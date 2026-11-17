@@ -12,8 +12,10 @@ und sie startet wie eine normale App – im Vollbild und auch offline. Alle Spie
 
 ## Die Spiele
 
-Die Startseite ist ein **Spielkatalog** mit 4 Kacheln pro Reihe, Kategorien und einer Leiste mit den
-**Tagesrätseln** (jeden Tag neu, mit Serien-Zähler).
+Die Startseite ist ein **Spielkatalog** mit 4 Kacheln pro Reihe: Suche, Favoriten (langes Drücken auf
+eine Kachel), «Zuletzt gespielt», Abschnitte pro Kategorie und eine Leiste mit den **Tagesrätseln**
+(jeden Tag neu, mit Serien-Zähler). Der **Ton** ist leise und sanft, hält sich an den Stumm-Schalter des
+iPhones und lässt sich mit dem Lautsprecher-Knopf auf leise / normal / aus stellen.
 
 | Spiel | Kategorie | Worum es geht | Inhalt | Tagesrätsel |
 |---|---|---|---|:-:|
@@ -38,6 +40,8 @@ Jedes Spiel bekommt einen einheitlichen **Startbildschirm** (ein Knopf zum Weite
 Modus, Statistik) und eine **kurze, animierte Anleitung** («So geht's»), die beim ersten Start
 automatisch erscheint und jederzeit über **?** erreichbar ist.
 
+> **Ziel: 100 Spiele.** Welche Spiele noch kommen, steht im [Fahrplan](ROADMAP.md).
+>
 > **Stand:** Die App wird laufend ausgebaut. Juwelen, Blasenzauber und Puzzle sind noch im Bau, und
 > der einheitliche Startbildschirm wird Spiel für Spiel eingebaut. Was neu dazukommt, steht im
 > [Versionsverlauf](CHANGELOG.md).
@@ -110,6 +114,7 @@ tools/                Werkzeuge: build-site.mjs (baut dist/), make-icons.mjs, de
 wrangler.jsonc        Cloudflare-Konfiguration
 DEV.md                Entwickler-Leitfaden (Regeln, Datenformate, Tests)
 CHANGELOG.md          Versionsverlauf
+ROADMAP.md            Fahrplan zu 100 Spielen
 ```
 
 ## Lokal entwickeln

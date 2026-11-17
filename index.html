@@ -96,6 +96,23 @@
     .info-ic .ph { font-size: 40px; }
     .info-status { margin-top: 6px; font-weight: 700; color: var(--text); }
 
+    .search {
+      display: flex; align-items: center; gap: 8px; margin: 10px 0 0; padding: 0 14px; height: 46px;
+      background: var(--surface); border-radius: 16px; box-shadow: 0 1px 3px rgba(70, 45, 20, .10);
+      color: var(--text-3);
+    }
+    .search input {
+      flex: 1 1 auto; min-width: 0; border: 0; outline: 0; background: transparent; font-size: 16px;
+      font-weight: 650; color: var(--text); -webkit-user-select: text; user-select: text;
+    }
+    .search input::placeholder { color: var(--text-3); }
+    .search input::-webkit-search-cancel-button, .search input::-webkit-search-decoration { -webkit-appearance: none; appearance: none; }
+    .search .clear { border: 0; background: var(--surface-2); color: var(--text-2); width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; padding: 0; }
+    .cat-title { display: flex; align-items: baseline; gap: 8px; }
+    .cat-title small { font-weight: 700; color: var(--text-3); letter-spacing: 0; text-transform: none; font-size: 13px; }
+    .empty { text-align: center; color: var(--text-2); font-weight: 650; padding: 30px 10px; }
+    .tile .fav { position: absolute; top: -5px; left: -5px; z-index: 2; width: 22px; height: 22px; border-radius: 50%;
+      background: #ffd23f; color: #7a5a00; display: grid; place-items: center; font-size: 13px; box-shadow: 0 0 0 2px var(--bg); }
     .foot { margin: 30px 0 0; text-align: center; color: var(--text-3); font-size: 14px; font-weight: 600; }
     .foot .heart { color: #ff6f7d; }
 
@@ -130,8 +147,13 @@
           tippen und <b>«Zum Home-Bildschirm»</b> wählen – dann startet Spielpause wie eine echte App, auch offline.
         </div>
 
+        <label class="search" for="q">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg>
+          <input id="q" type="search" placeholder="Spiel suchen" autocomplete="off" enterkeyhint="search">
+          <button class="clear hidden" id="q-clear" type="button" aria-label="Suche löschen">✕</button>
+        </label>
         <div class="chips" id="chips" role="tablist"></div>
-        <div class="grid" id="grid"></div>
+        <div id="catalog"></div>
 
         <section id="daily-wrap" class="hidden">
           <h2 class="section-title">Tagesrätsel</h2>
@@ -179,6 +201,7 @@
         h('div.ic', null, iconEl(g)),
         h('span.name', null, g.tile || g.title));
       if (badges && isNew(g)) a.append(h('span.new', null, 'Neu'));
+      if (badges && store.get('favorites', []).includes(g.id)) a.append(h('span.fav', null, '★'));
       a.addEventListener('click', () => { sfx.play('tap'); rememberPlay(g); });
       // Langes Drücken: Info zum Spiel
       let timer = 0, sx = 0, sy = 0, long = false;
@@ -205,10 +228,12 @@
         buttons: [
           { label: 'Spielen', value: 'play', primary: true },
           ...(g.daily ? [{ label: 'Tagesrätsel', value: 'daily' }] : []),
+          { label: isFav(g) ? '★ Aus Favoriten entfernen' : '☆ Zu Favoriten', value: 'fav' },
           { label: 'Schliessen', value: null, ghost: true },
         ],
       }).then((v) => {
         if (!v) return;
+        if (v === 'fav') { toggleFav(g); render(); return; }
         rememberPlay(g);
         location.href = `${g.id}/${v === 'daily' ? '#daily' : ''}`;
       });
@@ -233,24 +258,66 @@
       }
     }
 
-    // Kategorien + Katalog
-    const chips = document.getElementById('chips');
-    const grid = document.getElementById('grid');
-    let current = store.get('hub.category', 'alle');
-    if (current !== 'alle' && !categories.some((c) => c.id === current)) current = 'alle';
+    // ---------- Favoriten ----------
+    const favs = () => store.get('favorites', []);
+    const isFav = (g) => favs().includes(g.id);
+    function toggleFav(g) {
+      store.update('favorites', [], (l) => (l.includes(g.id) ? l.filter((x) => x !== g.id) : [...l, g.id]));
+    }
 
-    function renderGrid() {
-      grid.replaceChildren(...games.filter((g) => current === 'alle' || g.category === current).map((g) => tile(g)));
-      for (const c of chips.children) c.classList.toggle('active', c.dataset.id === current);
+    // ---------- Kategorien + Katalog ----------
+    const chips = document.getElementById('chips');
+    const catalog = document.getElementById('catalog');
+    const q = document.getElementById('q');
+    const qClear = document.getElementById('q-clear');
+    let current = store.get('hub.category', 'alle');
+
+    const norm = (t) => t.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f\u00ad]/g, '');
+    const gridOf = (list) => h('div.grid', null, list.map((g) => tile(g)));
+    const section = (title, list) => h('section', null,
+      h('h2.section-title.cat-title', null, title, h('small', null, String(list.length))), gridOf(list));
+
+    function renderChips() {
+      const recentIds = store.get('recent', []);
+      const opts = [{ id: 'alle', title: 'Alle' }];
+      if (favs().length) opts.push({ id: 'favoriten', title: '★ Favoriten' });
+      if (recentIds.length) opts.push({ id: 'zuletzt', title: 'Zuletzt' });
+      opts.push(...categories.filter((c) => games.some((g) => g.category === c.id)));
+      if (!opts.some((o) => o.id === current)) current = 'alle';
+      chips.replaceChildren(...opts.map((c) => {
+        const b = h('button.chip', { type: 'button', role: 'tab', 'data-id': c.id, class: 'chip' + (c.id === current ? ' active' : '') }, c.title);
+        b.addEventListener('click', () => { current = c.id; store.set('hub.category', current); render(); });
+        return b;
+      }));
     }
-    for (const c of [{ id: 'alle', title: 'Alle' }, ...categories.filter((c) => games.some((g) => g.category === c.id))]) {
-      const b = h('button.chip', { type: 'button', role: 'tab', 'data-id': c.id }, c.title);
-      b.addEventListener('click', () => {
-        current = c.id; store.set('hub.category', current); sfx.play('click'); renderGrid();
-      });
-      chips.append(b);
+
+    function render() {
+      renderChips();
+      const term = norm(q.value.trim());
+      qClear.classList.toggle('hidden', !term);
+      let out = [];
+      if (term) {
+        const hits = games.filter((g) => norm(`${g.title} ${g.subtitle} ${(categories.find((c) => c.id === g.category) || {}).title || ''}`).includes(term));
+        out = hits.length ? [gridOf(hits)] : [h('p.empty', null, 'Kein Spiel gefunden.')];
+      } else if (current === 'alle') {
+        const recent = store.get('recent', []).map((id) => games.find((g) => g.id === id)).filter(Boolean).slice(0, 4);
+        if (recent.length && games.length > 8) out.push(section('Zuletzt gespielt', recent));
+        for (const c of categories) {
+          const list = games.filter((g) => g.category === c.id);
+          if (list.length) out.push(section(c.title, list));
+        }
+      } else if (current === 'favoriten') {
+        out = [gridOf(favs().map((id) => games.find((g) => g.id === id)).filter(Boolean))];
+      } else if (current === 'zuletzt') {
+        out = [gridOf(store.get('recent', []).map((id) => games.find((g) => g.id === id)).filter(Boolean))];
+      } else {
+        out = [gridOf(games.filter((g) => g.category === current))];
+      }
+      catalog.replaceChildren(...out);
     }
-    renderGrid();
+    q.addEventListener('input', render);
+    qClear.addEventListener('click', () => { q.value = ''; render(); q.blur(); });
+    render();
 
     // Scrollposition merken (zurück aus einem Spiel)
     const scroller = document.getElementById('scroll');

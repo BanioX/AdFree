@@ -36,6 +36,7 @@ Keine fremden Namen, Figuren, Marken (kein Marvel, Disney, Pokémon, …), kein 
 - Jede Datei, die du anlegst, gehört in **deinen** Ordner (plus dein Icon `/icons/games/<id>.svg`).
   Ändere keine Dateien ausserhalb deines Bereichs (insbesondere nicht `/shared/*`, `/index.html`,
   `/games.js`, `/sw.js`). Wenn dir in `shared` etwas fehlt, baue es lokal in deinem Ordner.
+- Spiele einer **Familie** (z.B. Patiencen, Brettspiele) dürfen gemeinsamen Code in `/lib/<familie>/` teilen.
 - Laufzeit-Code nicht in Ordner namens `tests`, `tools` oder `src` legen – diese werden beim
   Veröffentlichen weggelassen (dort gehören Tests, Werkzeuge und Quellskripte hin).
 - **Keine git-Befehle, die etwas verändern** (kein commit/add/checkout/stash/reset). Der Orchestrator committet.

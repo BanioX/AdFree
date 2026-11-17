@@ -2,6 +2,18 @@
 
 Was in Spielpause neu dazukommt. Neueste Einträge oben.
 
+## 17. November 2026 (Abend)
+
+### Verbessert
+- **Ton komplett neu:** viel leiser und sanfter (weiche Glockentöne statt Piepsen), Menü-Knöpfe sind
+  stumm, schnelle Wiederholungen werden gedrosselt. Auf dem iPhone gilt jetzt der **Stumm-Schalter**,
+  und laufende Musik wird nicht mehr unterbrochen. Ton-Knopf: **leise** (Standard) → normal → aus.
+- **Startseite für viele Spiele:** Suche, **Favoriten** (langes Drücken auf eine Kachel),
+  «Zuletzt gespielt» und Abschnitte pro Kategorie.
+
+### Geplant
+- **Fahrplan zu 100 Spielen** veröffentlicht: siehe [ROADMAP.md](ROADMAP.md).
+
 ## 17. November 2026
 
 ### Neu

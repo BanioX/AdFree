@@ -15,11 +15,16 @@
 //   added     Datum (JJJJ-MM-TT), an dem das Spiel dazukam – zeigt 14 Tage lang «Neu»
 
 export const categories = [
-  { id: 'kreativ', title: 'Kreativ' },
-  { id: 'logik', title: 'Logik' },
-  { id: 'karten', title: 'Karten & Steine' },
+  { id: 'kreativ', title: 'Kreativ & Malen' },
+  { id: 'logik', title: 'Logikrätsel' },
+  { id: 'zahlen', title: 'Zahlen' },
+  { id: 'karten', title: 'Karten & Patience' },
+  { id: 'steine', title: 'Mahjong & Steine' },
+  { id: 'brett', title: 'Brettspiele' },
   { id: 'woerter', title: 'Wörter' },
+  { id: 'sortieren', title: 'Sortieren & Ordnen' },
   { id: 'action', title: 'Kombinieren' },
+  { id: 'gedaechtnis', title: 'Gedächtnis & Wissen' },
 ];
 
 export const games = [
@@ -27,13 +32,13 @@ export const games = [
   { id: 'beads', title: 'Perlenbild', tile: 'Perlen\u00ADbild', subtitle: 'Steine sortieren, Bild legen', category: 'kreativ', color: '#3f8ef0', added: '2026-11-17' },
   { id: 'cube', title: 'Pfeilwürfel', tile: 'Pfeil\u00ADwürfel', subtitle: '3D-Pfeilrätsel', category: 'logik', color: '#f29a1f', added: '2026-11-17' },
   { id: 'solitaire', title: 'Solitär', subtitle: 'Klondike, Spider & FreeCell', category: 'karten', color: '#2f9e6e', daily: true, added: '2026-11-17' },
-  { id: 'mahjong', title: 'Mahjong', subtitle: 'Gleiche Steine paarweise abräumen', category: 'karten', color: '#c0573e', daily: true, added: '2026-11-17' },
-  { id: 'triple', title: 'Dreierlei', subtitle: 'Drei Gleiche sammeln', category: 'karten', color: '#8a63d2', added: '2026-11-17' },
-  { id: 'sudoku', title: 'Sudoku', subtitle: 'Zahlen 1–9 logisch einsetzen', category: 'logik', color: '#4a7bd0', daily: true, added: '2026-11-17' },
+  { id: 'mahjong', title: 'Mahjong', subtitle: 'Gleiche Steine paarweise abräumen', category: 'steine', color: '#c0573e', daily: true, added: '2026-11-17' },
+  { id: 'triple', title: 'Dreierlei', subtitle: 'Drei Gleiche sammeln', category: 'steine', color: '#8a63d2', added: '2026-11-17' },
+  { id: 'sudoku', title: 'Sudoku', subtitle: 'Zahlen 1–9 logisch einsetzen', category: 'zahlen', color: '#4a7bd0', daily: true, added: '2026-11-17' },
   { id: 'nonogram', title: 'Bilderrätsel', tile: 'Bilder\u00ADrätsel', subtitle: 'Zahlen lösen, Bild entdecken', category: 'logik', color: '#e0699a', daily: true, added: '2026-11-17' },
-  { id: 'sort', title: 'Farbfluss', subtitle: 'Farben in Gläser sortieren', category: 'logik', color: '#2bb3c0', daily: true, added: '2026-11-17' },
-  { id: 'blocks', title: 'Blockpuzzle', tile: 'Block\u00ADpuzzle', subtitle: 'Reihen füllen und abräumen', category: 'logik', color: '#f0a020', added: '2026-11-17' },
-  { id: 'merge', title: 'Verdoppeln', tile: 'Verdop\u00ADpeln', subtitle: 'Gleiche Kacheln verschmelzen', category: 'logik', color: '#e2795a', added: '2026-11-17' },
+  { id: 'sort', title: 'Farbfluss', subtitle: 'Farben in Gläser sortieren', category: 'sortieren', color: '#2bb3c0', daily: true, added: '2026-11-17' },
+  { id: 'blocks', title: 'Blockpuzzle', tile: 'Block\u00ADpuzzle', subtitle: 'Reihen füllen und abräumen', category: 'action', color: '#f0a020', added: '2026-11-17' },
+  { id: 'merge', title: 'Verdoppeln', tile: 'Verdop\u00ADpeln', subtitle: 'Gleiche Kacheln verschmelzen', category: 'zahlen', color: '#e2795a', added: '2026-11-17' },
   { id: 'wordsearch', title: 'Wortsuche', tile: 'Wort\u00ADsuche', subtitle: 'Versteckte Wörter finden', category: 'woerter', color: '#5a9e3c', daily: true, added: '2026-11-17' },
   { id: 'wordle', title: 'Wortrate', subtitle: 'Das Wort in sechs Versuchen', category: 'woerter', color: '#d9a21b', daily: true, added: '2026-11-17' },
   { id: 'match3', title: 'Juwelen', subtitle: 'Drei in einer Reihe', category: 'action', color: '#d0447c', added: '2026-11-17' },

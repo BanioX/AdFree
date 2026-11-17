@@ -244,3 +244,15 @@ export function sym(halfRows, odd = false, map = {}) {
 export function rows(text) {
   return text.split('\n').map((s) => s.trim()).filter(Boolean);
 }
+
+/**
+ * Zeichnet ein Objekt als eigene Ebene: draw(layer) füllt die Form, danach bekommt sie einen
+ * Umriss in `outline` (aussen, 4er-Nachbarschaft) und wird über g gelegt.
+ */
+export function obj(g, draw, outline = 'k', opt = {}) {
+  const l = g.layer();
+  draw(l);
+  if (outline) l.outline(outline, { diag: !!opt.diag });
+  g.over(l, 0, 0, opt.paint);
+  return l;
+}

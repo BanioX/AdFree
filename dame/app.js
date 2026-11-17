@@ -1,12 +1,13 @@
 // Dame gegen den Computer.
 
-import { boot, stage, fillTools, onPress } from '../lib/board/kit.js';
+import { boot, stage, fillTools, onPress, bt } from '../lib/board/kit.js';
 import { store } from '../shared/storage.js';
 import { sfx } from '../shared/sfx.js';
 import { h, toast, confirmDialog, sleep } from '../shared/ui.js';
 import { pickMove } from '../lib/board/ai.js';
 import { newGame, moves, apply, aiOptions, sideOf, judge } from './logic.js';
 import { tutorialSteps } from './tutorial.js';
+import { tr } from './strings.js';
 
 const ID = 'dame';
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -43,8 +44,8 @@ function art() {
 
 boot({
   id: ID,
-  title: 'Dame',
-  tagline: 'Schlagen, bis die Dame fliegt',
+  title: () => tr('title'),
+  tagline: () => tr('tagline'),
   accent: '#c45c26',
   confetti: ['#f4e2c4', '#c45c26', '#3a2418', '#ffe27a', '#fff'],
   steps: tutorialSteps,
@@ -60,8 +61,8 @@ boot({
     if (!state.hist) state.hist = [];
 
     const ui = stage({
-      title: 'Dame',
-      sub: 'Du hell',
+      title: tr('title'),
+      sub: tr('sub'),
       onBack: () => ctx.exit(),
       onHelp: () => ctx.help(),
     });
@@ -127,16 +128,16 @@ boot({
     }
     function status() {
       if (state.over) {
-        ui.setStatus(state.winner === 1 ? 'Du gewinnst!' : state.winner === 2 ? 'Computer gewinnt' : 'Unentschieden', state.winner === 1 ? 'win' : '');
-      } else if (busy && state.turn === 2) ui.setStatus('Computer überlegt …', '');
-      else if (moves(state).some((m) => m.taken.length)) ui.setStatus('Du musst schlagen', 'you');
-      else ui.setStatus('Du bist am Zug', 'you');
+        ui.setStatus(state.winner === 1 ? bt('youWinShort') : state.winner === 2 ? bt('cpuWin') : bt('draw'), state.winner === 1 ? 'win' : '');
+      } else if (busy && state.turn === 2) ui.setStatus(bt('cpuThink'), '');
+      else if (moves(state).some((m) => m.taken.length)) ui.setStatus(tr('must'), 'you');
+      else ui.setStatus(bt('youMove'), 'you');
     }
     function tools() {
       fillTools(ui.tools, [
-        { icon: 'undo', label: 'Zurück', disabled: busy || !state.hist.length, onClick: onUndo },
-        { icon: 'hint', label: 'Tipp', disabled: busy || state.over || state.turn !== 1, onClick: onHint },
-        { icon: 'refresh', label: 'Neu', disabled: busy, onClick: onNew },
+        { icon: 'undo', label: bt('undo'), disabled: busy || !state.hist.length, onClick: onUndo },
+        { icon: 'hint', label: bt('hint'), disabled: busy || state.over || state.turn !== 1, onClick: onHint },
+        { icon: 'refresh', label: bt('neu'), disabled: busy, onClick: onNew },
       ]);
     }
     let finishing = false;
@@ -155,8 +156,8 @@ boot({
         else if (p) ai++;
       }
       const choice = await ctx.finish(kind, {
-        title: kind === 'win' ? 'Gewonnen!' : kind === 'lose' ? 'Knapp!' : 'Unentschieden',
-        text: kind === 'draw' ? 'Niemand kommt weiter.' : `Du ${me} · Computer ${ai}`,
+        title: kind === 'win' ? bt('youWin') : kind === 'lose' ? bt('close') : bt('draw'),
+        text: kind === 'draw' ? tr('stuck') : tr('score', { a: me, b: ai }),
       });
       if (dead) return;
       if (choice === 'menu') ctx.exit();
@@ -175,7 +176,7 @@ boot({
     }
     async function onNew() {
       if (state.hist.length && !state.over) {
-        if (!(await confirmDialog('Neue Partie?', 'Die laufende Partie wird beendet.', 'Neu starten'))) return;
+        if (!(await confirmDialog(bt('newMatch'), bt('endMatch'), bt('restart')))) return;
       }
       if (!dead) restart();
     }
@@ -209,7 +210,7 @@ boot({
       hintTo = m.to;
       paint();
       sfx.play('sparkle');
-      toast('Dieser Zug sieht gut aus.');
+      toast(tr('hint'));
       status();
       tools();
     }

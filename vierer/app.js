@@ -1,12 +1,13 @@
 // Vier in einer Reihe – gegen den Computer, drei Stärken.
 
-import { boot, stage, fillTools } from '../lib/board/kit.js';
+import { boot, stage, fillTools, bt } from '../lib/board/kit.js';
 import { store } from '../shared/storage.js';
 import { sfx } from '../shared/sfx.js';
 import { h, toast, confirmDialog, sleep } from '../shared/ui.js';
 import { pickMove } from '../lib/board/ai.js';
 import { newGame, apply, undo, aiOptions } from './logic.js';
 import { tutorialSteps } from './tutorial.js';
+import { tr } from './strings.js';
 
 const ID = 'vierer';
 const ACCENT = '#2f7de1';
@@ -47,16 +48,16 @@ function art() {
 
 boot({
   id: ID,
-  title: 'Vier in einer Reihe',
-  tagline: 'Vier gleiche Steine in einer Linie',
+  title: () => tr('title'),
+  tagline: () => tr('tagline'),
   accent: ACCENT,
   confetti: ['#ffd23a', '#ff5a6a', '#5aa2f6', '#ffffff', '#ffb199'],
   steps: tutorialSteps,
   art,
   summary({ diff, bag, saved }) {
-    if (saved && !saved.over) return 'Partie läuft';
-    if (!bag.played) return 'Bereit für die erste Partie';
-    return `${bag.wins} ${bag.wins === 1 ? 'Sieg' : 'Siege'}`;
+    if (saved && !saved.over) return tr('running');
+    if (!bag.played) return tr('ready');
+    return tr(bag.wins === 1 ? 'winOne' : 'wins', { n: bag.wins });
   },
   start(ctx) {
     let dead = false;
@@ -66,15 +67,15 @@ boot({
     state.diff = state.diff || ctx.diff;
 
     const ui = stage({
-      title: 'Vier in einer Reihe',
-      sub: 'Du gelb · Computer rot',
+      title: tr('title'),
+      sub: tr('sub'),
       onBack: () => ctx.exit(),
       onHelp: () => ctx.help(),
     });
     const board = h('div.c4');
     const holes = [];
     for (let c = 0; c < 7; c++) {
-      const col = h('button.c4-col', { type: 'button', 'data-c': String(c), 'aria-label': `Reihe ${c + 1}` });
+      const col = h('button.c4-col', { type: 'button', 'data-c': String(c), 'aria-label': tr('col', { n: c + 1 }) });
       holes[c] = [];
       for (let r = 5; r >= 0; r--) {
         const hole = h('div.c4-hole', { 'data-r': String(r) });
@@ -127,18 +128,18 @@ boot({
 
     function status() {
       if (state.over) {
-        if (state.winner === 1) ui.setStatus('Du gewinnst!', 'win');
-        else if (state.winner === 2) ui.setStatus('Computer gewinnt', 'lose');
-        else ui.setStatus('Unentschieden', '');
-      } else if (busy && state.turn === 2) ui.setStatus('Computer überlegt …', '');
-      else ui.setStatus('Du bist am Zug', 'you');
+        if (state.winner === 1) ui.setStatus(bt('youWinShort'), 'win');
+        else if (state.winner === 2) ui.setStatus(bt('cpuWin'), 'lose');
+        else ui.setStatus(bt('draw'), '');
+      } else if (busy && state.turn === 2) ui.setStatus(bt('cpuThink'), '');
+      else ui.setStatus(bt('youMove'), 'you');
     }
 
     function paintTools() {
       fillTools(ui.tools, [
-        { icon: 'undo', label: 'Zurück', disabled: busy || !state._u.length, onClick: onUndo },
-        { icon: 'hint', label: 'Tipp', disabled: busy || state.over || state.turn !== 1, onClick: onHint },
-        { icon: 'refresh', label: 'Neu', disabled: busy, onClick: onNew },
+        { icon: 'undo', label: bt('undo'), disabled: busy || !state._u.length, onClick: onUndo },
+        { icon: 'hint', label: bt('hint'), disabled: busy || state.over || state.turn !== 1, onClick: onHint },
+        { icon: 'refresh', label: bt('neu'), disabled: busy, onClick: onNew },
       ]);
     }
 
@@ -148,12 +149,12 @@ boot({
       paintTools();
       const kind = state.winner === 1 ? 'win' : state.winner === 2 ? 'lose' : 'draw';
       const choice = await ctx.finish(kind, {
-        title: kind === 'win' ? 'Vier in einer Reihe!' : kind === 'lose' ? 'Knapp!' : 'Unentschieden',
+        title: kind === 'win' ? tr('four') : kind === 'lose' ? bt('close') : bt('draw'),
         text: kind === 'win'
-          ? 'Deine Steine bilden eine Linie.'
+          ? tr('winText')
           : kind === 'lose'
-            ? 'Der Computer war diesmal schneller.'
-            : 'Das Brett ist voll – unentschieden.',
+            ? tr('loseText')
+            : tr('drawText'),
       });
       if (dead) return true;
       if (choice === 'menu') ctx.exit();
@@ -173,7 +174,7 @@ boot({
 
     async function onNew() {
       if (state.n && !state.over) {
-        if (!(await confirmDialog('Neue Partie?', 'Die laufende Partie wird beendet.', 'Neu starten'))) return;
+        if (!(await confirmDialog(bt('newMatch'), bt('endMatch'), bt('restart')))) return;
       }
       if (dead) return;
       restart();
@@ -195,7 +196,7 @@ boot({
       if (busy || state.over || state.turn !== 1) return;
       busy = true;
       paintTools();
-      ui.setStatus('Einen Moment …', '');
+      ui.setStatus(tr('moment'), '');
       await sleep(20);
       if (dead) return;
       const col = pickMove({ ...aiOptions('mittel'), state, difficulty: 'mittel', noise: { mittel: 0 } });
@@ -204,7 +205,7 @@ boot({
       ghost = { c: col, r: state.h[col] };
       paint();
       sfx.play('sparkle');
-      toast('Diese Reihe sieht gut aus.');
+      toast(tr('hint'));
       status();
       paintTools();
     }
@@ -213,7 +214,7 @@ boot({
       if (dead || busy || state.over || state.turn !== 1) return;
       if (state.h[col] >= 6) {
         sfx.play('error');
-        toast('Diese Reihe ist voll.');
+        toast(tr('full'));
         const colEl = board.querySelector(`[data-c="${col}"]`);
         if (colEl) { colEl.classList.remove('sp-shake'); void colEl.offsetWidth; colEl.classList.add('sp-shake'); }
         return;

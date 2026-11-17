@@ -5,6 +5,7 @@ Was in Spielpause neu dazukommt. Neueste Einträge oben.
 ## 17. November 2026 (Nacht)
 
 ### Neu (Grok)
+- **Sprache**: Vier in einer Reihe, Reversi, Kalaha, Fünf in einer Reihe, Dame, Mühle und Eile mit Weile sind auf Deutsch und Englisch (`shared/i18n.js`, Schalter DE/EN).
 - **Vier in einer Reihe**: gegen den Computer in drei Stärken, mit Tipp, Rückgängig und gespeicherter Partie.
 - **Reversi**: schwarz gegen den Computer, Steine umdrehen, drei Stärken.
 - **Kalaha**: Samen säen, Extra-Zug und Fangen, drei Stärken.

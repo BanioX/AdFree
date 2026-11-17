@@ -36,6 +36,18 @@ Wer eine Welle übernimmt, trägt sich hier und in `ROADMAP.md` ein.
     dann nur **rückwärtskompatibel** (nichts entfernen oder umbenennen, was andere nutzen) und im
     CHANGELOG begründen.
 
+## Sprachen
+
+Deutsch und Englisch teilen sich [`shared/i18n.js`](shared/i18n.js). **Kein zweites System daneben.**
+
+- `lang` ist `'de'` oder `'en'` (gespeicherte Wahl, sonst die Gerätesprache).
+- `L('Deutsch', 'English')` oder `L({ de, en })` für einzelne Texte. Fehlt Englisch, gilt Deutsch.
+- `dict({ de: { key: '…' }, en: { key: '…' } })` ergibt `t(key, vars)` für viele Texte. `{name}` wird ersetzt.
+- `setLang('en')` speichert und lädt die Seite neu. `languageButton()` ist der Schalter DE/EN.
+- In `games.js` gehören `title_en`, `subtitle_en` und `tile_en` zum Eintrag. `gameText(g, lang)` liefert die passende Fassung.
+
+Wortspiele brauchen eigene englische Wortlisten, keine übersetzten deutschen.
+
 ## Git-Ablauf
 
 1. Vor der Arbeit: `git pull --rebase origin main`.

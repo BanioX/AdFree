@@ -45,13 +45,13 @@ export const games = [
   { id: 'match3', title: 'Juwelen', subtitle: 'Drei in einer Reihe', title_en: 'Jewels', subtitle_en: 'Three in a row', category: 'action', color: '#d0447c', added: '2026-11-17' },
   { id: 'bubbles', title: 'Blasenzauber', tile: 'Blasen\u00ADzauber', subtitle: 'Seifenblasen abschiessen', title_en: 'Bubble Magic', subtitle_en: 'Aim and pop the bubbles', category: 'action', color: '#4fa3e3', added: '2026-11-17' },
   { id: 'jigsaw', title: 'Puzzle', subtitle: 'Bilder Teil für Teil', title_en: 'Jigsaw', subtitle_en: 'Pictures piece by piece', category: 'kreativ', color: '#9a6b4f', added: '2026-11-17' },
-  { id: 'vierer', title: 'Vier in einer Reihe', tile: 'Vier in\u00A0einer Reihe', subtitle: 'Vier Steine in einer Linie', category: 'brett', color: '#2f7de1', added: '2026-11-17' },
-  { id: 'reversi', title: 'Reversi', subtitle: 'Steine einschliessen und umdrehen', category: 'brett', color: '#1f8a4c', added: '2026-11-17' },
-  { id: 'kalaha', title: 'Kalaha', subtitle: 'Samen säen, Vorrat füllen', category: 'brett', color: '#c4843a', added: '2026-11-17' },
-  { id: 'gomoku', title: 'Fünf in einer Reihe', tile: 'Fünf in\u00A0einer Reihe', subtitle: 'Fünf Steine in einer Linie', category: 'brett', color: '#8a5a2b', added: '2026-11-17' },
-  { id: 'dame', title: 'Dame', subtitle: 'Schlagen, bis die Dame fliegt', category: 'brett', color: '#c45c26', added: '2026-11-17' },
-  { id: 'muehle', title: 'Mühle', subtitle: 'Drei in einer Linie, Stein weg', category: 'brett', color: '#8b5a2b', added: '2026-11-17' },
-  { id: 'eile', title: 'Eile mit Weile', tile: 'Eile mit\u00A0Weile', subtitle: 'Kurze Runde, vier Farben', category: 'brett', color: '#e23d4a', added: '2026-11-17' },
+  { id: 'vierer', title: 'Vier in einer Reihe', title_en: 'Four in a Row', tile: 'Vier in\u00A0einer Reihe', tile_en: 'Four in\u00A0a Row', subtitle: 'Vier Steine in einer Linie', subtitle_en: 'Four matching discs in a line', category: 'brett', color: '#2f7de1', added: '2026-11-17' },
+  { id: 'reversi', title: 'Reversi', subtitle: 'Steine einschliessen und umdrehen', subtitle_en: 'Trap discs and flip them', category: 'brett', color: '#1f8a4c', added: '2026-11-17' },
+  { id: 'kalaha', title: 'Kalaha', subtitle: 'Samen säen, Vorrat füllen', subtitle_en: 'Sow seeds and fill your store', category: 'brett', color: '#c4843a', added: '2026-11-17' },
+  { id: 'gomoku', title: 'Fünf in einer Reihe', title_en: 'Five in a Row', tile: 'Fünf in\u00A0einer Reihe', tile_en: 'Five in\u00A0a Row', subtitle: 'Fünf Steine in einer Linie', subtitle_en: 'Five stones in a line', category: 'brett', color: '#8a5a2b', added: '2026-11-17' },
+  { id: 'dame', title: 'Dame', title_en: 'Draughts', subtitle: 'Schlagen, bis die Dame fliegt', subtitle_en: 'Jump until the king flies', category: 'brett', color: '#c45c26', added: '2026-11-17' },
+  { id: 'muehle', title: 'Mühle', title_en: 'Nine Men’s Morris', tile_en: 'Nine Men’s\u00A0Morris', subtitle: 'Drei in einer Linie, Stein weg', subtitle_en: 'Three in a row, take a stone', category: 'brett', color: '#8b5a2b', added: '2026-11-17' },
+  { id: 'eile', title: 'Eile mit Weile', title_en: 'Ludo', tile: 'Eile mit\u00A0Weile', tile_en: 'Ludo', subtitle: 'Kurze Runde, vier Farben', subtitle_en: 'A short race, four colours', category: 'brett', color: '#e23d4a', added: '2026-11-17' },
 ];
 
 /** Titel/Untertitel/Kachelname in der aktuellen Sprache */

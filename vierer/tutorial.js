@@ -1,6 +1,8 @@
 // Animierte Anleitung für Vier in einer Reihe.
 
 import { h } from '../shared/ui.js';
+import { L } from '../shared/i18n.js';
+import { tr } from './strings.js';
 
 function mini(cols, rows = 4) {
   const board = h('div.c4-demo');
@@ -25,8 +27,8 @@ function put(hole, kind) {
 export function tutorialSteps() {
   return [
     {
-      title: 'Stein fallen lassen',
-      text: 'Tippe eine Reihe an. Dein Stein fällt nach unten.',
+      title: tr('tut1'),
+      text: tr('tut1t'),
       demo(stage, api) {
         const { board, holes } = mini(5, 4);
         stage.append(board);
@@ -39,8 +41,8 @@ export function tutorialSteps() {
       },
     },
     {
-      title: 'Vier in einer Linie',
-      text: 'Vier eigene Steine in einer Reihe, Spalte oder Diagonale gewinnen.',
+      title: tr('tut2'),
+      text: tr('tut2t'),
       demo(stage, api) {
         const { board, holes } = mini(5, 4);
         stage.append(board);
@@ -59,12 +61,12 @@ export function tutorialSteps() {
       },
     },
     {
-      title: 'Tipp und Zurück',
-      text: 'Der Tipp zeigt eine gute Reihe. Zurück nimmt den letzten Zug zurück.',
+      title: tr('tut3'),
+      text: tr('tut3t'),
       demo(stage, api) {
         const bar = h('div.c4-demo-bar');
-        const hint = h('div.c4-demo-btn', null, 'Tipp');
-        const undo = h('div.c4-demo-btn', null, 'Zurück');
+        const hint = h('div.c4-demo-btn', null, L('Tipp', 'Hint'));
+        const undo = h('div.c4-demo-btn', null, L('Zurück', 'Undo'));
         bar.append(undo, hint);
         const { board, holes } = mini(5, 3);
         stage.append(board, bar);

@@ -22,6 +22,7 @@
 // Das Spiel kann einzelne Teile später aktualisieren: menu.update({ primary, daily, stats }).
 
 import { h, icon, soundButton, backButton } from './ui.js';
+import { languageButton } from './i18n.js';
 import { sfx } from './sfx.js';
 import { todayKey } from './storage.js';
 import { L, lang } from './i18n.js';
@@ -41,6 +42,7 @@ export function gameMenu(opts) {
   const topbar = h('div.topbar.gm-topbar', null,
     backButton(opts.backHref || '../'),
     h('div.spacer'),
+    languageButton(),
     opts.onHelp ? helpBtn : null,
     soundButton());
 

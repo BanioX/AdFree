@@ -1,4 +1,5 @@
 import { h } from '../shared/ui.js';
+import { tr } from './strings.js';
 
 function row(kinds) {
   const line = h('div', { style: { display: 'flex', gap: '6px', justifyContent: 'center', marginTop: '48px' } });
@@ -17,8 +18,8 @@ function row(kinds) {
 export function tutorialSteps() {
   return [
     {
-      title: 'Stein setzen',
-      text: 'Tippe ein freies Feld. Du spielst schwarz und beginnst.',
+      title: tr('tut1'),
+      text: tr('tut1t'),
       demo(stage, api) {
         const { line, cells } = row(['', '', '', '', '']);
         const board = h('div', { style: { background: '#e4c07a', borderRadius: '16px', padding: '8px' } });
@@ -33,8 +34,8 @@ export function tutorialSteps() {
       },
     },
     {
-      title: 'Fünf in einer Linie',
-      text: 'Fünf eigene Steine in einer Reihe, Spalte oder Diagonale gewinnen.',
+      title: tr('tut2'),
+      text: tr('tut2t'),
       demo(stage, api) {
         const { line, cells } = row(['me', 'me', 'me', 'me', '']);
         const board = h('div', { style: { background: '#e4c07a', borderRadius: '16px', padding: '8px' } });
@@ -51,8 +52,8 @@ export function tutorialSteps() {
       },
     },
     {
-      title: 'Blocken',
-      text: 'Halt den Computer auf, bevor er fünf Steine schliesst. Tipp und Zurück helfen.',
+      title: tr('tut3'),
+      text: tr('tut3t'),
       demo(stage, api) {
         const { line, cells } = row(['ai', 'ai', 'ai', 'ai', '']);
         const board = h('div', { style: { background: '#e4c07a', borderRadius: '16px', padding: '8px' } });

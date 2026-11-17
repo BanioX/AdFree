@@ -431,3 +431,5 @@ a { color: inherit; }
 }
 .tut-ripple.go { animation: tut-ripple .55s ease-out; }
 @keyframes tut-ripple { 0% { transform: scale(.3); opacity: .9; } 100% { transform: scale(1.5); opacity: 0; } }
+
+.lang-btn { font-size: 13px; font-weight: 800; letter-spacing: .02em; }

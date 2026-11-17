@@ -1,11 +1,12 @@
 // Kalaha gegen den Computer.
 
-import { boot, stage, fillTools, onPress } from '../lib/board/kit.js';
+import { boot, stage, fillTools, onPress, bt } from '../lib/board/kit.js';
 import { sfx } from '../shared/sfx.js';
 import { h, toast, confirmDialog, sleep } from '../shared/ui.js';
 import { pickMove } from '../lib/board/ai.js';
 import { newGame, apply, moves, aiOptions } from './logic.js';
 import { tutorialSteps } from './tutorial.js';
+import { tr } from './strings.js';
 
 const ID = 'kalaha';
 const SEED = ['#6b3a1f', '#8a4b28', '#a86432', '#c4843a', '#7a3e45', '#5c6b32'];
@@ -43,8 +44,8 @@ function art() {
 
 boot({
   id: ID,
-  title: 'Kalaha',
-  tagline: 'Samen säen, Vorrat füllen',
+  title: () => tr('title'),
+  tagline: () => tr('tagline'),
   accent: '#c4843a',
   confetti: ['#f0c27a', '#c4843a', '#6b3a1f', '#fff3', '#8a4b28'],
   steps: tutorialSteps,
@@ -58,8 +59,8 @@ boot({
     let popped = new Set();
 
     const ui = stage({
-      title: 'Kalaha',
-      sub: 'Dein Vorrat rechts',
+      title: tr('title'),
+      sub: tr('sub'),
       onBack: () => ctx.exit(),
       onHelp: () => ctx.help(),
     });
@@ -110,16 +111,16 @@ boot({
       ui.setSub(`Du ${state.p[6]} · Computer ${state.p[13]}`);
     }
     function status() {
-      if (state.over) ui.setStatus(state.winner === 1 ? 'Du gewinnst!' : state.winner === 2 ? 'Computer gewinnt' : 'Unentschieden', state.winner === 1 ? 'win' : '');
-      else if (state.turn === 2) ui.setStatus('Computer sät …', '');
-      else if (state.extra) ui.setStatus('Noch einmal!', 'you');
-      else ui.setStatus('Du bist am Zug', 'you');
+      if (state.over) ui.setStatus(state.winner === 1 ? bt('youWinShort') : state.winner === 2 ? bt('cpuWin') : bt('draw'), state.winner === 1 ? 'win' : '');
+      else if (state.turn === 2) ui.setStatus(tr('sowing'), '');
+      else if (state.extra) ui.setStatus(tr('again'), 'you');
+      else ui.setStatus(bt('youMove'), 'you');
     }
     function tools() {
       fillTools(ui.tools, [
-        { icon: 'undo', label: 'Zurück', disabled: busy || !state.hist.length, onClick: onUndo },
-        { icon: 'hint', label: 'Tipp', disabled: busy || state.over || state.turn !== 1, onClick: onHint },
-        { icon: 'refresh', label: 'Neu', disabled: busy, onClick: onNew },
+        { icon: 'undo', label: bt('undo'), disabled: busy || !state.hist.length, onClick: onUndo },
+        { icon: 'hint', label: bt('hint'), disabled: busy || state.over || state.turn !== 1, onClick: onHint },
+        { icon: 'refresh', label: bt('neu'), disabled: busy, onClick: onNew },
       ]);
     }
     let finishing = false;
@@ -128,8 +129,8 @@ boot({
       finishing = true;
       const kind = state.winner === 1 ? 'win' : state.winner === 2 ? 'lose' : 'draw';
       const choice = await ctx.finish(kind, {
-        title: kind === 'win' ? 'Voller Vorrat!' : kind === 'lose' ? 'Knapp!' : 'Unentschieden',
-        text: `Du ${state.p[6]} Samen · Computer ${state.p[13]}`,
+        title: kind === 'win' ? tr('full') : kind === 'lose' ? bt('close') : bt('draw'),
+        text: tr('score', { a: state.p[6], b: state.p[13] }),
       });
       if (dead) return;
       if (choice === 'menu') ctx.exit();
@@ -147,7 +148,7 @@ boot({
     }
     async function onNew() {
       if (state.hist.length && !state.over) {
-        if (!(await confirmDialog('Neue Partie?', 'Die laufende Partie wird beendet.', 'Neu starten'))) return;
+        if (!(await confirmDialog(bt('newMatch'), bt('endMatch'), bt('restart')))) return;
       }
       if (!dead) restart();
     }
@@ -175,7 +176,7 @@ boot({
       if (dead || pit == null) return;
       pits[pit].classList.add('pop');
       sfx.play('sparkle');
-      toast('Diese Mulde sieht gut aus.');
+      toast(tr('hint'));
     }
     function mark(before) {
       popped = new Set();
@@ -200,7 +201,7 @@ boot({
       if (dead || busy || state.over || state.turn !== 1) return;
       if (pit < 0 || pit > 5 || !state.p[pit]) {
         sfx.play('error');
-        toast('Diese Mulde ist leer.');
+        toast(tr('empty'));
         return;
       }
       busy = true;

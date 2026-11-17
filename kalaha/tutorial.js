@@ -1,10 +1,11 @@
 import { h } from '../shared/ui.js';
+import { tr } from './strings.js';
 
 export function tutorialSteps() {
   return [
     {
-      title: 'Samen säen',
-      text: 'Tippe eine eigene Mulde. Die Samen wandern einzeln weiter.',
+      title: tr('tut1'),
+      text: tr('tut1t'),
       demo(stage, api) {
         const row = h('div.row');
         const pits = [4, 4, 4, 4].map((n) => h('i', null, String(n)));
@@ -24,8 +25,8 @@ export function tutorialSteps() {
       },
     },
     {
-      title: 'Vorrat füllen',
-      text: 'Landet der letzte Samen im eigenen Vorrat, bist du noch einmal am Zug.',
+      title: tr('tut2'),
+      text: tr('tut2t'),
       demo(stage, api) {
         const store = h('i', null, '0');
         store.style.width = '46px';
@@ -44,8 +45,8 @@ export function tutorialSteps() {
       },
     },
     {
-      title: 'Gegenüber fangen',
-      text: 'In einer leeren eigenen Mulde fängst du die Samen gegenüber.',
+      title: tr('tut3'),
+      text: tr('tut3t'),
       demo(stage, api) {
         const mine = h('i', null, '0');
         const opp = h('i', null, '6');

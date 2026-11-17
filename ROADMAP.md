@@ -27,41 +27,41 @@ Legende: ✅ spielbar · 🔧 in Arbeit · 📋 geplant
 | 15 | Juwelen – drei in einer Reihe | Kombinieren | 🔧 |
 | 16 | Blasenzauber – Bubble Shooter | Kombinieren | 🔧 |
 
-## Welle 1 – die beliebtesten Familien
+## Welle 1 – die beliebtesten Familien (in Arbeit)
 
 **Karten & Patience** (gemeinsame Karten-Darstellung)
 | # | Spiel | Stand |
 |--:|---|:-:|
-| 17 | Pyramide – Paare zu 13 | 📋 |
-| 18 | Gipfel – TriPeaks-Patience | 📋 |
-| 19 | Golf-Patience | 📋 |
-| 20 | Yukon | 📋 |
-| 21 | Skorpion | 📋 |
-| 22 | Bäckerdutzend | 📋 |
-| 23 | Tschau Sepp – gegen den Computer | 📋 |
-| 24 | Rommé – gegen den Computer | 📋 |
+| 17 | Pyramide – Paare zu 13 | 🔧 |
+| 18 | Gipfel – TriPeaks-Patience | 🔧 |
+| 19 | Golf-Patience | 🔧 |
+| 20 | Yukon | 🔧 |
+| 21 | Skorpion | 🔧 |
+| 22 | Bäckerdutzend | 🔧 |
+| 23 | Tschau Sepp – gegen den Computer | 🔧 |
+| 24 | Rommé – gegen den Computer | 🔧 |
 
 **Zahlen** (gemeinsames Zahlengitter)
 | # | Spiel | Stand |
 |--:|---|:-:|
-| 25 | Zahlenpaare – gleiche oder Summe 10 streichen | 📋 |
-| 26 | Zahlensummen – Zahlen streichen bis die Summen stimmen | 📋 |
-| 27 | Kakuro | 📋 |
-| 28 | Rechenquadrate (KenKen-Art) | 📋 |
-| 29 | Killer-Sudoku | 📋 |
-| 30 | Mini-Sudoku 6×6 | 📋 |
-| 31 | Zahlenschlange (Hidato-Art) | 📋 |
+| 25 | Zahlenpaare – gleiche oder Summe 10 streichen | 🔧 |
+| 26 | Zahlensummen – Zahlen streichen bis die Summen stimmen | 🔧 |
+| 27 | Kakuro | 🔧 |
+| 28 | Rechenquadrate (KenKen-Art) | 🔧 |
+| 29 | Killer-Sudoku | 🔧 |
+| 30 | Mini-Sudoku 6×6 | 🔧 |
+| 31 | Zahlenschlange (Hidato-Art) | 🔧 |
 
 **Sortieren & Ordnen** (gemeinsame Stapel-/Regal-Logik)
 | # | Spiel | Stand |
 |--:|---|:-:|
-| 32 | Kugelsortierung | 📋 |
-| 33 | Schrauben & Muttern | 📋 |
-| 34 | Wollknäuel | 📋 |
-| 35 | Wabenstapel – Hexa-Sortierung | 📋 |
-| 36 | Regal-Ordnung – drei Gleiche ins Fach | 📋 |
-| 37 | Ausparken – Autos aus dem Stau schieben | 📋 |
-| 38 | Kuchen-Sortierung | 📋 |
+| 32 | Kugelsortierung | 🔧 |
+| 33 | Schrauben & Muttern | 🔧 |
+| 34 | Wollknäuel | 🔧 |
+| 35 | Wabenstapel – Hexa-Sortierung | 🔧 |
+| 36 | Regal-Ordnung – drei Gleiche ins Fach | 🔧 |
+| 37 | Ausparken – Autos aus dem Stau schieben | 🔧 |
+| 38 | Kuchen-Sortierung | 🔧 |
 
 ## Welle 2
 

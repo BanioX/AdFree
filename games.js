@@ -72,6 +72,7 @@ export const games = [
   { id: 'frucht', title: 'Früchte-Fusion', title_en: 'Fruit Merge', tile: 'Früchte-\u00ADFusion', tile_en: 'Fruit Merge', subtitle: 'Fallen lassen und verschmelzen', subtitle_en: 'Drop them and let them fuse', category: 'action', color: '#e25b4a', added: '2026-11-17' },
   { id: 'kette', title: 'Kugelkette', title_en: 'Ball Chain', tile: 'Kugelkette', tile_en: 'Ball Chain', subtitle: 'Drei gleiche Kugeln weg tippen', subtitle_en: 'Tap three matching balls', category: 'action', color: '#4fa3e3', added: '2026-11-17' },
   { id: 'farbklick', title: 'Farbklicker', title_en: 'Color Flood', tile: 'Farb\u00ADklicker', tile_en: 'Color Flood', subtitle: 'Die Ecke frisst die Farbe', subtitle_en: 'The corner swallows the colour', category: 'action', color: '#d0447c', added: '2026-11-17' },
+  { id: 'farbkugel', title: 'Farbkugeln', title_en: 'Color Lines', tile: 'Farbkugeln', tile_en: 'Color Lines', subtitle: 'Fünf in einer Reihe räumen', subtitle_en: 'Clear five in a row', category: 'action', color: '#8a63d2', added: '2026-11-17' },
 ];
 
 /** Titel/Untertitel/Kachelname in der aktuellen Sprache */

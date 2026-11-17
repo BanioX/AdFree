@@ -243,34 +243,52 @@ boot({
       status();
     }
 
-    let hold = null;
+    // iOS Safari: setPointerCapture und das Neuzeichnen der Vorschau brechen
+    // den Finger ab (pointercancel). Danach kommt nur noch click – der Stein
+    // muss trotzdem fallen. pointerup und click dürfen nicht doppelt ziehen.
+    let armed = null;
+    let droppedAt = -1e9;
     const colOf = (e) => {
       const el = e.target.closest?.('.c4-col');
       return el ? Number(el.dataset.c) : null;
     };
+    function drop(col, fromClick) {
+      if (col == null || Number.isNaN(col)) return;
+      if (fromClick && performance.now() - droppedAt < 450) return;
+      droppedAt = performance.now();
+      armed = null;
+      play(col);
+    }
     board.addEventListener('pointerdown', (e) => {
+      if (e.pointerType === 'mouse' && e.button !== 0) return;
       if (busy || state.over) return;
       const c = colOf(e);
       if (c == null) return;
-      hold = c;
-      board.setPointerCapture?.(e.pointerId);
+      armed = c;
       if (state.h[c] < 6) { ghost = { c, r: state.h[c] }; paint(); }
     });
     board.addEventListener('pointermove', (e) => {
-      if (hold == null || busy) return;
+      if (armed == null || busy) return;
       const c = colOf(e);
       if (c == null || state.h[c] >= 6) return;
+      armed = c;
       if (!ghost || ghost.c !== c) { ghost = { c, r: state.h[c] }; paint(); }
     });
     board.addEventListener('pointerup', (e) => {
-      if (hold == null) return;
+      if (armed == null) return;
       const c = colOf(e);
-      const chosen = c == null ? hold : c;
-      hold = null;
-      ghost = null;
-      play(chosen);
+      drop(c == null ? armed : c, false);
     });
-    board.addEventListener('pointercancel', () => { hold = null; ghost = null; paint(); });
+    board.addEventListener('pointercancel', (e) => {
+      if (armed == null) return;
+      const c = colOf(e);
+      drop(c == null ? armed : c, false);
+    });
+    board.addEventListener('click', (e) => {
+      const c = colOf(e);
+      if (c == null) return;
+      drop(c, true);
+    });
 
     const onHide = () => persist();
     window.addEventListener('pagehide', onHide);

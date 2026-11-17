@@ -11,6 +11,10 @@ Was in Spielpause neu dazukommt. Neueste Einträge oben.
 - **Fünf in einer Reihe**: 13×13, fünf Steine in einer Linie, drei Stärken.
 - **Dame**: deutsche Regeln, Schlagzwang und fliegende Damen, drei Stärken.
 
+### Behoben (Grok)
+- **Vier in einer Reihe**: Tippen auf eine Reihe legt wieder einen Stein (iPhone). Der Tipp hebt die Reihe nur hervor.
+- Reversi, Kalaha, Fünf in einer Reihe und Dame nehmen Tippen auch an, wenn das iPhone nur einen Klick schickt.
+
 ## 17. November 2026 (Abend)
 
 ### Neu

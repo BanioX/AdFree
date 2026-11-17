@@ -28,6 +28,15 @@ const fit = await page.evaluate(() => {
   return b.bottom <= t.top + 2 && t.bottom <= innerHeight + 1;
 });
 assert.equal(fit, true);
+await page.waitForTimeout(550);
+const clickOnly = await page.evaluate(() => {
+  const n = window.__sp.state().cells.filter(Boolean).length;
+  const el = document.querySelector('.rv-dot')?.closest('.rv-cell');
+  if (!el) return { ok: false, n };
+  el.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+  return { ok: window.__sp.state().cells.filter(Boolean).length > n, n };
+});
+assert.equal(clickOnly.ok, true, 'Klick ohne pointerup setzt einen Stein');
 assert.deepEqual(errors, []);
 await browser.close();
 console.log('reversi e2e ok');

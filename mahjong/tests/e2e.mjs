@@ -224,6 +224,9 @@ try {
   check(await mj(() => window.__mahjong.route()) === '', 'Zurück-Button führt nicht ins Menü');
   await shot('11-menu-continue');
   check((await page.locator('.gm-primary-label').innerText()).includes('Weiter'), 'Menü zeigt kein «Weiter»');
+  check((await page.locator('.gm-primary-sub').innerText()).startsWith('Level 2 · Kleine Pyramide'), 'Hauptknopf nennt Level und Name nicht');
+  check(await page.locator('.mj-hero.live canvas').count() === 1, 'Live-Vorschau des laufenden Spiels fehlt im Menü');
+  check(await page.locator('.tbl').count() === 5 && await page.locator('.tbl.on').count() === 1, 'Abschnitt «Tische» fehlt');
   await page.locator('.gm-sec', { hasText: 'Reise' }).tap();
   await wait(700);
   await shot('12-journey');

@@ -28,8 +28,8 @@ Keine fremden Namen, Figuren, Marken (kein Marvel, Disney, Pokémon, …), kein 
 - Safe Areas beachten (`env(safe-area-inset-*)`, Variablen `--safe-top` etc. in `shared/style.css`).
   Kein `100vh` – `100dvh` oder `position: fixed; inset: 0` (siehe `.app`).
 - 60 fps anstreben. Nur neu zeichnen, wenn sich etwas ändert (requestAnimationFrame-Loop, der schläft).
-- Sprache der Oberfläche: **Deutsch, Schweizer Rechtschreibung** (kein «ß», sondern «ss»;
-  Anführungszeichen «so»). Kurze, freundliche Texte.
+- Sprache der Oberfläche: **Deutsch (Schweizer Rechtschreibung: «ss» statt «ß», Anführungszeichen «so»)
+  und Englisch** – siehe «Zweisprachig» weiter unten. Kurze, freundliche Texte.
 - Spielstand wird automatisch gespeichert (beim Verlassen nichts verloren). Kein Login, nichts online.
 - **Keine Werbung, keine Käufe, keine künstlichen Wartezeiten, keine Energie-/Leben-Paywalls.**
   Hilfen (Tipps, Mischen, …) sind gratis.
@@ -88,6 +88,32 @@ Alle Spiele verwenden dieselben Bausteine, damit sich die App wie aus einem Guss
   über «?» im Startbildschirm **und** im laufenden Spiel erreichbar. Keine Textwüsten.
 - Im laufenden Spiel bei Level 1 zusätzlich ein dezenter Hinweis direkt am Spielfeld (Coach-Mark,
   z.B. pulsierender Ring um das erste sinnvolle Ziel), der nach der ersten Aktion verschwindet.
+
+## Zweisprachig: Deutsch + Englisch (Pflicht für jedes Spiel)
+
+Die App gibt es auf **Deutsch und Englisch**. Sprache = gespeicherte Wahl, sonst Sprache des Geräts;
+umschalten auf der Startseite (DE/EN). Alles Sichtbare muss in beiden Sprachen da sein:
+
+```js
+import { L, lang, isEn, fmt, dict, plural, num } from '../shared/i18n.js';
+L('Spielen', 'Play');                                   // kurze Texte inline
+const t = dict({ de: { level: 'Level {n}' }, en: { level: 'Level {n}' } });   // viele Texte: /<id>/i18n.js
+plural(n, ['Bild', 'Bilder'], ['picture', 'pictures']);
+```
+
+- **Alle** Texte: Menüs, Knöpfe, Anleitung (Titel + Satz jedes Schritts), Hinweise, Toasts, Gewinn-Blatt,
+  Statistik, Einstellungen, `aria-label`, `<title>`, `reportSummary`-Text.
+- **Sprachabhängige Inhalte** (Wortlisten, Themen, Rätsel-Texte, Bildtitel) pro Sprache in `data/`
+  (z.B. `data/words.de.js`, `data/words.en.js`) und mit `lang` wählen. Wortspiele brauchen echte
+  englische Wortlisten (gleiche Qualität wie Deutsch), nicht übersetzte deutsche.
+- Gemeinsame Bausteine (`gameMenu`, Tutorial, Dialoge, Ton-Knopf) sind schon zweisprachig; was das
+  Spiel ihnen übergibt (Titel, Untertitel, Schritte, Knopftexte), muss es selbst mit `L()` übersetzen.
+- `games.js`: jedes Spiel braucht `title_en` und `subtitle_en` (optional `tile_en`).
+- Englisch: natürlich und freundlich (britische oder amerikanische Schreibweise einheitlich pro Spiel),
+  kurze Sätze wie im Deutschen. Spielnamen dürfen auf Englisch anders heissen (z.B. «Farbenzauber» →
+  «Color Magic»).
+- Testen: Playwright-Kontext mit `locale: 'en-US'` und `locale: 'de-CH'` – beide Sprachen ansehen,
+  keine deutschen Reste im englischen Modus (und umgekehrt).
 
 ## Spass-Standard (Pflicht für jedes Spiel)
 

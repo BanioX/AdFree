@@ -5,6 +5,7 @@ import { sfx } from '../shared/sfx.js';
 import { icon, h, toast, showModal, confirmDialog, celebrate, setupPage, soundButton, backButton, sleep } from '../shared/ui.js';
 import { layouts } from './data/layouts.js';
 import { tilesets, tilesetById } from './data/tilesets.js';
+import { tables } from './data/tables.js';
 import { parseLayout, generateLayoutDef, sizeClass, solve, TILE } from './engine.js';
 import { Session } from './game.js';
 import { BoardView, drawMiniLayout } from './board.js';
@@ -34,14 +35,8 @@ const settings = Object.assign({ tileset: 'klassisch', table: 'sand', highlightF
 if (!tilesets.some((t) => t.id === settings.tileset)) settings.tileset = 'klassisch';
 const saveSettings = () => store.set(K.settings, settings);
 
-// Tische (Spielfeld-Farben) – werden mit Sternen der Reise freigeschaltet
-const TABLES = [
-  { id: 'sand', name: 'Sand', stars: 0, c1: '#f6eddd', c2: '#e9d8bc' },
-  { id: 'jade', name: 'Jade', stars: 4, c1: '#e4f2e9', c2: '#bddccb' },
-  { id: 'himmel', name: 'Himmel', stars: 12, c1: '#e8f0fb', c2: '#c3d5ee' },
-  { id: 'rose', name: 'Rosé', stars: 24, c1: '#fcebec', c2: '#efc6cc' },
-  { id: 'nacht', name: 'Nacht', stars: 40, c1: '#454b61', c2: '#2a2f40', dark: true },
-];
+// Tische (Spielfeld-Farben) – werden mit Sternen der Reise freigeschaltet (data/tables.js)
+const TABLES = tables;
 const tableById = (id) => TABLES.find((t) => t.id === id) || TABLES[0];
 function currentTable() {
   const t = tableById(settings.table);
@@ -982,9 +977,19 @@ async function showWinSheet(session, res) {
   else if (res.firstClear && kind === 'level') extra.push(h('div.badge-new', null, '✨ Neues Layout geschafft'));
   if (res.newTable) {
     const t = res.newTable;
-    extra.push(h('div.badge-table', null,
+    const note = h('small', null, 'Antippen zum Ausprobieren');
+    const badge = h('button.badge-table', { type: 'button' },
       h('span.sw', { style: { background: `linear-gradient(160deg, ${t.c1}, ${t.c2})` } }),
-      h('span', null, h('b', null, `Neuer Tisch: ${t.name}`), h('small', null, 'Im Menü unter «Tische» wählen'))));
+      h('span', null, h('b', null, `Neuer Tisch: ${t.name}`), note));
+    badge.addEventListener('click', () => {
+      settings.table = t.id;
+      saveSettings();
+      const wrap = document.querySelector('.board-wrap');
+      if (wrap) applyTable(wrap, t);
+      note.textContent = 'Gewählt ✓';
+      badge.classList.add('on');
+    });
+    extra.push(badge);
   }
   if (kind === 'daily') {
     const st = dailyStreak(ID);

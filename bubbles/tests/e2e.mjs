@@ -1,14 +1,14 @@
 // Ablauf-Test (Playwright, iPhone 13): Menü → Tutorial → Level 1 bis zum Siegesblatt →
 // Level 2 anspielen → Neuladen setzt fort → Entspannt-Modus → Levelkarte. Keine Konsolenfehler.
 //
-//   python3 -m http.server 8222 --bind 127.0.0.1   (im Repo-Wurzelverzeichnis)
+//   python3 -m http.server 8145 --bind 127.0.0.1   (im Repo-Wurzelverzeichnis)
 //   node bubbles/tests/e2e.mjs
 import { createRequire } from 'node:module';
 import { mkdirSync } from 'node:fs';
 import assert from 'node:assert/strict';
 
 const { chromium, devices } = createRequire(import.meta.url)('playwright');
-const BASE = process.env.BASE || 'http://127.0.0.1:8222/bubbles/';
+const BASE = process.env.BASE || 'http://127.0.0.1:8145/bubbles/';
 const OUT = new URL('./out/', import.meta.url).pathname;
 mkdirSync(OUT, { recursive: true });
 
@@ -106,8 +106,8 @@ for (let i = 0; i < 4; i++) {
 await page.waitForFunction(() => !document.querySelector('.tut-backdrop'));
 await page.waitForFunction(() => location.hash === '#level/1');
 await page.waitForSelector('.bz-canvas');
-assert.ok(await page.$('.bz-coach'), 'Coach-Mark im ersten Level');
-await page.waitForTimeout(1700);
+await page.waitForSelector('.bz-coach .bz-coach-ring', { timeout: 5000 }); // Coach-Mark im ersten Level
+await page.waitForTimeout(900);
 await shot('03-level1');
 await noScroll();
 
@@ -115,7 +115,7 @@ await noScroll();
 step('Level 1 spielen');
 const won = await playUntil('spielpause.bubbles.level', async () => (await savedLevel()).status === 'won', 40);
 assert.ok(won, 'Level 1 gewonnen');
-assert.equal(await page.$('.bz-coach'), null, 'Coach-Mark verschwindet nach dem ersten Schuss');
+assert.equal(await page.$('.bz-coach'), null, 'Coach-Mark verschwindet nach der ersten Berührung');
 await page.waitForSelector('.sp-modal h2', { timeout: 15000 });
 assert.match(await page.textContent('.sp-modal h2'), /Geschafft|Wunderbar|Perfekt/);
 await page.waitForTimeout(900);

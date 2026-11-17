@@ -28,8 +28,8 @@
   box-shadow: inset 0 2px 8px rgba(120, 80, 30, .12), inset 0 0 0 1px rgba(120, 80, 30, .06);
 }
 .mj-hero.dark-table { background: radial-gradient(110% 80% at 50% 25%, rgba(255,255,255,.12), rgba(255,255,255,0) 70%), linear-gradient(180deg, var(--table-1), var(--table-2)); }
-.mj-hero.live { cursor: pointer; }
-.mj-hero-board { position: absolute; inset: 6px 8px 12px; }
+.mj-hero.live { cursor: pointer; height: 150px; }
+.mj-hero-board { position: absolute; inset: 4px 6px 14px; }
 .mj-hero-board canvas { pointer-events: none; }
 .mj-hero-bar { position: absolute; left: 22px; right: 22px; bottom: 7px; height: 5px; border-radius: 3px; background: rgba(120, 90, 60, .16); overflow: hidden; }
 .mj-hero-bar i { display: block; height: 100%; border-radius: 3px; background: linear-gradient(90deg, var(--gold), var(--accent)); }
@@ -196,8 +196,12 @@
 .win-facts span { font-size: 12.5px; font-weight: 700; }
 .badge-table {
   display: flex; align-items: center; gap: 10px; margin: 10px auto 0; padding: 8px 14px 8px 8px; width: fit-content;
-  border-radius: 16px; background: var(--surface-2); text-align: left; animation: mj-star .5s .5s var(--ease-spring) both;
+  border: 0; border-radius: 16px; background: var(--surface-2); text-align: left; font: inherit; color: inherit;
+  animation: mj-star .5s .5s var(--ease-spring) both; transition: box-shadow .2s;
 }
+.badge-table:active { transform: scale(.97); }
+.badge-table.on { box-shadow: inset 0 0 0 2px var(--jade); }
+.badge-table.on small { color: var(--jade); font-weight: 800; }
 .badge-table .sw { width: 34px; height: 34px; border-radius: 10px; box-shadow: inset 0 0 0 1px rgba(90, 60, 30, .15); flex: 0 0 auto; }
 .badge-table b { display: block; color: var(--text); font-size: 14.5px; }
 .badge-table small { display: block; font-size: 12px; font-weight: 650; }
@@ -252,7 +256,7 @@
 .td-tile.still, .td-tile.still canvas { transition: none !important; animation: none !important; }
 .td-tile canvas { filter: drop-shadow(0 4px 5px rgba(90, 40, 20, .2)); }
 .td-tile.dim { filter: brightness(.78) saturate(.8); }
-.td-tile.sel { transform: translate(-50%, calc(-50% - 6px)) scale(1.06); z-index: 30 !important; }
+.td-tile.sel { transform: translate(-50%, calc(-50% - 6px)) scale(1.06); z-index: 3 !important; }
 .td-tile.sel canvas { filter: drop-shadow(0 0 0 #e7a923) drop-shadow(0 0 6px rgba(231, 169, 35, .95)) drop-shadow(0 8px 8px rgba(90, 40, 20, .25)); }
 .td-tile.fly { transition: left .34s var(--ease-in-out, ease-in-out), top .34s var(--ease-in-out, ease-in-out), transform .25s var(--ease-out), opacity .3s; }
 .td-tile.hint canvas { animation: td-hint 0.9s ease-in-out infinite; }
@@ -265,7 +269,7 @@
 @keyframes td-shake {
   0%, 100% { margin-left: 0; } 20% { margin-left: -6px; } 40% { margin-left: 6px; } 60% { margin-left: -4px; } 80% { margin-left: 3px; }
 }
-.td-spark { position: absolute; width: 0; height: 0; z-index: 40; pointer-events: none; }
+.td-spark { position: absolute; width: 0; height: 0; z-index: 4; pointer-events: none; }
 .td-spark i {
   position: absolute; left: -4px; top: -4px; width: 8px; height: 8px; border-radius: 2px;
   transform: rotate(45deg); animation: td-spark .75s var(--ease-out) forwards;
@@ -274,7 +278,7 @@
   0% { opacity: 1; transform: translate(0, 0) rotate(45deg) scale(1.2); }
   100% { opacity: 0; transform: translate(var(--dx), var(--dy)) rotate(225deg) scale(.4); }
 }
-.td-tools { position: absolute; left: 50%; bottom: 16px; transform: translateX(-50%); display: flex; gap: 14px; }
+.td-tools { position: absolute; left: 50%; bottom: 16px; transform: translateX(-50%); display: flex; gap: 14px; z-index: 1; }
 .td-tools span {
   width: 46px; height: 46px; border-radius: 15px; background: var(--surface); box-shadow: var(--shadow);
   display: grid; place-items: center; color: var(--text);
@@ -282,7 +286,7 @@
 .td-tools .hint { color: #b77905; }
 .td-tools .shuffle { color: var(--jade); }
 .td-done {
-  position: absolute; left: 50%; top: 46%; transform: translate(-50%, -50%) scale(.4); z-index: 45;
+  position: absolute; left: 50%; top: 46%; transform: translate(-50%, -50%) scale(.4); z-index: 4;
   display: flex; flex-direction: column; align-items: center; gap: 8px; opacity: 0;
   transition: opacity .2s, transform .35s var(--ease-spring);
 }

@@ -7,10 +7,10 @@ import { sfx } from '../shared/sfx.js';
 import { icon, h, toast, showModal, celebrate, setupPage, soundButton, backButton, sleep } from '../shared/ui.js';
 import { themes, groups } from './data/themes.js';
 import { modes, DAILY_MODE } from './data/modes.js';
-import { generatePuzzle, matchSelection, starsFor, formatTime, dailyThemeIndex, pickHintWord } from './logic.js';
+import { generatePuzzle, matchSelection, readLine, starsFor, formatTime, dailyThemeIndex, pickHintWord } from './logic.js';
 import { Board, CAP_COLORS } from './board.js';
 import { gameMenu, menuSection } from '../shared/gamemenu.js';
-import { showTutorial, tutorialSeen } from '../shared/tutorial.js';
+import { showTutorial, maybeShowTutorial, tutorialSeen } from '../shared/tutorial.js';
 import { tutorialSteps } from './howto.js';
 
 const ID = 'wordsearch';
@@ -30,6 +30,22 @@ const themeById = (id) => themes.find((t) => t.id === id) || null;
 const modeById = (id) => modes.find((m) => m.id === id) || null;
 const groupById = (id) => groups.find((g) => g.id === id) || groups[0];
 const themeColor = (t) => (t && t.color) || groupById(t && t.group).color;
+
+/** h() setzt style per Object.assign – CSS-Variablen (--g, --c) brauchen setProperty. */
+function vars(el, map) {
+  for (const [k, v] of Object.entries(map)) el.style.setProperty(k, v);
+  return el;
+}
+
+// Erstes Rätsel überhaupt: klein, freundlich, schnell gelöst.
+const FIRST_THEME = 'tiere';
+const FIRST_MODE = { sizes: [7], words: [6] };
+// Jedes dritte Rätsel ist ein «Bonusrätsel» mit einem geheimen Zusatzwort (+1 Stern).
+const BONUS_EVERY = 3;
+const isBonusSeq = (seq) => seq > 1 && seq % BONUS_EVERY === 0;
+// Kombo: Wörter kurz hintereinander gefunden (Spielzeit, Pausen zählen nicht).
+const COMBO_MS = 10000;
+const PRAISE = ['', '', 'Schnell!', 'Super!', 'Fantastisch!', 'Wahnsinn!', 'Unaufhaltsam!'];
 
 // ---------- Lokale Icons ----------
 const IC = {
@@ -55,7 +71,7 @@ function setSettings(patch) {
   return s;
 }
 
-const defaultStats = () => ({ played: 0, won: 0, words: 0, stars: 0, hints: 0, time: 0, best: {}, wonBy: {}, perfect: 0 });
+const defaultStats = () => ({ played: 0, won: 0, words: 0, stars: 0, hints: 0, time: 0, best: {}, wonBy: {}, perfect: 0, bonus: 0, combo: 0 });
 function getStats() { return { ...defaultStats(), ...(store.get(K.stats, {}) || {}) }; }
 function setStats(s) { store.set(K.stats, s); }
 function getProgress() { return store.get(K.progress, {}) || {}; }
@@ -83,12 +99,33 @@ function nextThemeId(avoid) {
   return id;
 }
 
+/** Ist das nächste Rätsel das allererste? (kleines «Leicht»-Rätsel zum Einstieg) */
+const isFirstGame = () => !(Number(store.get(K.seq, 0)) > 0) && !getStats().won;
+
+/** Ein Wort aus der Liste nehmen und als geheimes Bonuswort verstecken. */
+function withBonus(pz, seq) {
+  const rng = makeRng(`ws-bonus|${pz.theme}|${seq}`);
+  const cand = pz.words.map((p, i) => i).filter((i) => [...pz.words[i].w].length >= 4);
+  if (pz.words.length < 5 || !cand.length) return pz;
+  const i = rng.pick(cand);
+  const [bonus] = pz.words.splice(i, 1);
+  return { ...pz, bonus };
+}
+
 function createGame(modeId, themeId) {
-  const mode = modeById(modeId);
+  const base = modeById(modeId);
   const prev = store.get(K.game(modeId), null);
-  const theme = themeById(themeId) || themeById(nextThemeId(prev && prev.puzzle && prev.puzzle.theme));
+  const first = isFirstGame() && modeId === 'leicht';
+  const theme = themeById(themeId) || (first && themeById(FIRST_THEME))
+    || themeById(nextThemeId(prev && prev.puzzle && prev.puzzle.theme));
   const seq = store.update(K.seq, 0, (n) => (Number(n) || 0) + 1);
-  const st = newState(generatePuzzle(theme, mode, seq));
+  const bonus = !first && isBonusSeq(seq);
+  let mode = base;
+  if (first) mode = { ...base, ...FIRST_MODE };
+  else if (bonus) mode = { ...base, words: base.words.map((n) => n + 1) };
+  let pz = generatePuzzle(theme, mode, seq);
+  if (bonus) pz = withBonus(pz, seq);
+  const st = newState(pz);
   store.set(K.game(modeId), st);
   const stats = getStats();
   stats.played++;
@@ -172,17 +209,19 @@ function screen(cls, ...children) {
 
 function helpButton() {
   const b = h('button.icon-btn', { type: 'button', 'aria-label': "So geht's", html: IC.help });
-  b.addEventListener('click', () => { sfx.play('click'); showHowTo(); });
+  b.addEventListener('click', () => showHowTo());
   return b;
 }
 
 // ---------- «So geht's» ----------
 
 let tutorialOpen = null;
-function showHowTo() {
+/** first=true: nur beim allerersten Start (maybeShowTutorial). Während es offen ist, steht die Zeit still. */
+function showHowTo(first = false) {
   if (tutorialOpen) return tutorialOpen;
   modalDepth++;
-  tutorialOpen = showTutorial({ id: ID, steps: tutorialSteps(modes), accent: ACCENT })
+  const opts = { id: ID, steps: tutorialSteps(modes), accent: ACCENT };
+  tutorialOpen = (first ? maybeShowTutorial(opts) : showTutorial(opts))
     .finally(() => { modalDepth = Math.max(0, modalDepth - 1); tutorialOpen = null; });
   return tutorialOpen;
 }
@@ -205,6 +244,28 @@ function logo() {
   return g;
 }
 
+/** Live-Vorschau des laufenden Rätsels (echtes Spielfeld, verkleinert) – Tipp darauf spielt weiter. */
+function livePreview(st, modeId) {
+  const pz = st.puzzle;
+  const t = themeById(pz.theme) || { title: pz.theme, emoji: '🔤', group: 'natur' };
+  const board = new Board(pz, {});
+  board.setLocked(true);
+  board.resize(Math.min(168, Math.max(132, pz.size * 15)));
+  st.found.forEach((idx, ord) => board.addFound(idx, ord, false));
+  if (pz.bonus && st.bonusFound) board.addBonus(pz.bonus);
+  const n = pz.words.length, f = st.found.length;
+  const el = h('button.ws-live', { type: 'button', 'aria-label': `${t.title} weiterspielen`, onclick: () => go('play/' + modeId) },
+    board.el,
+    h('span.ws-live-badge', null, t.emoji),
+    h('span.ws-live-bar', null, vars(h('i'), { '--p': (f / n).toFixed(3) })));
+  return vars(el, { '--g': themeColor(t) });
+}
+
+function heroArt(modeId) {
+  const st = runningGame(modeId);
+  return st ? livePreview(st, modeId) : logo();
+}
+
 const sizeLabel = (m) => (m.sizes.length > 1 ? `${m.sizes[0]}–${m.sizes[m.sizes.length - 1]}` : `${m.sizes[0]}×${m.sizes[0]}`);
 
 function runningGame(modeId) {
@@ -218,15 +279,23 @@ function primaryFor(modeId) {
   if (st) {
     const t = themeById(st.puzzle.theme) || { title: st.puzzle.theme, emoji: '🔤' };
     const f = st.found.length, n = st.puzzle.words.length;
+    const started = f || st.elapsed > 3000;
     return {
-      label: f || st.elapsed > 3000 ? 'Weiterspielen' : 'Spielen',
-      sub: `${t.emoji} ${t.title} · ${mode.title} · ${f}/${n} Wörter`,
+      label: started ? 'Weiterspielen' : 'Spielen',
+      sub: started ? `${t.emoji} ${t.title} · ${f}/${n} Wörter · ${formatTime(st.elapsed)}`
+        : `${t.emoji} ${t.title} · ${mode.title} · ${n} Wörter${st.puzzle.bonus ? ' · ✨ Bonus' : ''}`,
       onClick: () => go('play/' + modeId),
     };
   }
+  const nextSeq = (Number(store.get(K.seq, 0)) || 0) + 1;
+  let sub = `${mode.title} · ${mode.info}`;
+  if (modeId === 'leicht' && isFirstGame()) {
+    const t = themeById(FIRST_THEME);
+    sub = `${t ? t.emoji + ' ' + t.title + ' · ' : ''}${mode.title} · ${FIRST_MODE.words[0]} Wörter`;
+  } else if (isBonusSeq(nextSeq)) sub = `✨ Bonusrätsel · ${mode.title} · ${sizeLabel(mode)}`;
   return {
     label: 'Spielen',
-    sub: `${mode.title} · ${mode.info}`,
+    sub,
     onClick: () => { createGame(modeId); go('play/' + modeId); },
   };
 }
@@ -269,18 +338,40 @@ function menuStats() {
   ];
 }
 
+const solvedTheme = (progress, t) => modes.some((m) => progress[t.id] && progress[t.id][m.id] && progress[t.id][m.id].w);
+const themeStars = (progress, t) => Math.max(0, ...modes.map((m) => (progress[t.id] && progress[t.id][m.id] && progress[t.id][m.id].s) || 0));
+
+/** Sammelalbum: jedes gelöste Thema leuchtet farbig auf. */
+function albumSection() {
+  const progress = getProgress();
+  const got = themes.filter((t) => solvedTheme(progress, t)).length;
+  const cells = themes.map((t) => {
+    const ok = solvedTheme(progress, t);
+    const el = h('span.al-cell' + (ok ? '.got' : '') + (ok && themeStars(progress, t) >= 3 ? '.gold' : ''), { title: t.title }, t.emoji);
+    return vars(el, { '--g': themeColor(t) });
+  });
+  const card = h('button.card.album', { type: 'button', 'aria-label': 'Alle Themen', onclick: () => go('themen') },
+    h('div.al-head', null,
+      h('b', null, got ? `${got} von ${themes.length} Themen gesammelt` : `${themes.length} Themen zum Sammeln`),
+      h('span.al-more', null, 'Alle', h('span', { html: IC.chevronDown }))),
+    h('div.al-bar', null, vars(h('i'), { '--p': (got / themes.length).toFixed(3) })),
+    h('div.al-grid', null, cells));
+  return menuSection('Sammlung', card);
+}
+
 function showMenu() {
   reportSummary(ID, summaryText());
   const s = getSettings();
   const settingsCard = h('div.card.settings', null,
     toggleRow('Zeit anzeigen', 'showTimer'),
     toggleRow('Gefundene Wörter ans Listenende', 'sortFound'));
+  const hero = h('div.ws-hero', null, heroArt(s.mode));
   const menu = gameMenu({
     id: ID,
     title: 'Wortsuche',
     tagline: `${themes.length} Themen · immer neue Rätsel`,
     accent: ACCENT,
-    art: logo(),
+    art: hero,
     primary: primaryFor(s.mode),
     daily: dailyInfo(),
     modes: {
@@ -289,12 +380,13 @@ function showMenu() {
       options: modes.map((m) => ({ id: m.id, label: m.title, sub: sizeLabel(m) })),
       onChange(id) {
         setSettings({ mode: id });
+        hero.replaceChildren(heroArt(id));
         menu.update({ primary: primaryFor(id), secondary: secondaryFor(id) });
       },
     },
     secondary: secondaryFor(s.mode),
     stats: menuStats(),
-    sections: [menuSection('Einstellungen', settingsCard)],
+    sections: [albumSection(), menuSection('Einstellungen', settingsCard)],
     onHelp: () => showHowTo(),
     backHref: '../',
   });
@@ -305,7 +397,7 @@ function showMenu() {
 function toggleRow(label, key) {
   const input = h('input.switch', { type: 'checkbox', role: 'switch' });
   input.checked = !!getSettings()[key];
-  input.addEventListener('change', () => { sfx.play('click'); setSettings({ [key]: input.checked }); });
+  input.addEventListener('change', () => setSettings({ [key]: input.checked }));
   return h('label.toggle-row', null, h('span', null, label), input);
 }
 
@@ -322,12 +414,12 @@ function confirmLeave() {
 async function showStats() {
   const s = getStats();
   const progress = getProgress();
-  const solvedThemes = themes.filter((t) => progress[t.id] && Object.values(progress[t.id]).some((x) => x && x.w)).length;
+  const solvedThemes = themes.filter((t) => solvedTheme(progress, t)).length;
   const streak = dailyStreak(ID);
   const tiles = [
-    [s.played, 'Gespielt'], [s.won, 'Gelöst'], [s.words, 'Wörter gefunden'],
-    [s.stars + ' ★', 'Sterne'], [s.perfect || 0, 'Ohne Tipp'], [`${solvedThemes}/${themes.length}`, 'Themen'],
-    [streak ? `🔥 ${streak}` : '0', 'Tagesserie'], [s.hints, 'Tipps genutzt'], [formatTime(s.time || 0), 'Spielzeit'],
+    [s.won, 'Gelöst'], [s.words, 'Wörter gefunden'], [s.stars + ' ★', 'Sterne'],
+    [`${solvedThemes}/${themes.length}`, 'Themen'], [s.perfect || 0, 'Ohne Tipp'], [s.bonus || 0, 'Bonuswörter'],
+    [s.combo ? `×${s.combo}` : '–', 'Beste Kombo'], [streak ? `🔥 ${streak}` : '0', 'Tagesserie'], [formatTime(s.time || 0), 'Spielzeit'],
   ];
   const content = h('div.stats',
     null,
@@ -361,7 +453,7 @@ async function showStats() {
 // ---------- Themenkatalog ----------
 
 function showThemes() {
-  const back = backButton('#', () => { sfx.play('tap'); go(''); });
+  const back = backButton('#', () => go(''));
   const top = h('header.topbar', null, back, h('div.title', null, 'Themen'), soundButton());
   const body = h('div.scroll.themes');
   screen('themes-screen', top, body);
@@ -373,7 +465,7 @@ function showThemes() {
     const s = getSettings();
     seg.replaceChildren(...modes.map((m) => {
       const b = h('button.seg-btn' + (m.id === s.mode ? '.active' : ''), { type: 'button', 'data-mode': m.id }, h('b', null, m.title));
-      b.addEventListener('click', () => { sfx.play('click'); setSettings({ mode: m.id }); renderSeg(); renderTiles(); });
+      b.addEventListener('click', () => { setSettings({ mode: m.id }); renderSeg(); renderTiles(); });
       return b;
     }));
   };
@@ -383,11 +475,12 @@ function showThemes() {
       grid.replaceChildren(...list.map((t) => {
         const p = progress[t.id] || {};
         const mine = p[s.mode];
-        const tile = h('button.theme-tile', { type: 'button', style: { '--g': themeColor(t) }, 'data-theme': t.id },
+        const tile = h('button.theme-tile', { type: 'button', 'data-theme': t.id },
           h('span.tt-emoji', null, t.emoji),
           h('span.tt-title', null, t.title),
           h('span.tt-meta', null,
             mine && mine.w ? h('span.tt-stars', { html: [1, 2, 3].map((i) => starSvg(i <= (mine.s || 0), 13)).join('') }) : h('span.tt-count', null, `${String(t.words).split(/\s+/).filter(Boolean).length} Wörter`)));
+        vars(tile, { '--g': themeColor(t) });
         if (modes.some((m) => p[m.id] && p[m.id].w)) tile.classList.add('solved');
         tile.addEventListener('click', () => pickTheme(t));
         return tile;
@@ -409,7 +502,6 @@ function showThemes() {
   body.addEventListener('scroll', () => store.set('wordsearch.themesScroll', body.scrollTop), { passive: true });
 
   async function pickTheme(t) {
-    sfx.play('tap');
     const s = getSettings();
     const st = store.get(K.game(s.mode), null);
     if (validState(st) && !st.done && st.found.length && st.puzzle.theme !== t.id && !(await confirmLeave())) return;
@@ -444,14 +536,14 @@ function showGame(kind, modeId) {
   };
 
   // --- DOM ---
-  const back = backButton('#', () => { sfx.play('tap'); go(''); });
+  const back = backButton('#', () => go(''));
   // Die Zeit steht klein unter dem Thema – so bleibt die ganze Breite für den Themennamen.
   const timerEl = h('span.timer' + (settings.showTimer ? '' : '.hidden'), { html: IC.clock + '<span>0:00</span>' });
   const timerTxt = timerEl.querySelector('span');
   const sub = kind === 'daily' ? (settings.showTimer ? 'Tagesrätsel' : `Tagesrätsel · ${mode.title}`) : mode.title;
   const titleB = h('b', null, theme.title);
   const title = h('div.g-title', null,
-    h('span.g-emoji', { style: { '--g': themeColor(theme) } }, theme.emoji),
+    vars(h('span.g-emoji', null, theme.emoji), { '--g': themeColor(theme) }),
     h('span.g-text', null, titleB, h('small', null, h('span.g-sub', null, sub), timerEl)));
   const top = h('header.topbar', null, back, title, helpButton());
   /** Sehr lange Themennamen: erst etwas kleiner, notfalls zweizeilig – nie abgeschnitten. */
@@ -463,6 +555,7 @@ function showGame(kind, modeId) {
     titleB.classList.replace('fit1', 'fit2');
   };
   const pill = h('div.sel-pill');
+  const praiseEl = h('div.praise', { 'aria-live': 'polite' });
   const boardWrap = h('div.board-wrap');
   const countEl = h('span.count');
   const chevron = h('span.wh-chev', { html: IC.chevronDown });
@@ -471,7 +564,7 @@ function showGame(kind, modeId) {
   const list = h('div.words-list');
   // «+N»-Hinweis, falls die Liste auf sehr kleinen Bildschirmen doch scrollen muss
   const cue = h('button.more-cue', { type: 'button', 'aria-label': 'Weitere Wörter zeigen' });
-  cue.addEventListener('click', () => { sfx.play('click'); list.scrollBy({ top: Math.max(40, list.clientHeight - 24), behavior: 'smooth' }); });
+  cue.addEventListener('click', () => { list.scrollBy({ top: Math.max(40, list.clientHeight - 24), behavior: 'smooth' }); });
   const words = h('section.card.words' + (settings.listCollapsed ? '.collapsed' : ''), null,
     h('div.words-head', null, toggle, hintBtn), list, cue);
   const main = h('main.play-main', null, boardWrap, words);
@@ -486,17 +579,34 @@ function showGame(kind, modeId) {
       // Vorschau sitzt über dem Brett; bei Wörtern in den obersten Zeilen rutscht sie nicht ins Raster.
       pill.textContent = cells.map(({ r, c }) => [...pz.grid[r]][c]).join('');
       pill.classList.add('show');
+      praiseEl.classList.remove('show');
       sfx.play('place');
     },
   });
-  boardWrap.append(board.el, pill);
+  boardWrap.append(board.el, pill, praiseEl);
   st.found.forEach((idx, order) => board.addFound(idx, order, false));
+  if (pz.bonus && st.bonusFound) board.addBonus(pz.bonus);
 
   // --- Wortliste ---
   const chips = pz.words.map((p, i) => {
     const el = h('span.wchip', { 'data-i': i }, p.label);
     return el;
   });
+  // Bonusrätsel: geheimes Zusatzwort als «?»-Chip am Listenende
+  let bonusChip = null;
+  if (pz.bonus) {
+    bonusChip = h('button.wchip.bonus', { type: 'button', 'aria-label': 'Bonuswort' });
+    bonusChip.addEventListener('click', () => {
+      if (st.bonusFound || st.done) return;
+      toast('Ein geheimes Wort zum Thema versteckt sich im Raster – es bringt einen Extrastern.');
+    });
+  }
+  const paintBonusChip = () => {
+    if (!bonusChip) return;
+    bonusChip.classList.toggle('found', !!st.bonusFound);
+    bonusChip.classList.toggle('missed', !st.bonusFound && st.done);
+    bonusChip.textContent = st.bonusFound || st.done ? '✨ ' + pz.bonus.label : '✨ Bonuswort ?';
+  };
   const renderList = () => {
     const sortFound = getSettings().sortFound;
     const order = pz.words.map((_, i) => i);
@@ -506,6 +616,7 @@ function showGame(kind, modeId) {
       chips[idx].style.setProperty('--c', CAP_COLORS[ord % CAP_COLORS.length]);
     });
     list.replaceChildren(...order.map((i) => chips[i]));
+    if (bonusChip) { paintBonusChip(); list.append(bonusChip); }
     countEl.textContent = `${st.found.length}/${total}`;
     updateCue();
   };
@@ -528,7 +639,6 @@ function showGame(kind, modeId) {
   renderList();
 
   toggle.addEventListener('click', () => {
-    sfx.play('click');
     const c = !words.classList.contains('collapsed');
     words.classList.toggle('collapsed', c);
     setSettings({ listCollapsed: c });
@@ -626,17 +736,58 @@ function showGame(kind, modeId) {
     store.set(K.coach, true);
   };
 
+  // --- Lob & Kombos ---
+  let praiseTimer = 0;
+  function praise(text, cls = '') {
+    praiseEl.textContent = text;
+    praiseEl.className = 'praise' + (cls ? ' ' + cls : '');
+    void praiseEl.offsetWidth;
+    praiseEl.classList.add('show');
+    clearTimeout(praiseTimer);
+    praiseTimer = setTimeout(() => praiseEl.classList.remove('show'), 1250);
+  }
+  let combo = 0;
+  let lastFindAt = -Infinity;
+  /** Nach jedem neuen Wort: Kombo zählen und passend loben (höchstens ein Lob pro Wort). */
+  function cheer(p) {
+    combo = st.elapsed - lastFindAt <= COMBO_MS ? combo + 1 : 1;
+    lastFindAt = st.elapsed;
+    if (combo > (st.combo || 0)) st.combo = combo;
+    if (st.found.length === total) return;
+    if (combo >= 2) praise(`${PRAISE[Math.min(combo, PRAISE.length - 1)]} ×${combo}`, combo >= 4 ? 'hot' : '');
+    else if ([...p.w].length >= 8) praise('Starkes Wort!');
+    else if (st.found.length === 1 && !getStats().won) praise('Sehr gut!');
+    else if (st.found.length === Math.ceil(total / 2) && total >= 8) praise('Halbzeit!');
+  }
+
+  const rev = (x) => [...x].reverse().join('');
+  function isBonus(a, b) {
+    if (!pz.bonus || st.bonusFound) return false;
+    const str = readLine(pz, a, b);
+    return !!str && (str === pz.bonus.w || rev(str) === pz.bonus.w);
+  }
+  function foundBonus() {
+    st.bonusFound = true;
+    save();
+    board.addBonus(pz.bonus, true);
+    paintBonusChip();
+    if (bonusChip) { bonusChip.classList.remove('just'); void bonusChip.offsetWidth; bonusChip.classList.add('just'); }
+    praise('Bonuswort! +1 ★', 'gold');
+    sfx.play('fill');
+    setTimeout(() => sfx.play('sparkle'), 120);
+  }
+
   // --- Auswahl ---
   function onSelect(a, b) {
     if (st.done) return false;
     endCoach();
     const m = matchSelection(pz, a, b, foundSet);
     if (!m) {
+      if (isBonus(a, b)) { foundBonus(); return true; }
       sfx.play('tap');
       return false;
     }
     if (m.already) {
-      sfx.play('click');
       board.flashFound(m.index);
       bounceChip(m.index);
       return true;
@@ -653,6 +804,7 @@ function showGame(kind, modeId) {
     chip.classList.add('found', 'just');
     countEl.textContent = `${st.found.length}/${total}`;
     countEl.classList.remove('bump'); void countEl.offsetWidth; countEl.classList.add('bump');
+    cheer(pz.words[m.index]);
     report();
     if (st.found.length === total) win();
     else if (getSettings().sortFound) setTimeout(() => { if (!torn) renderList(); }, 900);
@@ -701,7 +853,7 @@ function showGame(kind, modeId) {
   // --- Gewonnen ---
   async function win() {
     st.done = true;
-    st.stars = starsFor(mode, total, st.elapsed, st.hints);
+    st.stars = Math.min(3, starsFor(mode, total, st.elapsed, st.hints) + (st.bonusFound ? 1 : 0));
     tick();
     save();
     const stats = getStats();
@@ -714,6 +866,8 @@ function showGame(kind, modeId) {
     stats.hints += st.hints;
     stats.time = (stats.time || 0) + st.elapsed;
     if (!st.hints) stats.perfect = (stats.perfect || 0) + 1;
+    if (st.bonusFound) stats.bonus = (stats.bonus || 0) + 1;
+    stats.combo = Math.max(stats.combo || 0, st.combo || 0);
     if (isBest) stats.best[bestKey] = Math.round(st.elapsed);
     stats.wonBy[bestKey] = (stats.wonBy[bestKey] || 0) + 1;
     setStats(stats);
@@ -729,6 +883,7 @@ function showGame(kind, modeId) {
     report();
     board.setLocked(true);
     hintBtn.disabled = true;
+    if (pz.bonus && !st.bonusFound) board.addBonus(pz.bonus, false, true);
     await sleep(350);
     if (torn) return;
     board.winWave();
@@ -766,13 +921,16 @@ function showGame(kind, modeId) {
     const stats = getStats();
     const bestKey = kind === 'daily' ? 'daily' : mode.id;
     const content = h('div.win', null,
-      h('div.win-badge', { style: { '--g': themeColor(theme) } }, theme.emoji),
+      vars(h('div.win-badge', null, theme.emoji), { '--g': themeColor(theme) }),
       stars,
       h('div.win-grid', null,
         h('div', null, h('b', null, formatTime(st.elapsed)), h('small', null, 'Zeit')),
         h('div', null, h('b', null, String(st.hints)), h('small', null, st.hints === 1 ? 'Tipp' : 'Tipps')),
         h('div', null, h('b', null, formatTime(stats.best[bestKey] || st.elapsed)), h('small', null, 'Bestzeit'))),
-      h('p.win-note', null, st.isBest ? '🏆 Neue Bestzeit!' : kind === 'daily' ? `Alle ${total} Wörter gefunden – morgen wartet ein neues Rätsel.` : `Alle ${total} Wörter zum Thema «${theme.title}» gefunden.`));
+      h('p.win-note', null, st.isBest ? '🏆 Neue Bestzeit!' : kind === 'daily' ? `Alle ${total} Wörter gefunden – morgen wartet ein neues Rätsel.` : `Alle ${total} Wörter zum Thema «${theme.title}» gefunden.`),
+      pz.bonus ? h('p.win-bonus' + (st.bonusFound ? '.got' : ''), null,
+        st.bonusFound ? `✨ Bonuswort «${pz.bonus.label}» gefunden – Extrastern!` : `Das Bonuswort war «${pz.bonus.label}».`) : null,
+      st.combo >= 3 ? h('p.win-combo', null, `🔥 Beste Kombo: ${st.combo} Wörter in Serie`) : null);
     // Sterne nacheinander aufleuchten lassen
     [...stars.children].forEach((s, i) => {
       s.style.animationDelay = 250 + i * 220 + 'ms';
@@ -793,7 +951,7 @@ function showGame(kind, modeId) {
     words.classList.add('done');
     const acts = resultActions(true).map((a) => {
       const b = h('button.btn' + (a.primary ? '.primary' : '') + (a.ghost ? '.ghost' : ''), { type: 'button' }, a.label);
-      b.addEventListener('click', () => { sfx.play('click'); doAction(a.value); });
+      b.addEventListener('click', () => doAction(a.value));
       return b;
     });
     const res = h('div.result', null,
@@ -809,6 +967,7 @@ function showGame(kind, modeId) {
   if (st.done) {
     board.setLocked(true);
     hintBtn.disabled = true;
+    if (pz.bonus && !st.bonusFound) board.addBonus(pz.bonus, false, true);
     showResultPanel();
   }
 
@@ -823,6 +982,7 @@ function showGame(kind, modeId) {
     layout: () => layout(),
     solveWord(i) { const p = pz.words[i]; const e = { r: p.r + (p.w.length - 1) * dirOf(p).dr, c: p.c + (p.w.length - 1) * dirOf(p).dc }; return onSelect({ r: p.r, c: p.c }, e); },
     solveAll() { pz.words.forEach((_, i) => { if (!foundSet.has(i)) this.solveWord(i); }); },
+    solveBonus() { const p = pz.bonus; if (!p) return false; const d = dirOf(p); return onSelect({ r: p.r, c: p.c }, { r: p.r + ([...p.w].length - 1) * d.dr, c: p.c + ([...p.w].length - 1) * d.dc }); },
   };
 
   teardown = () => {
@@ -830,6 +990,7 @@ function showGame(kind, modeId) {
     tick();
     save();
     clearInterval(timer);
+    clearTimeout(praiseTimer);
     ro.disconnect();
     board.setLocked(true);
     board.clearHint();
@@ -845,4 +1006,4 @@ function dirOf(p) {
 }
 
 route();
-if (!tutorialSeen(ID)) showHowTo();
+if (!tutorialSeen(ID)) showHowTo(true);

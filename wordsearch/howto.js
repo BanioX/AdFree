@@ -1,68 +1,63 @@
 // Wortsuche – «So geht's»: Schritte für das gemeinsame Tutorial (/shared/tutorial.js).
-// Jede Demo ist ein kleines, echtes Buchstabenraster mit wachsenden Kapseln.
+// Die Demos verwenden das echte Spielfeld (Board) verkleinert: gleiche Kapseln, Farben, Tipp-Ringe.
 
 import { h } from '../shared/ui.js';
+import { Board } from './board.js';
+import { wordCells } from './logic.js';
 
-const SVGNS = 'http://www.w3.org/2000/svg';
-const svgEl = (tag, attrs = {}) => {
-  const el = document.createElementNS(SVGNS, tag);
-  for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v);
-  return el;
+// Wetter-Raster 6×6
+const DEMO = {
+  size: 6,
+  grid: ['SONNEK', 'MWLUFT', 'OBLITZ', 'NREGEN', 'DHAGEL', 'FWINDA'],
+  words: [
+    { w: 'SONNE', label: 'Sonne', r: 0, c: 0, d: 'E' }, // 0
+    { w: 'MOND', label: 'Mond', r: 1, c: 0, d: 'S' }, // 1
+    { w: 'BLITZ', label: 'Blitz', r: 2, c: 1, d: 'E' }, // 2
+    { w: 'REGEN', label: 'Regen', r: 3, c: 1, d: 'E' }, // 3
+    { w: 'HAGEL', label: 'Hagel', r: 4, c: 1, d: 'E' }, // 4
+    { w: 'LUFT', label: 'Luft', r: 1, c: 2, d: 'E' }, // 5
+  ],
+  bonus: { w: 'WIND', label: 'Wind', r: 5, c: 1, d: 'E' },
 };
 
-// Wetter-Raster: SONNE →, MOND ↓, BLITZ →, REGEN →, HAGEL →
-const ROWS = ['SONNEK', 'MWLUFT', 'OBLITZ', 'NREGEN', 'DHAGEL'];
-const COLORS = ['#ff8fa3', '#6db7ff', '#9bd36a', '#ffb35c', '#a991ff'];
+const BULB = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2V16h5v-.1c0-.8.4-1.5 1-2A6 6 0 0 0 12 3z"/></svg>';
+const STAR = '<svg class="st on" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.8l2.8 5.8 6.3.9-4.6 4.4 1.1 6.3L12 17.2l-5.6 3 1.1-6.3-4.6-4.4 6.3-.9z" stroke-linejoin="round" stroke-width="1.6"/></svg>';
 
-/** Baut ein Mini-Raster in die Bühne. Liefert Helfer zum Wischen. */
-function demoGrid(stage, { cell = 34, chips = [] } = {}) {
-  const m = ROWS.length, n = ROWS[0].length;
-  const grid = h('div.wsd-grid', { style: { width: n * cell + 'px', height: m * cell + 'px', fontSize: Math.round(cell * 0.5) + 'px' } });
-  const svg = svgEl('svg', { class: 'wsd-caps', viewBox: `0 0 ${n} ${m}`, preserveAspectRatio: 'none', 'aria-hidden': 'true' });
-  const spans = [];
-  grid.append(svg);
-  ROWS.forEach((row) => [...row].forEach((ch) => { const s = h('span', null, ch); grid.append(s); spans.push(s); }));
-  const chipEls = chips.map((c) => h('span.wsd-chip', null, c));
-  const box = h('div.wsd', null, grid, chips.length ? h('div.wsd-chips', null, chipEls) : null);
+/** Echtes Spielfeld in die Bühne setzen (passend zur Bühnenhöhe). */
+function demoBoard(stage, { size, below = [] }) {
+  const board = new Board(DEMO, {});
+  board.setLocked(true);
+  const room = (stage.clientHeight || 260) - 24 - below.length * 42;
+  board.resize(Math.max(130, Math.min(size, room)));
+  const pill = h('div.sel-pill');
+  const wrap = h('div.board-wrap', null, board.el, pill);
+  const box = h('div.wst', null, wrap, ...below);
   stage.append(box);
-  const at = (r, c) => spans[r * n + c];
-
-  function line(r1, c1, r2, c2, cls, color) {
-    const l = svgEl('line', { x1: c1 + 0.5, y1: r1 + 0.5, x2: c2 + 0.5, y2: r2 + 0.5, class: cls });
-    if (color) l.style.stroke = color;
-    svg.append(l);
-    return l;
-  }
-
-  /** Finger wischt von (r1,c1) nach (r2,c2); die Kapsel rastet Buchstabe für Buchstabe ein. */
-  async function swipe(api, r1, c1, r2, c2, color, ms = 850) {
-    const steps = Math.max(Math.abs(r2 - r1), Math.abs(c2 - c1));
-    const dr = Math.sign(r2 - r1), dc = Math.sign(c2 - c1);
-    const cells = [];
-    for (let i = 0; i <= steps; i++) cells.push(at(r1 + dr * i, c1 + dc * i));
-    let sel = null;
-    await api.finger.drag(cells, ms, (i) => {
-      if (!sel) sel = line(r1, c1, r1, c1, 'wsd-sel');
-      sel.setAttribute('x2', c1 + dc * i + 0.5);
-      sel.setAttribute('y2', r1 + dr * i + 0.5);
-    });
-    if (sel) sel.remove();
-    const cap = line(r1, c1, r2, c2, 'wsd-cap', color);
-    cells.forEach((s, i) => {
-      s.style.animationDelay = i * 45 + 'ms';
-      s.classList.remove('pop'); void s.offsetWidth; s.classList.add('pop');
-    });
-    return cap;
-  }
-
-  function reset() {
-    svg.replaceChildren();
-    spans.forEach((s) => s.classList.remove('pop', 'hint'));
-    chipEls.forEach((c) => { c.classList.remove('found'); c.style.removeProperty('--c'); });
-  }
-
-  return { box, grid, at, swipe, reset, chips: chipEls, line };
+  return { board, pill, box };
 }
+
+/** Finger wischt über ein Wort; Auswahl-Kapsel und Buchstaben-Vorschau wie im Spiel. */
+async function swipe(api, demo, p, ms = 800) {
+  const { board, pill } = demo;
+  const cells = wordCells(p);
+  const targets = cells.map(({ r, c }) => board.spans[r * board.n + c]);
+  await api.finger.drag(targets, ms, (i) => {
+    board.showSel(cells[0], cells[i], false);
+    board.highlight(cells.slice(0, i + 1));
+    pill.textContent = cells.slice(0, i + 1).map(({ r, c }) => DEMO.grid[r][c]).join('');
+    pill.classList.add('show');
+  });
+  board.hideSel();
+  pill.classList.remove('show');
+}
+
+function chip(label) { return h('span.wchip', null, label); }
+function markChip(el, color) {
+  el.style.setProperty('--c', color);
+  el.classList.add('found');
+}
+
+const CAPS = ['#ff8fa3', '#6db7ff', '#9bd36a', '#ffb35c', '#a991ff', '#5ccfc0'];
 
 function arrowsSvg(dirs) {
   const all = { E: [1, 0], S: [0, 1], SE: [1, 1], NE: [1, -1], W: [-1, 0], N: [0, -1], NW: [-1, -1], SW: [-1, 1] };
@@ -80,68 +75,90 @@ export function tutorialSteps(modes) {
   return [
     {
       title: 'Wort wischen',
-      text: 'Fahre in einer geraden Linie vom ersten bis zum letzten Buchstaben.',
+      text: 'Fahre mit dem Finger in gerader Linie über ein Wort.',
       demo(stage, api) {
-        const g = demoGrid(stage, { cell: 38 });
+        const d = demoBoard(stage, { size: 206 });
         return api.loop(async () => {
-          g.reset();
-          await api.sleep(300);
-          await g.swipe(api, 0, 0, 0, 4, COLORS[0]);
-          await api.sleep(500);
-          await g.swipe(api, 1, 0, 4, 0, COLORS[1], 700);
-          await api.sleep(900);
-        }, 500);
+          d.board.reset();
+          await api.sleep(250);
+          await swipe(api, d, DEMO.words[0], 900);
+          d.board.addFound(0, 0, true);
+          await api.sleep(650);
+          await swipe(api, d, DEMO.words[1], 700);
+          d.board.addFound(1, 5, true);
+          api.finger.hide();
+          await api.sleep(1300);
+        }, 300);
       },
     },
     {
       title: 'Alle Wörter finden',
-      text: 'Jedes gefundene Wort bekommt eine Farbe – auch in der Liste unten.',
+      text: 'Finde alle Wörter der Liste – schnell und ohne Tipp gibt es drei Sterne.',
       demo(stage, api) {
-        const g = demoGrid(stage, { cell: 30, chips: ['Blitz', 'Hagel', 'Regen'] });
-        const words = [[2, 1, 2, 5, 0], [4, 1, 4, 5, 1], [3, 1, 3, 5, 2]];
+        const list = [2, 3, 4];
+        const chips = list.map((i) => chip(DEMO.words[i].label));
+        const d = demoBoard(stage, { size: 176, below: [h('div.wst-chips', null, chips)] });
+        const stars = h('div.wst-stars', { html: STAR + STAR + STAR });
+        d.board.el.append(stars);
         return api.loop(async () => {
-          g.reset();
-          await api.sleep(300);
-          for (const [r1, c1, r2, c2, ci] of words) {
-            await g.swipe(api, r1, c1, r2, c2, COLORS[ci + 2], 650);
-            g.chips[ci].style.setProperty('--c', COLORS[ci + 2]);
-            g.chips[ci].classList.add('found');
-            await api.sleep(250);
+          d.board.reset();
+          stars.classList.remove('show');
+          chips.forEach((c) => c.classList.remove('found'));
+          await api.sleep(250);
+          for (let k = 0; k < list.length; k++) {
+            await swipe(api, d, DEMO.words[list[k]], 600);
+            d.board.addFound(list[k], k + 2, true);
+            markChip(chips[k], CAPS[k + 2]);
+            await api.sleep(200);
           }
           api.finger.hide();
-          g.grid.classList.remove('wave'); void g.grid.offsetWidth; g.grid.classList.add('wave');
-          await api.sleep(1300);
-        }, 400);
+          await api.sleep(250);
+          d.board.winWave();
+          await api.sleep(450);
+          stars.classList.add('show');
+          await api.sleep(1700);
+        }, 300);
       },
     },
     {
-      title: 'Tipp & Zeit',
-      text: 'Jeder Tipp verrät mehr vom Wort. Schnell und ohne Tipp gibt es drei Sterne.',
+      title: 'Tipps & Bonus',
+      text: 'Tipps sind gratis – und ein geheimes Bonuswort bringt einen Extrastern.',
       demo(stage, api) {
-        const g = demoGrid(stage, { cell: 30 });
-        const btn = h('div.wsd-hint', { html: '<svg viewBox="0 0 24 24" width="20" height="20"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.6 10.8c.7.6 1.1 1.3 1.1 2.2h5c0-.9.4-1.6 1.1-2.2A6 6 0 0 0 12 3z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Tipp</span>' });
-        const stars = h('div.wsd-stars', null, '★', '★', '★');
-        g.box.append(h('div.wsd-row', null, btn, stars));
+        const hint = h('div.btn.hint-btn', { html: BULB + '<span>Tipp</span>' });
+        const luft = chip('Luft');
+        const bonus = h('span.wchip.bonus', null, '✨ Bonuswort ?');
+        const d = demoBoard(stage, { size: 168, below: [h('div.wst-row', null, hint, luft, bonus)] });
         return api.loop(async () => {
-          g.reset();
-          stars.classList.remove('lit');
-          await api.sleep(300);
-          await api.finger.tap(btn);
-          const ring = g.line(1, 2, 1, 2, 'wsd-ring');
-          g.at(1, 2).classList.add('hint');
-          await api.sleep(700);
-          ring.remove();
-          await g.swipe(api, 1, 2, 1, 5, COLORS[3], 600);
-          api.finger.hide();
+          d.board.reset();
+          luft.classList.remove('found', 'hinted');
+          bonus.classList.remove('found');
+          bonus.textContent = '✨ Bonuswort ?';
           await api.sleep(250);
-          stars.classList.add('lit');
-          await api.sleep(1400);
-        }, 400);
+          await api.finger.tap(hint);
+          d.board.showHint(5, 1, true);
+          luft.classList.add('hinted');
+          await api.sleep(650);
+          await api.finger.tap(hint, 250);
+          d.board.showHint(5, 2, true);
+          await api.sleep(700);
+          await swipe(api, d, DEMO.words[5], 650);
+          d.board.clearHint();
+          d.board.addFound(5, 3, true);
+          luft.classList.remove('hinted');
+          markChip(luft, CAPS[3]);
+          await api.sleep(500);
+          await swipe(api, d, DEMO.bonus, 650);
+          d.board.addBonus(DEMO.bonus, true);
+          bonus.textContent = '✨ Wind';
+          bonus.classList.add('found');
+          api.finger.hide();
+          await api.sleep(1600);
+        }, 300);
       },
     },
     {
       title: 'Drei Stufen',
-      text: 'Leicht nur → und ↓, Mittel auch schräg, Schwer in alle acht Richtungen.',
+      text: 'Leicht nur → und ↓, Mittel auch schräg, Schwer in alle Richtungen.',
       demo(stage, api) {
         const cards = (modes || []).map((m) => h('div.wsd-mode', null,
           h('div', { html: arrowsSvg(m.dirs) }),

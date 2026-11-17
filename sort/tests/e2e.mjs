@@ -79,7 +79,8 @@ async function walkTutorial(prefix) {
   assert.ok(n >= 3 && n <= 4, '3–4 Schritte');
   for (let i = 0; i < n; i++) {
     assert.ok(await page.locator('.tut-stage .tt-scene').count() > 0, 'animierte Demo in Schritt ' + (i + 1));
-    if (prefix) { await page.waitForTimeout(i === 0 ? 1900 : 1400); await shot(`${prefix}-${i + 1}`); }
+    // Bildschirmfoto mitten in der Animation (Giessen, ✕, Tipp-Pfeile)
+    if (prefix) { await page.waitForTimeout([2600, 2600, 2600, 2700][i] || 1500); await shot(`${prefix}-${i + 1}`); }
     await page.locator('.tut-next').tap();
     await page.waitForTimeout(250);
   }
@@ -91,6 +92,8 @@ step('Erster Start');
 await page.goto(BASE);
 await walkTutorial('01-howto');
 assert.equal(await page.locator('.topbar a[href="../"], .topbar [href="../"]').count() > 0, true, 'Zurück zur Startseite');
+assert.equal(await page.locator('.gm-stats').count(), 0, 'keine leeren Kennzahlen bei Neuinstallation');
+assert.equal(await page.locator('.mp.cur').count(), 1, 'Levelkarte zeigt das aktuelle Level');
 await shot('02-menu');
 
 // 2) Level 1 (Tutorial) spielen bis zum Gewinnblatt
@@ -98,7 +101,20 @@ step('Level 1 spielen');
 await page.getByText('Spielen', { exact: false }).first().tap();
 await page.waitForFunction(() => location.hash === '#play');
 await waitBoard();
+// Coach-Mark: pulsierender Ring um das erste Glas, verschwindet nach dem ersten Giessen
+await page.locator('.coach-ring:not(.hidden)').waitFor({ timeout: 4000 });
+await page.waitForTimeout(500);
 await shot('03-level1');
+{
+  const src = +(await page.locator('.coach-ring').getAttribute('data-tube'));
+  await tapTube(src);
+  await page.waitForTimeout(500);
+  const dst = +(await page.locator('.coach-ring').getAttribute('data-tube'));
+  assert.notEqual(src, dst, 'Ring wandert zum Zielglas');
+  await tapTube(dst);
+  await page.evaluate(() => window.__sort.idle());
+  assert.equal(await page.locator('.coach-ring.hidden').count(), 1, 'Coach-Mark weg nach dem ersten Zug');
+}
 await solveByTaps({ shotMid: '04-pour' });
 await page.locator('.sp-modal-backdrop.show .win-stats').waitFor({ timeout: 8000 });
 await page.waitForTimeout(700);
@@ -272,6 +288,26 @@ await page.waitForTimeout(600);
 await shot('11-geheimnis');
 const hidden = await page.evaluate(() => window.__sort.game.run.state.tubes.some((t) => t.h > 0));
 assert.ok(hidden, 'verdeckte Schichten');
+
+// 8) Kleines iPhone (375×667): Hauptknopf ohne Scrollen sichtbar
+step('Kleiner Bildschirm');
+{
+  const small = await browser.newContext({ ...devices['iPhone 13'], viewport: { width: 375, height: 667 }, deviceScaleFactor: 1 });
+  const p2 = await small.newPage();
+  p2.on('pageerror', (e) => errors.push('pageerror: ' + e.message));
+  await p2.goto(BASE);
+  await p2.evaluate(() => {
+    localStorage.setItem('spielpause.tutorial.sort', 'true');
+    localStorage.setItem('spielpause.sort.progress', JSON.stringify({ level: 23, stars: { 1: 3, 2: 3, 3: 2, 4: 3, 5: 3, 16: 3, 17: 2, 18: 3, 19: 3, 20: 1, 21: 3, 22: 3 } }));
+  });
+  await p2.reload();
+  await p2.waitForTimeout(1200);
+  const box = await p2.locator('.gm-primary').boundingBox();
+  assert.ok(box && box.y + box.height <= 667, 'Hauptknopf sichtbar ohne Scrollen');
+  assert.match(await p2.locator('.gm-primary-sub').textContent(), /Level 23/);
+  await p2.screenshot({ path: OUT + '12-menu-375x667.png' });
+  await small.close();
+}
 
 await page.waitForTimeout(300);
 assert.deepEqual(errors, [], 'keine Konsolenfehler');

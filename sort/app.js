@@ -6,11 +6,13 @@ import { icon, h, toast, showModal, confirmDialog, celebrate, setupPage, soundBu
 import { gameMenu, menuSection } from '../shared/gamemenu.js';
 import { showTutorial, maybeShowTutorial, tutorialSeen, markTutorialSeen } from '../shared/tutorial.js';
 import { liquids, hiddenLiquid } from './data/colors.js';
-import { praise, tips, howTo, featureIntro, stuck } from './data/texts.js';
-import { chapterOf, parTarget, starsFor, dailyParams } from './logic/levels.js';
+import { praise, tips, howTo, featureIntro, stuck, corkPraise, comboPraise } from './data/texts.js';
+import { chapters, CHAPTER_SIZE } from './data/chapters.js';
+import { chapterOf, parTarget, starsFor, dailyParams, levelParams } from './logic/levels.js';
 import { applyPour, undoPour, pourAmount, isSolved, hasUsefulMove, isComplete, cloneState, validateState } from './logic/rules.js';
 import { solve, solveBest } from './logic/solver.js';
 import { Board } from './view/board.js';
+import { tubeHeight } from './view/glass.js';
 import { audio } from './view/audio.js';
 import { tutorialSteps } from './view/tutorial.js';
 import { engine } from './engine.js';
@@ -110,7 +112,6 @@ function switchRow(label, sub, on, onChange) {
     on = !on;
     sw.classList.toggle('on', on);
     sw.setAttribute('aria-checked', String(on));
-    sfx.play('click');
     onChange(on);
   });
   return h('div.set-row', null, h('div.set-label', null, h('b', null, label), sub ? h('small', null, sub) : null), sw);
@@ -125,7 +126,6 @@ function showSettings(onChanged) {
     b.addEventListener('click', () => {
       settings.speed = id;
       saveSettings();
-      sfx.play('click');
       for (const c of speedChips.children) c.classList.toggle('active', c.dataset.id === id);
     });
     speedChips.append(b);
@@ -141,12 +141,10 @@ function showSettings(onChanged) {
     h('div.set-actions', null, help, reset));
   const p = showModal({ title: 'Optionen', content, buttons: [{ label: 'Fertig', value: 'ok', primary: true }] });
   help.addEventListener('click', () => {
-    sfx.play('click');
     document.querySelector('.sp-modal-backdrop .sp-modal-buttons .btn')?.click();
     setTimeout(() => showHelp(), 280);
   });
   reset.addEventListener('click', async () => {
-    sfx.play('click');
     document.querySelector('.sp-modal-backdrop .sp-modal-buttons .btn')?.click();
     await sleep(280);
     const ok = await confirmDialog('Alles zurücksetzen?', 'Level, Sterne und Statistik werden gelöscht. Das kann nicht rückgängig gemacht werden.', 'Zurücksetzen', 'Abbrechen');
@@ -177,7 +175,7 @@ function showStats() {
   return showModal({ title: 'Statistik', content: grid, buttons: [{ label: 'Schliessen', value: true, primary: true }] });
 }
 
-function showLevelMap() {
+function showLevelMap(focusChapter = -1) {
   const backdrop = h('div.sheet-backdrop');
   const body = h('div.sheet-body');
   const close = () => {
@@ -185,7 +183,7 @@ function showLevelMap() {
     setTimeout(() => backdrop.remove(), 300);
   };
   const closeBtn = h('button.icon-btn', { type: 'button', 'aria-label': 'Schliessen', html: icon('close') });
-  closeBtn.addEventListener('click', () => { sfx.play('click'); close(); });
+  closeBtn.addEventListener('click', close);
   const sheet = h('div.sheet', { role: 'dialog', 'aria-modal': 'true' },
     h('div.sheet-head', null, h('h2', null, 'Level-Übersicht'), closeBtn),
     body);
@@ -194,6 +192,7 @@ function showLevelMap() {
   const cur = progress.level;
   const lastCh = chapterOf(cur).index;
   let curEl = null;
+  const heads = [];
   for (let ci = 0; ci <= lastCh; ci++) {
     const ch = chapterOf(ci * 15 + 1);
     let got = 0;
@@ -204,27 +203,28 @@ function showLevelMap() {
       let b;
       if (n < cur) {
         b = h('button.lv.done', { type: 'button', 'aria-label': `Level ${n} nochmals spielen` }, h('span', null, String(n)), h('span.stars', { html: starsHtml(st, 11) }));
-        b.addEventListener('click', () => { sfx.play('tap'); close(); location.hash = `replay/${n}`; });
+        b.addEventListener('click', () => { close(); location.hash = `replay/${n}`; });
       } else if (n === cur) {
         b = h('button.lv.cur', { type: 'button', 'aria-label': `Level ${n} spielen` }, h('span', null, String(n)), h('span.play', { html: icon('play', { size: 12 }) }));
-        b.addEventListener('click', () => { sfx.play('tap'); close(); location.hash = 'play'; });
+        b.addEventListener('click', () => { close(); location.hash = 'play'; });
         curEl = b;
       } else {
         b = h('div.lv.locked', null, h('span', null, String(n)));
       }
       grid.append(b);
     }
-    body.append(
-      h('div.chapter-head', { style: { '--c1': ch.bg[0], '--c2': ch.bg[1] } },
+    const head = h('div.chapter-head', { style: { '--c1': ch.bg[0], '--c2': ch.bg[1] } },
         h('span.em', null, ch.emoji),
         h('div', null, h('b', null, `Kapitel ${ci + 1} · ${ch.name}`), h('small', null, `Level ${ch.first}–${ch.last}`)),
-        h('span.ch-stars', { html: `${got}/${(ch.last - ch.first + 1) * 3} ${icon('star', { size: 14 })}` })),
-      grid);
+        h('span.ch-stars', { html: `${got}/${(ch.last - ch.first + 1) * 3} ${icon('star', { size: 14 })}` }));
+    heads.push(head);
+    body.append(head, grid);
   }
   document.body.append(backdrop);
   requestAnimationFrame(() => {
     backdrop.classList.add('show');
-    if (curEl) body.scrollTop = Math.max(0, curEl.offsetTop - body.clientHeight / 2);
+    if (focusChapter >= 0 && heads[focusChapter] && focusChapter !== lastCh) body.scrollTop = Math.max(0, heads[focusChapter].offsetTop - 12);
+    else if (curEl) body.scrollTop = Math.max(0, curEl.offsetTop - body.clientHeight / 2);
   });
 }
 
@@ -275,43 +275,31 @@ function applyChapterBg(n) {
 function menuScreen() {
   const ch = applyChapterBg(progress.level);
   app.className = 'app sort menu-screen';
-  const hasRun = !!store.get(K.run('level'), null);
-  const first = progress.level === 1 && !hasRun;
-  const today = todayKey();
-  const dp = dailyParams(today);
-  const inCh = progress.level - ch.first;
-  const chLen = ch.last - ch.first + 1;
+  const saved = store.get(K.run('level'), null);
+  const inProgress = !!(saved && saved.id === 'L' + progress.level && !saved.won && saved.moves > 0);
+  const first = progress.level === 1 && !saved;
+  const dp = dailyParams(todayKey());
+  const lp = levelParams(progress.level);
+  const special = lp.geheimnis ? 'Geheimnis-Level' : lp.gross ? 'Grosse Gläser' : '';
 
-  // Titelbild: kleines, selbst spielendes Regal
+  // Titelbild: kleines, selbst spielendes Regal in den Farben des Kapitels
   const heroCanvas = h('canvas', { 'aria-hidden': 'true' });
   const art = h('div.hero', null, h('div.hero-board', null, heroCanvas));
-
-  // Fortschritt im Kapitel
-  const dots = h('div.ch-dots');
-  for (let n = ch.first; n <= ch.last; n++) {
-    const d = h('span.dot');
-    if (n < progress.level) d.classList.add('done');
-    if (n === progress.level) d.classList.add('cur');
-    dots.append(d);
-  }
-  let chStars = 0;
-  for (let n = ch.first; n <= ch.last; n++) chStars += progress.stars[n] || 0;
-  const chLine = h('div.ch-line', null, dots, h('span.ch-stars', { html: `${chStars}/${chLen * 3} ${icon('star', { size: 15 })}` }));
-  const tip = h('p.tip', null, '💡 ', tips[Math.floor(Math.random() * tips.length)]);
 
   const play = async () => {
     await firstHelp(); // Anleitung immer vor dem allerersten Spiel
     if (screen && screen.kind === 'menu') location.hash = 'play';
   };
+  const played = progress.level > 1 || stats.won > 0;
   const menu = gameMenu({
     id: ID,
     title: 'Farbfluss',
-    tagline: `${ch.emoji} Kapitel ${ch.index + 1} · ${ch.name}`,
+    tagline: 'Farben in Gläser sortieren',
     accent: ACCENT,
     art,
     primary: {
       label: first ? 'Spielen' : 'Weiterspielen',
-      sub: `Level ${progress.level}${inCh >= 0 ? ` · ${inCh + 1}/${chLen} im Kapitel` : ''}`,
+      sub: `Level ${progress.level} · ${special || `${ch.emoji} ${ch.name}`}${inProgress ? ` · ${saved.moves} ${saved.moves === 1 ? 'Zug' : 'Züge'}` : ''}`,
       onClick: play,
     },
     daily: {
@@ -321,17 +309,17 @@ function menuScreen() {
       onClick: async () => { await firstHelp(); if (screen && screen.kind === 'menu') location.hash = 'daily'; },
     },
     secondary: [
-      { label: 'Levels', icon: 'grid', onClick: showLevelMap },
+      { label: 'Levels', icon: 'grid', onClick: () => showLevelMap() },
       { label: 'Statistik', icon: 'star', onClick: showStats },
       { label: 'Optionen', icon: 'settings', onClick: () => showSettings() },
     ],
-    stats: [
+    stats: played ? [
       { label: 'Geschafft', value: progress.level - 1 },
       { label: 'Sterne', value: totalStars() },
       { label: 'Perfekt', value: stats.perfect },
-      { label: 'Serie', value: dailyStreak(ID) },
-    ],
-    sections: [menuSection('Dieses Kapitel', chLine), tip],
+      { label: 'Tage-Serie', value: dailyStreak(ID) },
+    ] : null,
+    sections: [chapterPath(ch), chapterAlbum(ch), h('p.tip', null, '💡 ', tips[Math.floor(Math.random() * tips.length)])],
     onHelp: showHelp,
     backHref: '../',
   });
@@ -342,6 +330,65 @@ function menuScreen() {
   firstHelp();
 
   return { kind: 'menu', destroy() { demo.stop(); } };
+}
+
+/** Kleine Levelkarte des aktuellen Kapitels (15 Level, Sterne, besondere Level markiert). */
+function chapterPath(ch) {
+  const cur = progress.level;
+  let got = 0;
+  const grid = h('div.mp-grid');
+  for (let n = ch.first; n <= ch.last; n++) {
+    const st = progress.stars[n] || 0;
+    got += st;
+    const p = levelParams(n);
+    const mark = p.geheimnis ? h('i.mp-mark.secret', { title: 'Geheimnis-Level' }, '?')
+      : p.gross ? h('i.mp-mark.tall', { title: 'Grosse Gläser' }, h('span')) : null;
+    let el;
+    if (n < cur) {
+      el = h('button.mp.done', { type: 'button', 'aria-label': `Level ${n} nochmals spielen` },
+        h('b', null, String(n)), h('span.stars', { html: starsHtml(st, 10) }), mark);
+      el.addEventListener('click', () => { location.hash = `replay/${n}`; });
+    } else if (n === cur) {
+      el = h('button.mp.cur', { type: 'button', 'aria-label': `Level ${n} spielen` },
+        h('b', null, String(n)), h('span.play', { html: icon('play', { size: 11 }) }), mark);
+      el.addEventListener('click', async () => { await firstHelp(); if (screen && screen.kind === 'menu') location.hash = 'play'; });
+    } else {
+      el = h('div.mp.locked', null, h('b', null, String(n)), mark);
+    }
+    grid.append(el);
+  }
+  const head = h('div.mp-head', null,
+    h('span.mp-em', null, ch.emoji),
+    h('div.mp-title', null, h('b', null, ch.name), h('small', null, `Kapitel ${ch.index + 1} · Level ${ch.first}–${ch.last}`)),
+    h('span.ch-stars', { html: `${got}/${(ch.last - ch.first + 1) * 3} ${icon('star', { size: 15 })}` }));
+  const card = h('div.mp-card', { style: { '--c1': ch.bg[0], '--c2': ch.bg[1] } }, head, grid);
+  return menuSection('Levelkarte', card);
+}
+
+/** Alle Kapitel als Sammlung: geschaffte und aktuelle in Farbe, kommende verschlossen. */
+function chapterAlbum(cur) {
+  const strip = h('div.album');
+  const count = Math.max(chapters.length, cur.index + 3);
+  let curEl = null;
+  for (let i = 0; i < count; i++) {
+    const c = chapterOf(i * CHAPTER_SIZE + 1);
+    const open = i <= cur.index;
+    let got = 0;
+    if (open) for (let n = c.first; n <= c.last; n++) got += progress.stars[n] || 0;
+    const full = got === (c.last - c.first + 1) * 3;
+    const tile = h(open ? 'button.al' : 'div.al.locked', open ? { type: 'button', 'aria-label': `Kapitel ${i + 1}: ${c.name}` } : null,
+      h('span.al-em', null, open ? c.emoji : '🔒'),
+      h('b', null, c.name),
+      h('small', null, open ? (i === cur.index ? 'Jetzt' : full ? 'Alle ★' : `${got} ★`) : `ab Level ${c.first}`));
+    tile.style.setProperty('--c1', c.bg[0]);
+    tile.style.setProperty('--c2', c.bg[1]);
+    if (i === cur.index) { tile.classList.add('cur'); curEl = tile; }
+    if (full) tile.classList.add('full');
+    if (open) tile.addEventListener('click', () => showLevelMap(i));
+    strip.append(tile);
+  }
+  requestAnimationFrame(() => { if (curEl) strip.scrollLeft = Math.max(0, curEl.offsetLeft - strip.clientWidth / 2 + curEl.offsetWidth / 2); });
+  return menuSection(`Kapitel · ${cur.index + 1} von ${count}`, strip);
 }
 
 function startDemo(canvas, ch) {
@@ -435,11 +482,13 @@ function gameScreen({ mode, n }) {
   let tStart = 0;
   let stuckShown = false;
   let solving = false;
-  let coachStep = 0;
+  let coachDone = false;
+  let combo = 0;
+  const pendingPraise = new Map();
   let paused = false;
 
   // --- DOM ---
-  const back = backButton('#', () => { sfx.play('click'); location.hash = ''; });
+  const back = backButton('#', () => { location.hash = ''; });
   const titleMain = h('b', null, mode === 'daily' ? 'Tagesrätsel' : `Level ${levelNo}`);
   const titleSub = h('small', null, '');
   const chips = h('div.feat');
@@ -447,8 +496,9 @@ function gameScreen({ mode, n }) {
   const top = h('header.topbar.game-top', null, back, h('div.title-block', null, h('div.tb-row', null, titleMain, chips), titleSub), helpBtn, soundButton());
   const canvas = h('canvas', { 'aria-label': 'Spielfeld' });
   const coach = h('div.coach.hidden');
+  const ring = h('div.coach-ring.hidden', { 'aria-hidden': 'true' });
   const loading = h('div.loading', null, h('div.spinner'), h('span', null, 'Gläser werden gefüllt …'));
-  const wrap = h('div.board-wrap', null, canvas, coach, loading);
+  const wrap = h('div.board-wrap', null, canvas, ring, coach, loading);
 
   const tool = (ic, label, id) => {
     const b = h('button.tool', { type: 'button', id }, h('span.ic', { html: icon(ic) }), h('span.lbl', null, label));
@@ -505,41 +555,86 @@ function gameScreen({ mode, n }) {
     if (run.gross) chips.append(h('span.fchip.tall', { title: 'Grosse Gläser' }, run.geheimnis ? 'Gross' : 'Grosse Gläser'));
   }
 
-  // --- Coach (Anleitung im ersten Level) ---
+  // --- Coach-Mark (nur Level 1): pulsierender Ring + Pfeil bis zum ersten Giessen ---
   function setCoach(text) {
     if (!text) { coach.classList.add('hidden'); return; }
     coach.textContent = text;
     coach.classList.remove('hidden');
   }
 
+  function placeRing(i) {
+    const t = board && i >= 0 ? board.tubes[i] : null;
+    if (!t) { ring.classList.add('hidden'); ring.dataset.tube = ''; return; }
+    const c = board.tubeCenter(i);
+    const r = wrap.getBoundingClientRect();
+    const w = board.w, H = tubeHeight(t.cap) * w;
+    ring.style.left = `${c.x - r.left - w * 0.86}px`;
+    ring.style.top = `${c.y - r.top - H * 0.55 - w * 0.3}px`;
+    ring.style.width = `${w * 1.72}px`;
+    ring.style.height = `${H + w * 0.55}px`;
+    ring.style.borderRadius = `${w * 0.86}px`;
+    ring.dataset.tube = String(i);
+    ring.classList.remove('hidden');
+  }
+
+  function endCoach(praiseIt) {
+    if (coachDone) return;
+    coachDone = true;
+    placeRing(-1);
+    if (board) board.setHint(null);
+    if (praiseIt) {
+      setCoach('Genau so! Den Rest schaffst du allein.');
+      setTimeout(() => { if (coachDone) setCoach(null); }, 2600);
+    } else setCoach(null);
+  }
+
   async function tutorialStep() {
-    if (!run || !run.tutorial || run.won) { setCoach(null); return; }
+    if (!run || !run.tutorial || run.won || coachDone) { placeRing(-1); return; }
+    const r = await engine.hint(run.state);
+    if (destroyed || !run || run.won || coachDone) return;
+    const mv = r && r.move;
+    if (!mv) { endCoach(false); return; }
     if (sel >= 0) {
-      const r = await engine.hint(run.state);
-      if (destroyed || !run || run.won) return;
-      const mv = r && r.move;
-      if (mv && mv.from === sel) {
+      if (mv.from === sel) {
         board.setHint({ from: mv.from, to: mv.to });
-        setCoach('Und jetzt das Glas, in das es fliessen soll.');
+        placeRing(mv.to);
+        setCoach('Und jetzt hier hineingiessen.');
       } else {
-        board.setHint(null);
-        setCoach('Tippe ein Glas an, um es wieder abzustellen.');
+        board.setHint({ from: mv.from, to: -1 });
+        placeRing(mv.from);
+        setCoach('Lieber dieses Glas antippen.');
       }
       return;
     }
-    const r = await engine.hint(run.state);
-    if (destroyed || !run || run.won) return;
-    if (r && r.move) {
-      board.setHint({ from: r.move.from, to: -1 });
-      setCoach(coachStep === 0 ? 'Tippe auf das Glas mit dem Pfeil.' : 'Super! Weiter so – Glas antippen …');
-    }
+    board.setHint({ from: mv.from, to: -1 });
+    placeRing(mv.from);
+    setCoach('Tippe dieses Glas an.');
+  }
+  const onResize = () => { if (!coachDone && ring.dataset.tube) placeRing(+ring.dataset.tube); };
+  window.addEventListener('resize', onResize);
+
+  // --- Lob für fertige Gläser (Korken), Kombos bei mehreren nacheinander ---
+  function praiseCork(i) {
+    const k = pendingPraise.get(i) || 1;
+    pendingPraise.delete(i);
+    if (!board || !board.tubes[i]) return;
+    const text = k >= 2 ? comboPraise[Math.min(k, comboPraise.length - 1)] : corkPraise[Math.floor(Math.random() * corkPraise.length)];
+    const c = board.tubeCenter(i);
+    const r = wrap.getBoundingClientRect();
+    const H = tubeHeight(board.tubes[i].cap) * board.w;
+    const el = h('div.float-praise' + (k >= 2 ? '.combo' : ''), null, text);
+    el.style.left = `${Math.min(Math.max(c.x - r.left, 70), r.width - 70)}px`;
+    el.style.top = `${c.y - r.top - H * 0.55 - board.w * 0.9}px`;
+    if (k >= 3) el.style.fontSize = `${Math.min(30, 20 + k * 2)}px`;
+    wrap.append(el);
+    setTimeout(() => el.remove(), 1400);
   }
 
   // --- Spielzüge ---
   function tap(i) {
     if (!run || run.won) return;
     const st = run.state;
-    if (!run.tutorial && board.hint && !(sel < 0 && board.hint.from === i)) board.setHint(null);
+    if ((!run.tutorial || coachDone) && board.hint && !(sel < 0 && board.hint.from === i)) board.setHint(null);
     if (i < 0) {
       if (sel >= 0) { sel = -1; board.select(-1); }
       if (run.tutorial) tutorialStep();
@@ -574,11 +669,11 @@ function gameScreen({ mode, n }) {
       board.select(-1);
       board.pour(mv, st.tubes[mv.from].h, st.tubes[mv.to].h);
       sel = -1;
-      coachStep++;
+      if (isComplete(st.tubes[mv.to], st.per)) { combo++; pendingPraise.set(mv.to, combo); } else combo = 0;
       save();
       updateHud();
+      if (!coachDone) endCoach(run.tutorial);
       if (isSolved(st)) { onSolved(); return; }
-      if (run.tutorial) { board.setHint(null); setCoach(null); board.whenIdle().then(() => tutorialStep()); }
       return;
     }
     // Ziel passt nicht: anderes Glas wählen (oder schütteln, wenn es nicht wählbar ist)
@@ -629,6 +724,8 @@ function gameScreen({ mode, n }) {
     board.sync(run.state);
     board.shake(from);
     sfx.play('whoosh');
+    combo = 0;
+    pendingPraise.clear();
     stuckShown = false;
     save();
     updateHud();
@@ -648,7 +745,8 @@ function gameScreen({ mode, n }) {
     run.extraUsed = false;
     sel = -1;
     stuckShown = false;
-    coachStep = 0;
+    combo = 0;
+    pendingPraise.clear();
     board.setState(run.state, { intro: true });
     sfx.play('whoosh');
     save();
@@ -700,10 +798,10 @@ function gameScreen({ mode, n }) {
     }
   }
 
-  onPress(bUndo, () => { sfx.play('click'); undo(); });
-  onPress(bRestart, () => { sfx.play('click'); restart(false); });
+  onPress(bUndo, () => { undo(); });
+  onPress(bRestart, () => { restart(false); });
   onPress(bExtra, () => { addGlass(); });
-  onPress(bHint, () => { sfx.play('click'); giveHint(); });
+  onPress(bHint, () => { giveHint(); });
 
   /** «So geht's» mitten im Spiel – die Zeit läuft solange nicht weiter. */
   async function openHelp() {
@@ -716,7 +814,7 @@ function gameScreen({ mode, n }) {
       if (!destroyed && run && !run.won && !document.hidden) tStart = performance.now();
     }
   }
-  onPress(helpBtn, () => { sfx.play('click'); openHelp(); });
+  onPress(helpBtn, () => { openHelp(); });
 
   // --- Gewonnen ---
   async function onSolved() {
@@ -728,6 +826,7 @@ function gameScreen({ mode, n }) {
     const stars = starsFor({ moves: run.moves, par: run.par, extraUsed: run.extraUsed });
     stats.won++;
     if (stars === 3) stats.perfect++;
+    const record = stats.fastest != null && run.elapsed < stats.fastest;
     if (stats.fastest == null || run.elapsed < stats.fastest) {
       stats.fastest = run.elapsed;
       stats.fastestLabel = run.mode === 'daily' ? 'Tagesrätsel' : `Level ${run.n}`;
@@ -766,10 +865,10 @@ function gameScreen({ mode, n }) {
     celebrate(run.colors.slice(0, 6).map((c) => liquids[c].color));
     await sleep(650);
     if (destroyed) return;
-    showWin(stars, newChapter);
+    showWin(stars, newChapter, record);
   }
 
-  async function showWin(stars, newChapter) {
+  async function showWin(stars, newChapter, record) {
     const content = h('div.win');
     content.append(h('div.win-stars', { html: [0, 1, 2].map((i) => `<span class="ws ${i < stars ? 'on' : ''}" style="animation-delay:${0.15 + i * 0.18}s">${icon('star', { size: 54 })}</span>`).join('') }));
     const target = parTarget(run.par);
@@ -781,6 +880,7 @@ function gameScreen({ mode, n }) {
       run.mode === 'daily'
         ? h('div', null, h('b', null, `${dailyStreak(ID)} 🔥`), h('small', null, 'Tage in Folge'))
         : h('div', null, h('b', null, `${totalStars()}`), h('small', null, 'Sterne total'))));
+    if (record) content.append(h('div.win-record', null, '🏆 Neue Bestzeit!'));
     if (run.extraUsed) content.append(h('p.win-note', null, 'Mit Extra-Glas gelöst – ohne gibt’s drei Sterne.'));
     else if (stars < 3) content.append(h('p.win-note', null, `Mit höchstens ${target} Zügen gibt’s drei Sterne.`));
     if (newChapter) {
@@ -793,13 +893,15 @@ function gameScreen({ mode, n }) {
     if (run.mode === 'level') {
       buttons = [
         { label: `Weiter zu Level ${progress.level}`, value: 'next', primary: true, icon: 'play' },
+        stars < 3 ? { label: 'Nochmal für ★★★', value: 'retry', ghost: true, icon: 'refresh' } : null,
         { label: 'Menü', value: 'menu', ghost: true },
-      ];
+      ].filter(Boolean);
     } else if (run.mode === 'replay') {
       buttons = [
         { label: 'Level-Übersicht', value: 'map', primary: true, icon: 'grid' },
+        stars < 3 ? { label: 'Nochmal für ★★★', value: 'again', ghost: true, icon: 'refresh' } : null,
         { label: `Weiter mit Level ${progress.level}`, value: 'play', ghost: true },
-      ];
+      ].filter(Boolean);
     } else {
       buttons = [
         { label: 'Zum Menü', value: 'menu', primary: true, icon: 'home' },
@@ -809,6 +911,8 @@ function gameScreen({ mode, n }) {
     const v = await showModal({ title: praise[Math.floor(Math.random() * praise.length)], content, buttons, dismissible: false });
     if (destroyed) return;
     if (v === 'next') nextLevel();
+    else if (v === 'retry') location.hash = `replay/${run.n}`;
+    else if (v === 'again') { const n0 = run.n; destroy(); screen = gameScreen({ mode: 'replay', n: n0 }); }
     else if (v === 'map') { location.hash = ''; setTimeout(showLevelMap, 120); }
     else if (v === 'play') location.hash = 'play';
     else location.hash = '';
@@ -871,7 +975,7 @@ function gameScreen({ mode, n }) {
       speed: () => SPEEDS[settings.speed] || 1,
       onTap: tap,
       onIdle,
-      onCork: (i, count) => audio.cork(count - 1),
+      onCork: (i, count) => { audio.cork(count - 1); praiseCork(i); },
       onReveal: () => audio.reveal(),
       sound: audio,
       shelfColor: ch.shelf,
@@ -905,7 +1009,8 @@ function gameScreen({ mode, n }) {
       });
       if (v === 'on') { settings.symbols = true; saveSettings(); if (board) board.wake(); toast('Farbsymbole an – änderbar unter «Optionen»'); }
     }
-    if (run.tutorial) setTimeout(() => tutorialStep(), 700);
+    if (run.tutorial && !run.moves && !run.won) setTimeout(() => tutorialStep(), 700);
+    else coachDone = true;
     if (!hasUsefulMove(run.state) && !run.won) onIdle();
   }
 
@@ -917,6 +1022,7 @@ function gameScreen({ mode, n }) {
     clearInterval(autosave);
     document.removeEventListener('visibilitychange', onVis);
     window.removeEventListener('pagehide', save);
+    window.removeEventListener('resize', onResize);
     if (board) board.destroy();
     if (window.__sort && window.__sort._game === api) window.__sort._game = null;
   }

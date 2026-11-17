@@ -51,7 +51,7 @@ function burst(box, el) {
   const b = h('div.tut-burst');
   b.style.left = el.style.left;
   b.style.top = el.style.top;
-  for (let i = 0; i < 8; i++) b.append(h('i', { style: { '--a': (i * 45) + 'deg' } }));
+  for (let i = 0; i < 8; i++) { const d = h('i'); d.style.setProperty('--a', (i * 45) + 'deg'); b.append(d); }
   box.append(b);
   setTimeout(() => b.remove(), 750);
 }
@@ -77,24 +77,25 @@ export function tutorialFor(family, face = {}) {
     text: 'Lege Karten absteigend Rot auf Schwarz – antippen oder ziehen.',
     demo(stage, api) {
       const box = scene(stage);
-      const n9 = C(SP, 9, 10, 14);
-      const hB = C(KR, 12, 42, 14, false), r8 = C(HE, 8, 42, 25);
-      const hC = C(KA, 4, 74, 14, false), k7 = C(KR, 7, 74, 25);
+      const n9 = C(SP, 9, 10, 22);
+      const hB = C(KR, 12, 42, 22, false), r8 = C(HE, 8, 42, 33);
+      const hC = C(KA, 4, 74, 22, false), k7 = C(KR, 7, 74, 33);
       box.append(n9, hB, r8, hC, k7);
-      const g7 = ghost(box, 10, 36);
+      const g7 = ghost(box, 10, 44);
       return api.loop(async () => {
-        jump(r8, 42, 25, 2); jump(k7, 74, 25, 2);
+        jump(r8, 42, 33, 2); jump(k7, 74, 33, 2);
         hB.classList.remove('up'); hC.classList.remove('up');
         await api.sleep(350);
         await api.finger.tap(r8);
-        slide(r8, 10, 25, 380, 3);
+        slide(r8, 10, 33, 380, 3);
         await api.sleep(380);
         flipUp(hB);
         await api.sleep(450);
         const d = api.finger.drag([k7, g7], 650);
+        d.catch(() => {});
         await api.sleep(650);
         k7.classList.add('lifted');
-        slide(k7, 10, 36, 650, 4);
+        slide(k7, 10, 44, 650, 4);
         await d;
         k7.classList.remove('lifted');
         flipUp(hC);
@@ -217,19 +218,20 @@ export function tutorialFor(family, face = {}) {
     text: 'Gleichfarbige Folgen ziehst du gemeinsam auf eine höhere Karte.',
     demo(stage, api) {
       const box = scene(stage);
-      const n9 = C(SP, 9, 10, 14);
-      const hB = C(SP, 12, 42, 10, false), b8 = C(SP, 8, 42, 20), b7 = C(SP, 7, 42, 31);
-      const hC = C(SP, 5, 74, 10, false), c4 = C(SP, 4, 74, 20);
+      const n9 = C(SP, 9, 10, 20);
+      const hB = C(SP, 12, 42, 16, false), b8 = C(SP, 8, 42, 26), b7 = C(SP, 7, 42, 37);
+      const hC = C(SP, 5, 74, 16, false), c4 = C(SP, 4, 74, 26);
       box.append(n9, hB, b8, b7, hC, c4);
-      const g8 = ghost(box, 10, 25);
+      const g8 = ghost(box, 10, 31);
       return api.loop(async () => {
-        jump(b8, 42, 20, 2); jump(b7, 42, 31, 3);
+        jump(b8, 42, 26, 2); jump(b7, 42, 37, 3);
         hB.classList.remove('up');
         await api.sleep(350);
         const d = api.finger.drag([b8, g8], 700);
+        d.catch(() => {});
         await api.sleep(650);
         b8.classList.add('lifted'); b7.classList.add('lifted');
-        slide(b8, 10, 25, 700, 4); slide(b7, 10, 36, 700, 5);
+        slide(b8, 10, 31, 700, 4); slide(b7, 10, 42, 700, 5);
         await d;
         b8.classList.remove('lifted'); b7.classList.remove('lifted');
         flipUp(hB);
@@ -259,6 +261,7 @@ export function tutorialFor(family, face = {}) {
         pill.classList.remove('show');
         await api.sleep(400);
         const d = api.finger.drag([ace, gA], 650);
+        d.catch(() => {});
         await api.sleep(650);
         slide(ace, 10, 4 + 12 * 5.4, 650, 20);
         await d;
@@ -312,21 +315,22 @@ export function tutorialFor(family, face = {}) {
     text: 'Lege absteigend Rot auf Schwarz – jede Karte ist von Anfang an sichtbar.',
     demo(stage, api) {
       const box = scene(stage);
-      const s6 = C(SP, 6, 10, 14);
-      const bQ = C(KR, 12, 42, 14), h5 = C(HE, 5, 42, 25);
-      const cK = C(KA, 13, 74, 14), k4 = C(KR, 4, 74, 25);
+      const s6 = C(SP, 6, 10, 22);
+      const bQ = C(KR, 12, 42, 22), h5 = C(HE, 5, 42, 33);
+      const cK = C(KA, 13, 74, 22), k4 = C(KR, 4, 74, 33);
       box.append(s6, bQ, h5, cK, k4);
-      const g4 = ghost(box, 10, 36);
+      const g4 = ghost(box, 10, 44);
       return api.loop(async () => {
-        jump(h5, 42, 25, 2); jump(k4, 74, 25, 2);
+        jump(h5, 42, 33, 2); jump(k4, 74, 33, 2);
         await api.sleep(350);
         await api.finger.tap(h5);
-        slide(h5, 10, 25, 380, 3);
+        slide(h5, 10, 33, 380, 3);
         await api.sleep(700);
         const d = api.finger.drag([k4, g4], 650);
+        d.catch(() => {});
         await api.sleep(650);
         k4.classList.add('lifted');
-        slide(k4, 10, 36, 650, 4);
+        slide(k4, 10, 44, 650, 4);
         await d;
         k4.classList.remove('lifted');
         await api.sleep(1300);
@@ -351,6 +355,7 @@ export function tutorialFor(family, face = {}) {
         await api.sleep(350);
         cells[1].classList.add('pulse');
         const d = api.finger.drag([nine, cells[1]], 650);
+        d.catch(() => {});
         await api.sleep(650);
         nine.classList.add('lifted');
         slide(nine, xs[1], 8, 650, 5);

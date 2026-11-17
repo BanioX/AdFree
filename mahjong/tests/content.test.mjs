@@ -74,3 +74,18 @@ test('Tagesrätsel: für ein Datum immer gleich, gültig und lösbar', () => {
   }
   assert.ok(seen.size >= 5, 'Tagesrätsel soll abwechseln');
 });
+
+test('Tische: eindeutig, aufsteigend, erster gratis, gültige Farben', async () => {
+  const { tables } = await import('../data/tables.js');
+  assert.ok(tables.length >= 2);
+  assert.equal(tables[0].stars, 0);
+  assert.equal(new Set(tables.map((t) => t.id)).size, tables.length);
+  for (let i = 0; i < tables.length; i++) {
+    const t = tables[i];
+    assert.match(t.id, /^[a-z0-9-]+$/);
+    assert.ok(t.name && !t.name.includes('ß'), t.name);
+    assert.match(t.c1, /^#[0-9a-f]{6}$/i);
+    assert.match(t.c2, /^#[0-9a-f]{6}$/i);
+    if (i > 0) assert.ok(t.stars > tables[i - 1].stars, `${t.id}: Sterne aufsteigend`);
+  }
+});

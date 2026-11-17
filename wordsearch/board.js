@@ -279,6 +279,39 @@ export class Board {
     }
   }
 
+  /**
+   * Bonuswort (nicht in der Liste): goldene Kapsel. missed=true: nach dem Sieg nur gestrichelt zeigen.
+   */
+  addBonus(p, animate = false, missed = false) {
+    if (!p) return;
+    if (this.bonusG) this.bonusG.remove();
+    const e = wordEnd(p);
+    const pos = { x1: p.c + 0.5, y1: p.r + 0.5, x2: e.c + 0.5, y2: e.r + 0.5 };
+    const g = svg('g', { class: 'g-bonus' + (missed ? ' missed' : '') + (animate ? ' in' : '') });
+    if (missed) g.append(svg('line', { class: 'bonus-dash', ...pos }));
+    else g.append(svg('line', { class: 'bonus-glow', ...pos }), svg('line', { class: 'bonus-cap', ...pos }), svg('line', { class: 'bonus-shine', ...pos }));
+    this.gFound.append(g);
+    this.bonusG = g;
+    if (animate) {
+      wordCells(p).forEach(({ r, c }, i) => this.bump(this.spans[r * this.n + c], 'pop', i * 55));
+      this.floatText('✨ ' + p.label, (p.c + e.c) / 2 + 0.5, (p.r + e.r) / 2 + 0.5, '#f0b400');
+    }
+  }
+
+  /** Alles Gefundene, Tipps und Markierungen entfernen (für die Tutorial-Demos). */
+  reset() {
+    this.gFound.replaceChildren();
+    this.found.clear();
+    this.bonusG = null;
+    this.clearHint();
+    this.clearCoach();
+    this.clearAnchor();
+    this.hideSel();
+    this.highlight([]);
+    this.el.classList.remove('won');
+    for (const s of this.spans) s.classList.remove('got', 'pop', 'wave', 'hinted');
+  }
+
   /** Bereits gefundenes Wort kurz aufblinken lassen. */
   flashFound(index) {
     const f = this.found.get(index);

@@ -63,9 +63,9 @@ export function drawPreview(canvas, src, sky, size = 124) {
   let maxY = 3;
   for (const o of cells) maxY = Math.max(maxY, o.y);
   // Massstab: ganze Breite (22 Einheiten) + Platz für den Werfer unten
-  const s = Math.min((W - 8) / WIDTH, (H - 6) / (maxY + 1 + 5.2));
+  const s = Math.min((W - 8) / WIDTH, (H - 6) / (maxY + 2.4 + 5.2));
   const ox = (W - WIDTH * s) / 2;
-  const oy = 3 + s * 0.35;
+  const oy = s * 1.7;
   const R = s * 1.02;
   const sc = new SpriteCache();
   sc.setSize(R * dpr, false);
@@ -77,13 +77,12 @@ export function drawPreview(canvas, src, sky, size = 124) {
   };
   for (const o of cells) draw(o.v, ox + o.x * s, oy + o.y * s);
 
-  // Wolkendecke
-  ctx.fillStyle = 'rgba(255,255,255,.96)';
-  ctx.fillRect(0, 0, W, oy - s * 0.2);
-  const bumps = 7;
-  for (let i = 0; i <= bumps; i++) {
+  // Wolkendecke (überlappt die oberste Reihe leicht – wie im Spiel)
+  ctx.fillStyle = 'rgba(255,255,255,.97)';
+  ctx.fillRect(0, 0, W, oy - s * 0.5);
+  for (let x = -s * 0.4; x < W + s * 2; x += s * 1.9) {
     ctx.beginPath();
-    ctx.arc((i / bumps) * W, oy - s * 0.25, W / bumps / 1.7, 0, Math.PI * 2);
+    ctx.arc(x, oy - s * 0.45, s * 1.02, 0, Math.PI * 2);
     ctx.fill();
   }
 

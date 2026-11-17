@@ -68,6 +68,13 @@ Der Satz `klassisch` (`kind: 'drawn'`) wird in `faces.js` von Hand gezeichnet:
 Bild 0–8 Punkte 1–9, 9–17 Bambus 1–9, 18–26 Zeichen 1–9, 27–30 Winde (O, S, W, N),
 31–33 Drachen, 34–37 Blumen, 38–41 Jahreszeiten.
 
+## Tische (`data/tables.js`)
+
+Farben des Spielfelds, freigeschaltet mit den Sternen der Reise (Menü-Abschnitt «Tische»).
+Eintrag: `{ id, name, stars, c1, c2, dark? }` – `stars` = nötige Sterne insgesamt (aufsteigend sortieren),
+`c1`/`c2` = Verlauf oben/unten, `dark: true` für dunkle Tische (Hinweise werden dann hell gezeichnet).
+Fünf Tische passen in eine Reihe; bei mehr Tischen das Raster in `style.css` (`.tables`) anpassen.
+
 ## Tagesrätsel (`daily.js`)
 
 Seed aus dem Datum (`todayKey()`): an 7 von 10 Tagen ein Reise-Layout mit mindestens 64 Steinen,

@@ -16,7 +16,7 @@ function table(stage) {
 /** Ein Demo-Stein: Wrapper (Position in % der Bühne) mit gezeichnetem Stein. */
 function demoTile(stage, setId, face, x, y, z = 0) {
   const c = BoardView.tileImage(setId, face, TW);
-  const el = h('div.td-tile', { style: { left: x + '%', top: y + '%', zIndex: String(10 + z) } }, c);
+  const el = h('div.td-tile', { style: { left: x + '%', top: y + '%', zIndex: String(1 + z) } }, c);
   el.dataset.x = String(x);
   el.dataset.y = String(y);
   stage.append(el);

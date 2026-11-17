@@ -33,6 +33,18 @@
       var a = document.getElementById('home');
       if (location.hostname.endsWith('github.io') && parts.length) a.href = '/' + parts[0] + '/';
       else a.href = '/';
+      var en = false;
+      try {
+        var saved = JSON.parse(localStorage.getItem('spielpause.lang') || 'null');
+        en = saved ? saved === 'en' : !String(navigator.language || 'de').toLowerCase().startsWith('de');
+      } catch (e) {}
+      if (en) {
+        document.documentElement.lang = 'en';
+        document.title = 'Coming soon – Spielpause';
+        document.querySelector('h1').textContent = 'Still being built';
+        document.querySelector('p').textContent = 'This game is almost ready. Check back tomorrow!';
+        a.textContent = 'Back to all games';
+      }
     })();
   </script>
 </body>

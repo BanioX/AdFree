@@ -25,6 +25,7 @@
 import { h, icon } from './ui.js';
 import { store } from './storage.js';
 import { sfx } from './sfx.js';
+import { L } from './i18n.js';
 
 const FINGER_SVG = `<svg viewBox="0 0 48 48" width="48" height="48" aria-hidden="true">
   <path d="M19 6.5c2 0 3.5 1.5 3.5 3.5v13.2l1.3-.3c.3-1.6 1.7-2.7 3.4-2.7 1.4 0 2.6.8 3.1 2 .6-.6 1.5-1 2.5-1 1.6 0 2.9 1 3.3 2.5.5-.3 1.1-.4 1.7-.4 1.9 0 3.4 1.5 3.4 3.4V34c0 6-4.6 10.5-10.6 10.5h-3.6c-3.6 0-6.3-1.3-8.4-4.1l-7.3-9.6c-1.1-1.5-.8-3.6.7-4.7 1.4-1 3.3-.8 4.4.4l2.2 2.4V10c0-2 1.5-3.5 3.4-3.5z"
@@ -50,7 +51,7 @@ export function maybeShowTutorial(opts) {
  */
 export function showTutorial(opts) {
   const { id, steps } = opts;
-  const doneLabel = opts.doneLabel || 'Los geht’s';
+  const doneLabel = opts.doneLabel || L('Los geht’s', 'Let’s go');
   return new Promise((resolve) => {
     let index = 0;
     let controller = null;
@@ -61,10 +62,10 @@ export function showTutorial(opts) {
     const textEl = h('p.tut-text');
     const dots = h('div.tut-dots', null, steps.map(() => h('span')));
     const nextBtn = h('button.btn.primary.tut-next', { type: 'button' });
-    const backBtn = h('button.tut-back', { type: 'button', 'aria-label': 'Zurück' });
+    const backBtn = h('button.tut-back', { type: 'button', 'aria-label': L('Zurück', 'Back') });
     backBtn.innerHTML = icon('back', { size: 22 });
-    const skipBtn = h('button.tut-skip', { type: 'button' }, 'Überspringen');
-    const head = h('div.tut-head', null, backBtn, h('span.tut-kicker', null, opts.title || 'So geht’s'), skipBtn);
+    const skipBtn = h('button.tut-skip', { type: 'button' }, L('Überspringen', 'Skip'));
+    const head = h('div.tut-head', null, backBtn, h('span.tut-kicker', null, opts.title || L('So geht’s', 'How to play')), skipBtn);
     const card = h('div.tut-card', { role: 'dialog', 'aria-modal': 'true' },
       head, stage, h('div.tut-body', null, titleEl, textEl), dots, nextBtn);
     const root = h('div.tut-backdrop', null, card);
@@ -92,7 +93,7 @@ export function showTutorial(opts) {
       titleEl.textContent = step.title || '';
       textEl.textContent = step.text || '';
       [...dots.children].forEach((d, i) => d.classList.toggle('on', i === index));
-      nextBtn.textContent = index === steps.length - 1 ? doneLabel : 'Weiter';
+      nextBtn.textContent = index === steps.length - 1 ? doneLabel : L('Weiter', 'Next');
       backBtn.style.visibility = index === 0 ? 'hidden' : 'visible';
       skipBtn.style.visibility = index === steps.length - 1 ? 'hidden' : 'visible';
       if (typeof step.demo === 'function') {

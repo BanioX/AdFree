@@ -1,6 +1,6 @@
 // End-to-End-Test (Playwright, iPhone 13):
-//   python3 -m http.server 8201 --bind 127.0.0.1   (im Repo-Wurzelverzeichnis)
-//   node solitaire/tests/e2e.mjs
+//   python3 -m http.server 8134 --bind 127.0.0.1   (im Repo-Wurzelverzeichnis)
+//   node solitaire/tests/e2e.mjs        (anderer Port: BASE=http://127.0.0.1:<port>/solitaire/)
 // Spielt eine Klondike-Partie mit echten Gesten (Ziehen, Antippen) an, prüft Rückgängig, Tipp,
 // Neuladen mitten im Spiel, spielt bis zum Gewinnblatt, löst das Tagesrätsel, prüft Spider bei 375 px
 // und dass keine Konsolenfehler auftreten. Screenshots: solitaire/tests/out/
@@ -9,7 +9,7 @@ import { mkdirSync } from 'node:fs';
 import assert from 'node:assert/strict';
 const { chromium, devices } = createRequire(import.meta.url)('playwright');
 
-const BASE = process.env.BASE || 'http://127.0.0.1:8201/solitaire/';
+const BASE = process.env.BASE || 'http://127.0.0.1:8134/solitaire/';
 const OUT = new URL('./out/', import.meta.url).pathname;
 mkdirSync(OUT, { recursive: true });
 
@@ -83,10 +83,12 @@ await noPageScroll();
 await shot('e2e-03-klondike');
 
 step('Züge mit Ziehen und Antippen');
-const sol = await S(() => window.__solitaire.solution(9000));
-assert.ok(sol.solved, 'Partie ist lösbar (Löser)');
 let real = 0;
-for (const a of sol.moves.slice(0, 10)) {
+for (let k = 0; k < 10; k++) {
+  // jedes Mal neu lösen: «Automatisch ablegen» kann Züge des Lösers vorwegnehmen
+  const sol = await S(() => window.__solitaire.solution(9000));
+  assert.ok(sol.solved, 'Partie ist lösbar (Löser)');
+  const a = sol.moves[0];
   if (a.t === 'stock') {
     const p = await S(() => window.__solitaire.pilePoint(0)); // Klondike: Stapel 0 = Talon
     await page.touchscreen.tap(p.x, p.y);
@@ -127,6 +129,28 @@ step('Tipp');
 await page.locator('.tool', { hasText: 'Tipp' }).tap();
 await page.waitForFunction(() => document.querySelector('.card.hint') || document.querySelector('.drop-glow.show'), null, { timeout: 4000 });
 
+step('«?» im Spiel: Tutorial, Uhr steht still');
+await page.waitForTimeout(1200);
+await page.locator('.game-top .icon-btn[aria-label="So geht’s"]').tap();
+await page.waitForSelector('.tut-card');
+const t0 = await S(() => window.__solitaire.session.time);
+await page.waitForTimeout(2200);
+const t1 = await S(() => window.__solitaire.session.time);
+assert.ok(t1 - t0 < 0.6, `Zeit pausiert (${t0} → ${t1})`);
+await page.locator('.tut-skip').tap();
+await page.waitForSelector('.tut-backdrop', { state: 'detached' });
+
+step('Menü mit laufender Partie');
+await page.locator('.game-top a.icon-btn').tap();
+await page.waitForSelector('.gm-primary');
+assert.match(await page.locator('.gm-primary').innerText(), /Weiterspielen/);
+assert.match(await page.locator('.gm-primary-sub').innerText(), /\d+ %/, 'Fortschritt im Hauptknopf');
+assert.equal(await page.locator('.hero-board').count(), 1, 'Live-Vorschau im Titelbild');
+assert.equal(await page.locator('.gm-sec', { hasText: 'Neue Partie' }).count(), 1, 'Neue Partie als Nebenknopf');
+await shot('e2e-03b-menu-running');
+await page.locator('.gm-primary').tap();
+await idle();
+
 step('Neuladen mitten im Spiel');
 await page.waitForTimeout(1200);
 const snap = await S(() => ({ piles: JSON.stringify(window.__solitaire.state.piles), moves: window.__solitaire.session.moves }));
@@ -163,12 +187,18 @@ await shot('e2e-05-menu-daily-done');
 // ------------------------------------------------------------ 4. FreeCell & Spider (Darstellung)
 step('FreeCell und Spider');
 await page.goto(BASE + '#play/freecell');
+await page.waitForSelector('.tut-card');
+assert.match(await page.locator('.tut-kicker').innerText(), /FreeCell/i, 'eigenes FreeCell-Tutorial beim ersten Mal');
+await page.waitForTimeout(1500);
+await shot('e2e-06a-freecell-tutorial');
+await page.locator('.tut-skip').tap();
+await page.waitForSelector('.tut-backdrop', { state: 'detached' });
 await idle();
 await noPageScroll();
 await shot('e2e-06-freecell');
 
 const ctx2 = await browser.newContext({ ...devices['iPhone 13'], deviceScaleFactor: 1, viewport: { width: 375, height: 667 } });
-await ctx2.addInitScript(() => localStorage.setItem('spielpause.tutorial.solitaire', 'true'));
+await ctx2.addInitScript(() => { localStorage.setItem('spielpause.tutorial.solitaire', 'true'); localStorage.setItem('spielpause.tutorial.solitaire-spider', 'true'); });
 const p2 = await ctx2.newPage();
 p2.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
 p2.on('pageerror', (e) => errors.push('pageerror: ' + e.message));

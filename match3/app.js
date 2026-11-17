@@ -6,11 +6,11 @@ import { store, reportSummary } from '../shared/storage.js';
 import { sfx } from '../shared/sfx.js';
 import { icon, h, toast, showModal, celebrate, setupPage, soundButton, backButton } from '../shared/ui.js';
 import { gameMenu, menuSection } from '../shared/gamemenu.js';
-import { showTutorial, tutorialSeen, markTutorialSeen } from '../shared/tutorial.js';
-import { Game, zenLevel } from './engine.js';
-import { getLevel, setLevelStore, worldIndex, worldInfo, PER_WORLD, MIN_LEVELS, features, VERSION as LEVEL_VERSION } from './levels.js';
+import { showTutorial, maybeShowTutorial } from '../shared/tutorial.js';
+import { Game, zenLevel, SP } from './engine.js';
+import { getLevel, setLevelStore, worldIndex, worldInfo, PER_WORLD, MIN_LEVELS, HANDMADE, features, VERSION as LEVEL_VERSION } from './levels.js';
 import { BoardView } from './board.js';
-import { spriteURL, iceURL, GEM_COLORS } from './sprites.js';
+import { spriteURL, iceURL, GEM_COLORS, makeSprites, drawIce } from './sprites.js';
 import { gemNames, winTitles, loseTitles, loseTitlesMid, loseTitlesFar, firstTips, zenMilestones } from './data/texts.js';
 import { tutorialSteps } from './howto.js';
 
@@ -89,33 +89,97 @@ function route() {
 }
 window.addEventListener('hashchange', route);
 
+// «So geht's»: beim allerersten Start automatisch (bevor das erste Level beginnt),
+// sonst über «?» im Menü und im laufenden Spiel.
 let tutorialOpen = null;
-function showHowTo() {
+function openTutorial(onlyFirst) {
   if (tutorialOpen) return tutorialOpen;
-  tutorialOpen = showTutorial({ id: ID, steps: tutorialSteps, accent: ACCENT }).finally(() => { tutorialOpen = null; });
+  const opts = { id: ID, steps: tutorialSteps, accent: ACCENT };
+  tutorialOpen = (onlyFirst ? maybeShowTutorial(opts) : showTutorial(opts)).finally(() => { tutorialOpen = null; });
   return tutorialOpen;
 }
-async function ensureTutorial() {
-  if (tutorialSeen(ID)) return;
-  await showHowTo();
-  markTutorialSeen(ID);
-}
+const showHowTo = () => openTutorial(false);
+const ensureTutorial = () => openTutorial(true);
 
 function helpBtn(onClick = showHowTo) {
   const b = h('button.icon-btn', { type: 'button', 'aria-label': 'So geht’s', html: '<span class="gm-q">?</span>' });
-  b.addEventListener('click', () => { sfx.play('click'); onClick(); });
+  b.addEventListener('click', () => onClick());
   return b;
 }
 
 // ---------- Menü ----------
 
-function heroArt() {
-  const row = h('div.m3-hero');
-  [0, 1, 2, 3, 4, 5].forEach((c, k) => row.append(h('img', {
-    src: spriteURL(String(c), 96), alt: '', draggable: 'false',
-    style: css({ animationDelay: k * 0.12 + 's', '--rot': ((k - 2.5) * 7) + 'deg', '--lift': (Math.abs(k - 2.5) * 7) + 'px' }),
-  })));
-  return row;
+/** Titelbild: Live-Vorschau des laufenden Bretts – oder (ohne laufendes Spiel) die sechs Juwelen. */
+function heroArt(mode) {
+  const zen = mode === 'zen';
+  const n = currentLevel();
+  const w = zen ? worldInfo(2) : worldInfo(worldIndex(n));
+  let live = null;
+  try { live = zen ? zenPreview(w) : levelPreview(n, w); } catch { live = null; }
+  const card = h('div.m3-hero' + (live ? '.live' : ''), { style: css({ '--sky1': w.sky[0], '--sky2': w.sky[1], '--wacc': w.accent }) },
+    h('span.m3-hero-deco.a', null, w.deco[0]), h('span.m3-hero-deco.b', null, w.deco[1]));
+  if (live) {
+    card.append(live.canvas, h('span.m3-hero-pill', null, live.pill));
+  } else {
+    const row = h('div.m3-gems');
+    [0, 1, 2, 3, 4, 5].forEach((c, k) => row.append(h('img', {
+      src: spriteURL(String(c), 96), alt: '', draggable: 'false',
+      style: css({ animationDelay: k * 0.12 + 's', '--rot': ((k - 2.5) * 7) + 'deg', '--lift': (Math.abs(k - 2.5) * 7) + 'px' }),
+    })));
+    card.append(row);
+  }
+  return card;
+}
+
+function levelPreview(n, theme) {
+  const run = store.get(K.run, null);
+  if (!run || run.won || run.n !== n || !run.s) return null;
+  // Nur aus dem Zwischenspeicher – im Menü nie ein Level neu berechnen.
+  if (n > HANDMADE && !store.get(`${ID}.lv.${LEVEL_VERSION}:${n}`, null)) return null;
+  const canvas = boardPreview(getLevel(n), run.s, theme);
+  const m = run.s.movesLeft;
+  return canvas && { canvas, pill: `${m} ${m === 1 ? 'Zug' : 'Züge'}` };
+}
+
+function zenPreview(theme) {
+  const z = store.get(K.zen, null);
+  if (!z || !z.s) return null;
+  const canvas = boardPreview(zenLevel(z.seed), z.s, theme);
+  return canvas && { canvas, pill: `${fmt(z.s.score || 0)} Punkte` };
+}
+
+/** Kleines Abbild eines gespeicherten Bretts (gleiche Sprites und Farben wie im Spiel). */
+function boardPreview(L, save, theme) {
+  if (!L || !save || !Array.isArray(save.cells) || save.cells.length !== L.w * L.h) return null;
+  const cs = Math.floor(Math.min(200 / L.w, 146 / L.h));
+  const pad = 6, W = L.w * cs + 2 * pad, H = L.h * cs + 2 * pad;
+  const dpr = Math.min(3, window.devicePixelRatio || 1);
+  const cv = h('canvas.m3-preview', { width: Math.round(W * dpr), height: Math.round(H * dpr), style: { width: W + 'px', height: H + 'px' } });
+  const ctx = cv.getContext('2d');
+  ctx.scale(dpr, dpr);
+  const xy = (i) => [pad + (i % L.w) * cs, pad + Math.floor(i / L.w) * cs];
+  ctx.fillStyle = 'rgba(255,255,255,.85)';
+  for (let i = 0; i < L.w * L.h; i++) {
+    if (!L.mask[i]) continue;
+    const [x, y] = xy(i);
+    ctx.beginPath(); ctx.roundRect(x - 3, y - 3, cs + 6, cs + 6, cs * 0.35); ctx.fill();
+  }
+  for (let i = 0; i < L.w * L.h; i++) {
+    if (!L.mask[i]) continue;
+    const [x, y] = xy(i);
+    ctx.fillStyle = theme.cells[(Math.floor(i / L.w) + (i % L.w)) % 2];
+    ctx.beginPath(); ctx.roundRect(x + 0.5, y + 0.5, cs - 1, cs - 1, cs * 0.22); ctx.fill();
+    if (save.ice && save.ice[i] > 0) drawIce(ctx, x, y, cs, save.ice[i]);
+  }
+  const atlas = makeSprites(cs * dpr);
+  save.cells.forEach((p, i) => {
+    if (!p || !L.mask[i]) return;
+    const [, t, c, sp, hp] = p;
+    const img = atlas.get({ t, c, sp, hp });
+    const [x, y] = xy(i);
+    if (img) ctx.drawImage(img, x, y, cs, cs);
+  });
+  return cv;
 }
 
 function primaryFor(mode) {
@@ -124,15 +188,20 @@ function primaryFor(mode) {
     const best = getStats().zenBest;
     return {
       label: z ? 'Weiterspielen' : 'Spielen', icon: 'play',
-      sub: `Entspannt · ohne Zuglimit${best ? ` · Rekord ${fmt(best)}` : ''}`,
+      sub: z && z.s && z.s.score ? `Entspannt · ${fmt(z.s.score)} Punkte` : `Entspannt · ohne Zuglimit${best ? ` · Rekord ${fmt(best)}` : ''}`,
       onClick: () => start(() => go('zen')),
     };
   }
   const n = currentLevel();
-  const p = getProg();
+  const run = store.get(K.run, null);
+  const live = run && !run.won && run.n === n && run.s;
+  const w = worldInfo(worldIndex(n));
+  let sub = `Level ${n} · ${w.title}`;
+  if (live) sub = `Level ${n} · noch ${run.s.movesLeft} ${run.s.movesLeft === 1 ? 'Zug' : 'Züge'}`;
+  else if (isFinale(n)) sub = `Level ${n} · Finale 👑`;
   return {
-    label: p.max > 1 || store.get(K.run, null) ? 'Weiterspielen' : 'Spielen', icon: 'play',
-    sub: `Level ${n} · ${worldInfo(worldIndex(n)).title}`,
+    label: getProg().max > 1 || live ? 'Weiterspielen' : 'Spielen', icon: 'play',
+    sub,
     onClick: () => start(() => go(`level/${n}`)),
   };
 }
@@ -142,20 +211,29 @@ async function start(fn) {
   fn();
 }
 
+/** Aktuelle Welt als kleine Levelkarte: 15 Stationen, Sterne, Ausblick auf die nächste Welt. */
 function worldCard() {
   const p = getProg();
   const n = Math.min(p.max, levelsShown(p));
-  const w = worldInfo(worldIndex(n));
-  let done = 0, stars = 0;
-  for (let k = w.first; k <= w.last; k++) { if (p.stars[k]) { done++; stars += p.stars[k]; } }
-  const card = h('button.m3-worldcard', { type: 'button', style: css({ '--wacc': w.accent, background: `linear-gradient(135deg, ${w.sky[0]}, ${w.sky[1]})` }) },
-    h('span.m3-wc-emoji', null, w.emoji),
-    h('span.m3-wc-text', null,
-      h('b', null, w.title),
-      h('small', null, `Level ${w.first}–${w.last} · ${stars} von ${PER_WORLD * 3} ★`),
-      h('span.m3-wc-bar', null, h('i', { style: { width: (done / PER_WORLD) * 100 + '%' } }))),
-    h('span.m3-wc-go', { html: icon('back', { size: 18 }) }));
-  card.addEventListener('click', () => { sfx.play('click'); go('karte'); });
+  const k = worldIndex(n);
+  const w = worldInfo(k), next = worldInfo(k + 1);
+  let stars = 0;
+  const path = h('span.m3-wc-path');
+  for (let i = w.first; i <= w.last; i++) {
+    const st = p.stars[i] || 0;
+    stars += st;
+    const state = st ? (st >= 3 ? 'done.gold' : 'done') : i === p.max ? 'cur' : 'locked';
+    const fin = i === w.last;
+    path.append(h(`i.${state}${fin ? '.fin' : ''}`, null, i === p.max && !fin ? String(i) : fin ? '👑' : ''));
+  }
+  const card = h('button.m3-worldcard', { type: 'button', 'aria-label': `Levelkarte – ${w.title}`, style: css({ '--wacc': w.accent, background: `linear-gradient(135deg, ${w.sky[0]}, ${w.sky[1]})` }) },
+    h('span.m3-wc-head', null,
+      h('span.m3-wc-emoji', null, w.emoji),
+      h('span.m3-wc-text', null, h('b', null, w.title), h('small', null, `Level ${w.first}–${w.last}`)),
+      h('span.m3-wc-stars', null, `★ ${stars}/${PER_WORLD * 3}`)),
+    path,
+    h('span.m3-wc-next', null, h('span', null, `Danach: ${next.emoji} ${next.title}`), h('span.m3-wc-go', { html: icon('back', { size: 16 }) })));
+  card.addEventListener('click', () => go('karte'));
   return card;
 }
 
@@ -172,17 +250,22 @@ function menuStats() {
 function showMenu() {
   reportSummary(ID, summary());
   const set = getSettings();
+  const heroBox = h('div.m3-herobox', null, heroArt(set.mode));
   const menu = gameMenu({
     id: ID,
     title: 'Juwelen',
     tagline: 'Drei gleiche in einer Reihe',
     accent: ACCENT,
-    art: heroArt(),
+    art: heroBox,
     primary: primaryFor(set.mode),
     modes: {
       label: 'Modus', value: set.mode,
       options: [{ id: 'levels', label: 'Abenteuer', sub: `${levelsShown()}+ Level` }, { id: 'zen', label: 'Entspannt', sub: 'ohne Zuglimit' }],
-      onChange(id) { setSettings({ mode: id }); menu.update({ primary: primaryFor(id) }); },
+      onChange(id) {
+        setSettings({ mode: id });
+        heroBox.replaceChildren(heroArt(id));
+        menu.update({ primary: primaryFor(id) });
+      },
     },
     secondary: [
       { label: 'Levelkarte', icon: 'grid', onClick: () => go('karte') },
@@ -197,8 +280,9 @@ function showMenu() {
   app.replaceChildren(menu);
   // erstes Level im Hintergrund vorbereiten (Kalibrierung wird zwischengespeichert)
   const t = setTimeout(() => { try { getLevel(currentLevel()); } catch { /* egal */ } }, 600);
-  teardown = () => clearTimeout(t);
-  if (!tutorialSeen(ID)) setTimeout(() => { if (!tutorialSeen(ID) && !location.hash) ensureTutorial(); }, 350);
+  // Allererster Start: kurze Anleitung, bevor gespielt wird
+  const t2 = setTimeout(() => { if (!location.hash) ensureTutorial(); }, 350);
+  teardown = () => { clearTimeout(t); clearTimeout(t2); };
 }
 
 function showStatsSheet() {
@@ -246,13 +330,18 @@ function showMap() {
       pts.push([x, y]);
       const st = p.stars[n] || 0;
       const state = n < p.max || st ? 'done' : n === p.max ? 'cur' : 'locked';
-      const node = h(`button.m3-node.${state}`, { type: 'button', style: { left: x + '%', top: y + 'px' }, 'aria-label': `Level ${n}`, 'data-n': n },
+      const fin = j === PER_WORLD - 1;
+      const node = h(`button.m3-node.${state}${fin ? '.fin' : ''}`, { type: 'button', style: { left: x + '%', top: y + 'px' }, 'aria-label': `Level ${n}${fin ? ' (Finale)' : ''}`, 'data-n': n },
+        fin ? h('span.m3-node-crown', null, '👑') : null,
         h('span.m3-node-n', null, state === 'locked' ? '' : String(n)),
         state === 'locked' ? h('span.m3-node-lock', { html: icon('lock', { size: 18 }) }) : null,
         state === 'done' ? h('span.m3-node-stars', null, ...[1, 2, 3].map((q) => h('i' + (q <= st ? '.on' : ''), null, '★'))) : null);
       node.addEventListener('click', () => {
-        if (state === 'locked') { sfx.play('error'); toast(`Schaffe zuerst Level ${p.max}`); return; }
-        sfx.play('tap');
+        if (state === 'locked') {
+          node.classList.remove('sp-shake'); void node.offsetWidth; node.classList.add('sp-shake');
+          toast(`Schaffe zuerst Level ${p.max}`);
+          return;
+        }
         start(() => go(`level/${n}`));
       });
       if (state === 'cur') currentNode = node;
@@ -276,7 +365,7 @@ function showMap() {
       path));
   }
   scroll.append(h('p.m3-map-foot', null, 'Weitere Welten erscheinen, sobald du weiterkommst – die Level gehen endlos weiter.'));
-  const bar = h('div.topbar', null, backButton('#', () => { sfx.play('click'); go(''); }), h('div.title', null, 'Levelkarte'), soundButton());
+  const bar = h('div.topbar', null, backButton('#', () => go('')), h('div.title', null, 'Levelkarte'), soundButton());
   app.replaceChildren(h('div.screen.m3-map', null, bar, scroll));
   if (currentNode) requestAnimationFrame(() => { scroll.scrollTop = Math.max(0, currentNode.offsetTop + currentNode.closest('.m3-world').offsetTop - scroll.clientHeight / 2); });
 }
@@ -300,7 +389,7 @@ function goalLabel(g, n) {
 
 /** Gemeinsamer Aufbau für Level und Entspannt-Modus. */
 function playScreen({ title, sub, theme, zen }) {
-  const back = backButton('#', () => { sfx.play('click'); go(''); });
+  const back = backButton('#', () => go(''));
   const bar = h('div.topbar.m3-bar', null, back,
     h('div.title.m3-title', null, h('span', null, title), sub ? h('small', null, sub) : null),
     helpBtn(), soundButton());
@@ -346,6 +435,7 @@ function playLevel(n) {
   if (!game) {
     game = new Game(L);
     fresh = true;
+    finaleGifts(game, n);
     store.set(K.run, { n, s: game.save() });
     const st = getStats(); st.played++; setStats(st);
   }
@@ -465,15 +555,23 @@ function playLevel(n) {
     reportSummary(ID, summary());
     sfx.play('complete');
     celebrate(CONFETTI);
+    // Letztes Level einer Welt: grosses Finale mit Blick auf die nächste Welt
+    const finale = isFinale(n);
+    const nextW = worldInfo(worldIndex(n) + 1);
+    if (finale) setTimeout(() => { if (my === session) celebrate([w.accent, nextW.accent, '#ffd43b', '#ffffff']); }, 700);
     // nächstes Level im Hintergrund vorbereiten
     setTimeout(() => { try { getLevel(n + 1); } catch { /* egal */ } }, 2900);
     const starRow = h('div.m3-winstars', null, ...[1, 2, 3].map((q) => h('span' + (q <= stars ? '.on' : ''), { style: { animationDelay: 0.25 + q * 0.28 + 's' } }, '★')));
-    const content = h('div.m3-win', null, starRow,
+    const content = h('div.m3-win', null,
+      finale ? h('div.m3-win-world', { style: css({ '--wacc': nextW.accent, background: `linear-gradient(135deg, ${nextW.sky[0]}, ${nextW.sky[1]})` }) },
+        h('span', null, nextW.emoji),
+        h('span', null, h('small', null, `${w.title} ist geschafft!`), h('b', null, `Neue Welt: ${nextW.title}`))) : null,
+      starRow,
       h('div.m3-win-score', null, h('small', null, 'Punkte'), h('b', null, fmt(game.score))),
       game.score > prevBest && prevBest > 0 ? h('div.m3-win-rec', null, 'Neuer Rekord!') : null,
       h('p.m3-win-sub', null, stars < 3 ? 'Mit mehr Punkten gibt es mehr Sterne.' : 'Alle drei Sterne – grossartig!'));
     const v = await showModal({
-      title: winTitles[n % winTitles.length], content, dismissible: false,
+      title: finale ? `${w.emoji} Welt geschafft!` : winTitles[n % winTitles.length], content, dismissible: false,
       buttons: [
         { label: `Weiter zu Level ${n + 1}`, value: 'next', primary: true, icon: 'play' },
         { label: 'Nochmal spielen', value: 'again', icon: 'refresh' },
@@ -521,6 +619,7 @@ function playLevel(n) {
     if (v === 'again') {
       // Neuer Versuch mit frisch gemischtem Brett
       const g2 = new Game({ ...L, seed: (L.seed + Date.now()) >>> 0 });
+      finaleGifts(g2, n);
       store.set(K.run, { n, s: g2.save() });
       const s2 = getStats(); s2.played++; setStats(s2);
       return go(`level/${n}`);
@@ -530,7 +629,6 @@ function playLevel(n) {
 
   ui.tHammer.addEventListener('click', () => {
     if (board.busy || game.status !== 'play') return;
-    sfx.play('click');
     setHammer(board.mode !== 'hammer');
   });
   ui.tShuffle.addEventListener('click', () => {
@@ -540,7 +638,6 @@ function playLevel(n) {
   });
   ui.tHint.addEventListener('click', () => {
     if (board.busy || game.status !== 'play') return;
-    sfx.play('click');
     const m = game.hint();
     if (m) board.showHint(m);
   });
@@ -565,17 +662,31 @@ function playLevel(n) {
 const sleepMs = (ms) => new Promise((r) => setTimeout(r, ms));
 function bump(el) { el.classList.remove('bump'); void el.offsetWidth; el.classList.add('bump'); }
 
+const isFinale = (n) => n > 0 && n % PER_WORLD === 0;
+
+/** Finale einer Welt: das Brett startet mit drei Sonderjuwelen (Blitz, Blitz, Bombe). */
+function finaleGifts(game, n) {
+  if (!isFinale(n)) return;
+  const free = [];
+  game.cells.forEach((p, i) => { if (p && p.t === 'g' && !p.sp) free.push(i); });
+  if (free.length < 6) return;
+  [SP.H, SP.BOMB, SP.V].forEach((sp, k) => {
+    const i = free[Math.floor(((k + 0.5) / 3) * free.length)];
+    game.cells[i].sp = sp;
+  });
+}
+
 function levelIntro(ui, L, n) {
   return new Promise((resolve) => {
     const goals = L.goals.map((g) => h('div.m3-intro-goal', null,
       goalIcon(g) ? h('img', { src: goalIcon(g), alt: '' }) : h('span.m3-goal-t', null, '🎯'),
       h('span', null, goalLabel(g, g.n || 0))));
     const card = h('div.m3-intro', null,
-      h('div.m3-intro-card', null,
-        h('small', null, `Level ${n}`),
+      h('div.m3-intro-card' + (isFinale(n) ? '.finale' : ''), null,
+        h('small', null, isFinale(n) ? `👑 Finale · Level ${n}` : `Level ${n}`),
         h('b', null, `${L.moves} Züge`),
         ...goals,
-        L.tip ? h('p', null, L.tip) : null));
+        isFinale(n) ? h('p', null, 'Zum Abschluss der Welt startest du mit drei Sonderjuwelen!') : L.tip ? h('p', null, L.tip) : null));
     ui.wrap.append(card);
     let done = false;
     const close = () => {
@@ -585,7 +696,7 @@ function levelIntro(ui, L, n) {
       setTimeout(() => { card.remove(); resolve(); }, 260);
     };
     card.addEventListener('pointerdown', close);
-    setTimeout(close, L.tip ? 3600 : 1900);
+    setTimeout(close, L.tip || isFinale(n) ? 3600 : 1900);
   });
 }
 
@@ -663,9 +774,9 @@ function playZen() {
     if (game.maxCombo > st.combo) { st.combo = game.maxCombo; setStats(st); }
     reportSummary(ID, `Entspannt · ${fmt(game.score)} Punkte`);
   }
-  ui.tHammer.addEventListener('click', () => { if (board.busy) return; sfx.play('click'); setHammer(board.mode !== 'hammer'); });
+  ui.tHammer.addEventListener('click', () => { if (board.busy) return; setHammer(board.mode !== 'hammer'); });
   ui.tShuffle.addEventListener('click', () => { if (board.busy) return; setHammer(false); act(game.shuffleBooster()); });
-  ui.tHint.addEventListener('click', () => { if (board.busy) return; sfx.play('click'); const m = game.hint(); if (m) board.showHint(m); });
+  ui.tHint.addEventListener('click', () => { if (board.busy) return; const m = game.hint(); if (m) board.showHint(m); });
   teardown = () => { board.destroy(); session++; };
 }
 

@@ -23,14 +23,18 @@ export const tips = [
 
 /**
  * «So geht's» (animiertes Tutorial, 3–4 Schritte). Pro Schritt: Titel (2–4 Wörter), ein kurzer
- * Satz und demo = Name der Mini-Szene in view/tutorial.js ('tap' | 'rule' | 'goal' | 'help').
+ * Satz und demo = Name der Mini-Szene in view/tutorial.js ('tap' | 'goal' | 'rule' | 'help').
  */
 export const howTo = [
-  { demo: 'tap', title: 'Antippen und giessen', text: 'Tippe ein Glas an, dann das Ziel – oder ziehe es hinüber.' },
+  { demo: 'tap', title: 'Antippen und giessen', text: 'Tippe ein Glas an, dann ein zweites – die oberste Farbe fliesst hinüber.' },
+  { demo: 'goal', title: 'Jedes Glas eine Farbe', text: 'Fülle jedes Glas mit nur einer Farbe – dann ploppt ein Korken drauf.' },
   { demo: 'rule', title: 'Gleiche Farbe oder leer', text: 'Giessen geht nur auf dieselbe Farbe oder in ein leeres Glas.' },
-  { demo: 'goal', title: 'Jedes Glas eine Farbe', text: 'Ist ein Glas voll und einfarbig, kommt ein Korken drauf.' },
-  { demo: 'help', title: 'Hilfen sind gratis', text: 'Rückgängig und Tipp so oft du willst, «+1 Glas» einmal pro Level.' },
+  { demo: 'help', title: 'Hilfen sind gratis', text: 'Tipp und Zurück so oft du willst, dazu ein Extra-Glas pro Level.' },
 ];
+
+/** Kurzes Lob, wenn ein Glas fertig wird (Korken). Index = Kombo (1, 2, 3+ fertige Gläser nacheinander). */
+export const corkPraise = ['Schön!', 'Prima!', 'Toll!', 'Super!', 'Herrlich!', 'Fein!'];
+export const comboPraise = ['', '', 'Doppelt! ×2', 'Dreifach! ×3', 'Kombo ×4!', 'Fantastisch! ×5', 'Unglaublich! ×6'];
 
 /** Einführung, wenn eine Besonderheit zum ersten Mal vorkommt. */
 export const featureIntro = {

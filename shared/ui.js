@@ -3,6 +3,7 @@
 //   import { icon, toast, showModal, confirmDialog, celebrate, setupPage, soundButton } from '../shared/ui.js';
 
 import { sfx } from './sfx.js';
+import { L } from './i18n.js';
 
 // ---------- Icons (inline SVG, stroke = currentColor) ----------
 
@@ -145,7 +146,7 @@ export function showModal(opts = {}) {
   });
 }
 
-export function confirmDialog(title, text, okLabel = 'Ja', cancelLabel = 'Abbrechen') {
+export function confirmDialog(title, text, okLabel = L('Ja', 'Yes'), cancelLabel = L('Abbrechen', 'Cancel')) {
   return showModal({
     title,
     text,
@@ -246,11 +247,11 @@ function registerServiceWorker() {
 /** Ton-Knopf (icon-btn): schaltet leise → normal → aus (für alle Spiele gemeinsam). */
 export function soundButton() {
   const b = h('button.icon-btn', { type: 'button' });
-  const LABEL = { leise: 'Ton: leise', normal: 'Ton: normal', aus: 'Ton aus' };
+  const LABEL = { leise: L('Ton: leise', 'Sound: soft'), normal: L('Ton: normal', 'Sound: normal'), aus: L('Ton aus', 'Sound off') };
   const ICON = { leise: 'soundLow', normal: 'soundOn', aus: 'soundOff' };
   const render = () => {
     b.innerHTML = icon(ICON[sfx.level] || 'soundOn');
-    b.setAttribute('aria-label', LABEL[sfx.level] + ' – tippen zum Ändern');
+    b.setAttribute('aria-label', LABEL[sfx.level] + L(' – tippen zum Ändern', ' – tap to change'));
   };
   render();
   b.addEventListener('click', () => {
@@ -264,7 +265,7 @@ export function soundButton() {
 
 /** Erzeugt einen Zurück-Button (icon-btn). href Standard: zur Startseite. */
 export function backButton(href = '../', onClick) {
-  const b = h('a.icon-btn', { href, 'aria-label': 'Zurück' });
+  const b = h('a.icon-btn', { href, 'aria-label': L('Zurück', 'Back') });
   b.innerHTML = icon('back');
   if (onClick) b.addEventListener('click', (e) => { e.preventDefault(); onClick(e); });
   return b;

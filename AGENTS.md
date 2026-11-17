@@ -4,7 +4,8 @@ Mehrere KI-Agenten bauen gleichzeitig an **Spielpause**. Damit sich niemand in d
 gelten diese Regeln für **alle** Agenten. Inhaltliche und technische Vorgaben stehen in
 [`DEV.md`](DEV.md) – bitte zuerst lesen und einhalten (Startbildschirm mit `shared/gamemenu.js`,
 animierte Anleitung mit `shared/tutorial.js`, Spass-Standard, eigenes Logo, leise Töne,
-Schweizer Rechtschreibung, keine externen Abhängigkeiten, keine Werbung).
+Schweizer Rechtschreibung, **zweisprachig Deutsch + Englisch** mit `shared/i18n.js`, keine externen
+Abhängigkeiten, keine Werbung).
 
 ## Wer macht was
 
@@ -52,7 +53,8 @@ immer funktionieren. Unfertige Spiele erst in `games.js` eintragen, wenn sie spi
 
 ## Fertig heisst
 
-Ein Spiel ist fertig, wenn es: eigenes Logo hat, Startbildschirm + animierte Anleitung hat, auf
+Ein Spiel ist fertig, wenn es: **auf Deutsch und Englisch** vollständig spielbar ist (inkl. `title_en`/`subtitle_en`
+in `games.js`), eigenes Logo hat, Startbildschirm + animierte Anleitung hat, auf
 dem iPhone (375–430 px breit) ohne Scrollen spielbar ist, Spielstand speichert, keine
 Konsolenfehler wirft, Tests hat, mehrere Runden lang **Spass macht** und in `games.js`,
 `ROADMAP.md`, `CHANGELOG.md` und `README.md` eingetragen ist.

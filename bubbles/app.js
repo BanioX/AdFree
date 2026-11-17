@@ -9,10 +9,12 @@ import { showTutorial, maybeShowTutorial } from '../shared/tutorial.js';
 import { Game } from './core/game.js';
 import { getLevel, worldOfLevel, LEVELS_PER_WORLD } from './core/levels.js';
 import { bestMove } from './core/solver.js';
-import { worldInfo } from './data/worlds.js';
+import { worldInfo, WORLDS } from './data/worlds.js';
 import { COLORS } from './data/colors.js';
+import { LEVELS } from './data/levels.js';
 import { PlayView } from './view.js';
 import { STEPS } from './howto.js';
+import { drawPreview } from './art.js';
 
 const ID = 'bubbles';
 const ACCENT = '#4fa3e3';
@@ -26,7 +28,8 @@ const app = document.getElementById('app');
 
 // ---------- Speicher ----------
 
-const K = { progress: `${ID}.progress`, level: `${ID}.level`, endless: `${ID}.endless`, stats: `${ID}.stats`, prefs: `${ID}.prefs` };
+const K = { progress: `${ID}.progress`, level: `${ID}.level`, endless: `${ID}.endless`, stats: `${ID}.stats`, prefs: `${ID}.prefs`, album: `${ID}.album` };
+const WORLD_COUNT = WORLDS.length;
 
 function progress() {
   const p = store.get(K.progress, null) || {};
@@ -43,6 +46,15 @@ function setPref(k, v) { const p = prefs(); p[k] = v; store.set(K.prefs, p); }
 const STATS0 = { levelsWon: 0, played: 0, popped: 0, dropped: 0, freed: 0, bestCombo: 0, shots: 0, endlessBest: 0, endlessRounds: 0, threeStars: 0 };
 function stats() { return { ...STATS0, ...(store.get(K.stats, null) || {}) }; }
 function bumpStats(fn) { const s = stats(); fn(s); store.set(K.stats, s); return s; }
+
+/** Befreite Tierchen: { emoji: Anzahl } */
+function album() { return store.get(K.album, null) || {}; }
+function addToAlbum(emojis) {
+  if (!emojis.length) return;
+  const a = album();
+  for (const e of emojis) a[e] = (a[e] | 0) + 1;
+  store.set(K.album, a);
+}
 
 function loadGame(key) {
   try { return Game.fromJSON(store.get(key, null)); } catch { return null; }
@@ -114,24 +126,56 @@ function help() { return showTutorial({ id: ID, steps: STEPS, accent: ACCENT });
 
 // ---------- Startbildschirm ----------
 
+/** Name des Levels für Anzeigen (handgezeichnet: eigener Name, sonst Welt). */
+function levelName(n) {
+  return n <= LEVELS.length ? LEVELS[n - 1].name : worldOfLevel(n).name;
+}
+
 function menuScreen() {
   const p = progress();
   const pr = prefs();
   const st = stats();
   const lv = currentLevelNo();
-  const endlessSaved = store.get(K.endless, null);
-  const endlessRunning = endlessSaved && ((endlessSaved.status === 'play' && endlessSaved.shotsUsed > 0) || endlessSaved.status === 'lost');
+  const savedLevel = loadGame(K.level);
+  const levelRunning = savedLevel && savedLevel.mode === 'level' && savedLevel.levelNo === lv && savedLevel.status === 'play' && savedLevel.shotsUsed > 0;
+  const endlessSaved = loadGame(K.endless);
+  const endlessRunning = endlessSaved && endlessSaved.mode === 'endless' && ((endlessSaved.status === 'play' && endlessSaved.shotsUsed > 0) || endlessSaved.status === 'lost');
+  const fresh = !p.top && !st.shots;
+
+  // Titelbild: Live-Vorschau des Spielfelds, das «Spielen» öffnet
+  const artCanvas = h('canvas.bz-hero-canvas', { 'aria-hidden': 'true' });
+  const art = h('div.bz-hero-art', null, artCanvas, h('span.bz-hero-badge'));
+  let artMode = null;
+  function paintArt(mode) {
+    if (artMode === mode) return;
+    artMode = mode;
+    const badge = art.lastChild;
+    if (mode === 'endless') {
+      badge.textContent = '∞';
+      drawPreview(artCanvas, endlessSaved && endlessSaved.status === 'play' ? endlessSaved : Game.newEndless(7), ENDLESS_SKY);
+    } else {
+      badge.textContent = String(lv);
+      const sky = worldOfLevel(lv).sky;
+      if (savedLevel && savedLevel.mode === 'level' && savedLevel.levelNo === lv && savedLevel.status === 'play') drawPreview(artCanvas, savedLevel, sky);
+      else {
+        drawPreview(artCanvas, null, sky);
+        // Level erzeugen kostet ein paar Millisekunden – erst nach dem ersten Bild
+        setTimeout(() => { if (artMode === 'levels' && art.isConnected) drawPreview(artCanvas, Game.newLevel(getLevel(lv)), sky); }, 30);
+      }
+    }
+  }
 
   const primaryFor = (mode) => {
     if (mode === 'endless') {
       return endlessRunning
         ? { label: 'Weiterspielen', sub: `Entspannt · ${fmt(endlessSaved.score)} Punkte`, onClick: () => start('#endless') }
-        : { label: 'Spielen', sub: 'Entspannt · ohne Schusslimit', onClick: () => start('#endless') };
+        : { label: 'Spielen', sub: st.endlessBest ? `Entspannt · Rekord ${fmt(st.endlessBest)}` : 'Entspannt · ohne Schusslimit', onClick: () => start('#endless') };
     }
-    const w = worldOfLevel(lv);
+    let sub = `Level ${lv} · ${levelName(lv)}`;
+    if (levelRunning) sub += ` · ${savedLevel.shotsLeft} Schüsse`;
     return {
-      label: p.top || store.get(K.level, null) ? 'Weiterspielen' : 'Spielen',
-      sub: `Level ${lv} · ${w.name}`,
+      label: fresh ? 'Spielen' : 'Weiterspielen',
+      sub,
       onClick: () => start(`#level/${lv}`),
     };
   };
@@ -141,48 +185,90 @@ function menuScreen() {
     go(hash);
   }
 
-  const symToggle = h('button.bz-toggle' + (pr.symbols ? '.on' : ''), { type: 'button' },
+  const symToggle = h('button.bz-toggle' + (pr.symbols ? '.on' : ''), { type: 'button', role: 'switch', 'aria-checked': String(pr.symbols) },
     h('span', null, 'Symbole in den Blasen', h('small', null, 'Hilft, Farben sicher zu unterscheiden')),
     h('i.bz-switch'));
   symToggle.addEventListener('click', () => {
     const on = !prefs().symbols;
     setPref('symbols', on);
     symToggle.classList.toggle('on', on);
-    sfx.play('click');
+    symToggle.setAttribute('aria-checked', String(on));
   });
+
+  const levelSection = () => {
+    const first = Math.floor((lv - 1) / 10) * 10 + 1;
+    return menuSection(`${worldOfLevel(lv).name} · Level ${first}–${first + 9}`, worldStrip(lv, p));
+  };
 
   const menu = gameMenu({
     id: ID,
     title: 'Blasenzauber',
     tagline: 'Zielen, treffen, platzen lassen',
     accent: ACCENT,
+    art,
     primary: primaryFor(pr.mode),
     modes: {
-      label: 'Modus',
+      label: 'Spielart',
       value: pr.mode,
-      options: [{ id: 'levels', label: 'Levels' }, { id: 'endless', label: 'Entspannt' }],
-      onChange(id) { setPref('mode', id); menu.update({ primary: primaryFor(id) }); },
+      options: [{ id: 'levels', label: 'Levels', sub: 'mit Sternen' }, { id: 'endless', label: 'Entspannt', sub: 'ohne Limit' }],
+      onChange(id) { setPref('mode', id); paintArt(id); menu.update({ primary: primaryFor(id) }); },
     },
     secondary: [
-      { label: 'Levelkarte', icon: 'grid', onClick: () => go('#map') },
-      { label: 'Statistik', icon: 'star', onClick: showStats },
+      { label: 'Levelkarte', icon: 'grid', sub: fresh ? `${WORLD_COUNT} Welten` : `${totalStars(p)} von ${unlocked(p) * 3} ★`, onClick: () => go('#map') },
+      { label: 'Statistik', icon: 'star', sub: st.bestCombo ? `Kombo-Rekord ×${st.bestCombo}` : 'Deine Erfolge', onClick: showStats },
     ],
-    stats: [
+    // Beim allerersten Start keine Nullen zeigen
+    stats: fresh ? null : [
       { label: 'Geschafft', value: String(p.top) },
       { label: 'Sterne', value: String(totalStars(p)) },
+      { label: 'Tierchen', value: fmt(st.freed) },
       { label: 'Rekord', value: fmt(st.endlessBest) },
     ],
     sections: [
-      menuSection(`${worldOfLevel(lv).name} · Level ${Math.floor((lv - 1) / 10) * 10 + 1}–${Math.floor((lv - 1) / 10) * 10 + 10}`, worldStrip(lv, p)),
+      levelSection(),
+      albumSection(),
       menuSection('Einstellungen', symToggle),
     ],
     onHelp: help,
     backHref: '../',
   });
+  paintArt(pr.mode);
   app.className = 'app';
   app.replaceChildren(menu);
   report();
   return { destroy() {} };
+}
+
+// ---------- Tierchen-Album ----------
+
+/** Alle verschiedenen Tierchen der Welten 0..n-1 in Reihenfolge des Auftauchens. */
+function albumPets(worlds) {
+  const seen = new Set();
+  const out = [];
+  for (let wi = 0; wi < worlds; wi++) {
+    for (const pet of worldInfo(wi).pets) if (!seen.has(pet)) { seen.add(pet); out.push({ pet, world: wi }); }
+  }
+  return out;
+}
+const ALL_PETS = () => albumPets(WORLD_COUNT).length;
+
+function albumSection() {
+  const al = album();
+  const reached = Math.floor((unlocked() - 1) / LEVELS_PER_WORLD) + 1;
+  const list = albumPets(Math.min(WORLD_COUNT, reached + 1));
+  const found = Object.keys(al).length;
+  const grid = h('div.bz-album-grid');
+  for (const { pet, world } of list) {
+    const n = al[pet] | 0;
+    const cell = h('div.bz-pet' + (n ? '.got' : ''), { title: n ? `${n}× befreit` : 'Noch nicht befreit' },
+      h('span', null, pet), n > 1 ? h('small', null, `×${n}`) : null);
+    if (n) cell.style.setProperty('--wc', COLORS[worldInfo(world).colors[0]].base);
+    grid.append(cell);
+  }
+  const note = found
+    ? `${found} von ${ALL_PETS()} Tierchen befreit`
+    : 'Befreie Tierchen aus den Blasen – das erste wartet in Level 4.';
+  return menuSection('Tierchen-Album', h('div.bz-album', null, grid, h('p.bz-album-note', null, note)));
 }
 
 /** Zehn Level rund um das aktuelle Level als Blasen (Rest auf der Levelkarte). */
@@ -219,9 +305,9 @@ function levelButton(n, p, w) {
     if (stars) b.append(h('span.bz-lv-stars', { html: [0, 1, 2].map((i) => STAR_SVG(i < stars ? '' : 'off')).join('') }));
   }
   b.addEventListener('click', () => {
-    if (locked) { sfx.play('error'); b.classList.remove('sp-shake'); void b.offsetWidth; b.classList.add('sp-shake'); toast('Zuerst die Level davor schaffen'); return; }
-    sfx.play('tap');
-    go(`#level/${n}`);
+    if (locked) { b.classList.remove('sp-shake'); void b.offsetWidth; b.classList.add('sp-shake'); toast('Zuerst die Level davor schaffen'); return; }
+    // Beim allerersten Mal zuerst die kurze Anleitung, dann das Level
+    maybeShowTutorial({ id: ID, steps: STEPS, accent: ACCENT }).then(() => go(`#level/${n}`));
   });
   return b;
 }
@@ -356,19 +442,14 @@ function playScreen(game) {
     if (!isLevel) scoreSub.textContent = `Rekord ${fmt(Math.max(stats().endlessBest, game.score))}`;
   }
 
-  // Coach-Mark beim allerersten Level
-  let coach = null;
-  if (isLevel && game.levelNo === 1 && game.shotsUsed === 0) {
-    coach = h('div.bz-coach', null, 'Ziehen zum Zielen – loslassen schiesst');
-    stage.append(coach);
-  }
-  const dropCoach = () => { if (coach) { const c = coach; coach = null; c.classList.add('gone'); setTimeout(() => c.remove(), 350); } };
+  // Coach-Mark beim allerersten Level: Zielhilfe, pulsierender Ring am Ziel, wischender Finger
+  const wantCoach = isLevel && game.levelNo === 1 && game.shotsUsed === 0 && game.status === 'play';
 
   const view = new PlayView(stage, game, {
     symbols: prefs().symbols,
     onShot(ev) {
-      dropCoach();
       saveGame(game);
+      if (ev.freed.length) addToAlbum(ev.freed.map((f) => game.pets[f.pet - 1] || '🐣'));
       const pops = ev.removed.filter((o) => o.how !== 'drop' && o.how !== 'finale').length;
       const drops = ev.removed.filter((o) => o.how === 'drop').length;
       bumpStats((s) => {
@@ -396,7 +477,7 @@ function playScreen(game) {
 
   if (game.status === 'won') setTimeout(() => !destroyed && showWin(), 400);
   else if (game.status === 'lost') setTimeout(() => !destroyed && showLose(), 400);
-  else if (coach) setTimeout(() => { if (!destroyed && coach && view.canShoot()) view.showHint(bestMove(game)); }, 1400);
+  else if (wantCoach) setTimeout(() => { if (!destroyed && game.shotsUsed === 0 && view.canShoot() && !view.pointer) view.setCoach(bestMove(game)); }, 1300);
   maybeShowTutorial({ id: ID, steps: STEPS, accent: ACCENT });
 
   // ----- Knöpfe -----
@@ -406,9 +487,8 @@ function playScreen(game) {
     const m = bestMove(game, { step: 1, useSpecials: true });
     if (m) view.showHint(m);
   });
-  helpBtn.addEventListener('click', () => { sfx.play('click'); help(); });
+  helpBtn.addEventListener('click', () => help());
   restartBtn.addEventListener('click', async () => {
-    sfx.play('click');
     if (game.shotsUsed > 0 && game.status === 'play') {
       const ok = await confirmDialog(isLevel ? 'Level neu starten?' : 'Neue Runde?', isLevel ? 'Der aktuelle Versuch geht verloren.' : 'Die aktuelle Runde wird beendet.', 'Neu starten');
       if (!ok) return;
@@ -472,9 +552,15 @@ function playScreen(game) {
       h('div.bz-result', null,
         h('div', null, h('b', null, fmt(game.score)), h('small', null, 'Punkte')),
         h('div', null, h('b', null, fmt(p.best[game.levelNo] || game.score)), h('small', null, 'Bestwert'))),
-      game.petsTotal ? h('p', null, `${game.petsTotal} Tierchen befreit ${game.pets.slice(0, 3).join('')}`) : null,
+      game.petsTotal ? h('p.bz-freed', null, `${game.petsTotal} Tierchen befreit `, h('span', null, game.pets.slice(0, 3).join(''))) : null,
       newBest ? h('span.bz-new', null, 'Neuer Bestwert!') : null);
     const next = game.levelNo + 1;
+    if ((next - 1) % LEVELS_PER_WORLD === 0) {
+      const nw = worldOfLevel(next);
+      content.append(h('div.bz-newworld', null,
+        h('span.bz-newworld-pets', null, nw.pets.join('')),
+        h('span', null, h('small', null, 'Neue Welt entdeckt'), h('b', null, nw.name))));
+    }
     const v = await showModal({
       title: ['Geschafft!', 'Wunderbar!', 'Perfekt!'][Math.max(0, stars - 1)],
       content,

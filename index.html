@@ -118,6 +118,7 @@
     .tile .soon-badge { position: absolute; top: -6px; right: -6px; z-index: 2; padding: 2px 7px; border-radius: 999px;
       background: var(--surface-3); color: var(--text-2); font-size: 10.5px; font-weight: 850; box-shadow: 0 0 0 2px var(--bg); }
     .daily a.soon { opacity: .55; }
+    .lang-btn { font-weight: 900; font-size: 14px; letter-spacing: .02em; }
     .foot { margin: 30px 0 0; text-align: center; color: var(--text-3); font-size: 14px; font-weight: 600; }
     .foot .heart { color: #ff6f7d; }
 
@@ -161,24 +162,36 @@
         <div id="catalog"></div>
 
         <section id="daily-wrap" class="hidden">
-          <h2 class="section-title">Tagesrätsel</h2>
+          <h2 class="section-title" id="daily-title">Tagesrätsel</h2>
           <div class="daily" id="daily"></div>
         </section>
 
-        <p class="foot">Gemacht mit <span class="heart">♥</span> – keine Werbung, keine Käufe.</p>
+        <p class="foot" id="foot">Gemacht mit <span class="heart">♥</span> – keine Werbung, keine Käufe.</p>
       </main>
     </div>
   </div>
 
   <script type="module">
-    import { games, categories } from './games.js';
+    import { games, categories, gameText } from './games.js';
+    import { L, lang, setLang, plural } from './shared/i18n.js';
     import { setupPage, soundButton, showModal, h, toast } from './shared/ui.js';
     import { store, readSummary, isDailyDone, dailyStreak } from './shared/storage.js';
     import { sfx } from './shared/sfx.js';
 
     setupPage();
     document.getElementById('sound').append(soundButton());
-    document.getElementById('tagline').textContent = `${games.length} Spiele – ganz ohne Werbung.`;
+    document.getElementById('tagline').textContent = L(`${games.length} Spiele – ganz ohne Werbung.`, `${games.length} games – no ads at all.`);
+    document.getElementById('q').placeholder = L('Spiel suchen', 'Search games');
+    document.getElementById('q-clear').setAttribute('aria-label', L('Suche löschen', 'Clear search'));
+    document.getElementById('daily-title').textContent = L('Tagesrätsel', 'Daily puzzles');
+    document.getElementById('foot').innerHTML = L('Gemacht mit <span class="heart">♥</span> – keine Werbung, keine Käufe.', 'Made with <span class="heart">♥</span> – no ads, no purchases.');
+    document.getElementById('install-tip').innerHTML = L(document.getElementById('install-tip').innerHTML,
+      '<b>Tip:</b> In Safari, tap the share icon and choose <b>“Add to Home Screen”</b> – Spielpause then starts like a real app, even offline.');
+
+    // Sprachschalter DE/EN
+    const langBtn = h('button.icon-btn.lang-btn', { type: 'button', 'aria-label': L('Sprache: Deutsch – tippen für Englisch', 'Language: English – tap for German') }, lang === 'en' ? 'EN' : 'DE');
+    langBtn.addEventListener('click', () => setLang(lang === 'en' ? 'de' : 'en'));
+    document.getElementById('sound').before(langBtn);
 
     // «Neu» nur für Spiele, die nach dem ersten Besuch dazugekommen sind (14 Tage lang, bis gespielt)
     const NEW_DAYS = 14;
@@ -193,13 +206,16 @@
     function soonToast(e) {
       e.preventDefault();
       e.stopImmediatePropagation();
-      toast('Kommt bald – wird gerade gebaut');
+      toast(L('Kommt bald – wird gerade gebaut', 'Coming soon – being built right now'));
     }
+
+    const T = (g) => gameText(g, lang);
+    const catTitle = (c) => (lang === 'en' && c.title_en) || c.title;
 
     function iconEl(g, cls = '') {
       const img = h('img', { src: `icons/games/${g.id}.svg`, alt: '', draggable: 'false', class: cls, loading: 'lazy' });
       img.addEventListener('error', () => {
-        const ph = h('div.ph', { style: { background: `linear-gradient(145deg, ${g.color}cc, ${g.color})` } }, g.title[0]);
+        const ph = h('div.ph', { style: { background: `linear-gradient(145deg, ${g.color}cc, ${g.color})` } }, T(g).title[0]);
         img.replaceWith(ph);
       }, { once: true });
       return img;
@@ -211,9 +227,9 @@
     }
 
     function tile(g, { badges = true } = {}) {
-      const a = h('a.tile', { href: `${g.id}/`, 'aria-label': `${g.title} – ${g.subtitle}` },
+      const a = h('a.tile', { href: `${g.id}/`, 'aria-label': `${T(g).title} – ${T(g).subtitle}` },
         h('div.ic', null, iconEl(g)),
-        h('span.name', null, g.tile || g.title));
+        h('span.name', null, T(g).tile));
       if (!isReady(g)) {
         a.classList.add('soon');
         a.append(h('span.soon-badge', null, 'Bald'));
@@ -241,15 +257,15 @@
       const s = readSummary(g.id);
       const content = h('div', null,
         h('div.info-ic', null, iconEl(g)),
-        h('p', null, g.subtitle),
+        h('p', null, T(g).subtitle),
         s && s.text ? h('p.info-status', null, s.text) : null);
       showModal({
-        title: g.title, content,
+        title: T(g).title, content,
         buttons: [
-          { label: 'Spielen', value: 'play', primary: true },
-          ...(g.daily ? [{ label: 'Tagesrätsel', value: 'daily' }] : []),
-          { label: isFav(g) ? '★ Aus Favoriten entfernen' : '☆ Zu Favoriten', value: 'fav' },
-          { label: 'Schliessen', value: null, ghost: true },
+          { label: L('Spielen', 'Play'), value: 'play', primary: true },
+          ...(g.daily ? [{ label: L('Tagesrätsel', 'Daily puzzle'), value: 'daily' }] : []),
+          { label: isFav(g) ? L('★ Aus Favoriten entfernen', '★ Remove from favorites') : L('☆ Zu Favoriten', '☆ Add to favorites'), value: 'fav' },
+          { label: L('Schliessen', 'Close'), value: null, ghost: true },
         ],
       }).then((v) => {
         if (!v) return;
@@ -273,8 +289,8 @@
         const a = h('a', { href: `${g.id}/#daily`, class: done ? 'done' : '' },
           iconEl(g),
           h('span', null,
-            h('b', null, g.title),
-            h('small', null, done ? `✓ Gelöst${streak > 1 ? ` · ${streak} Tage` : ''}` : (streak > 0 ? `Serie: ${streak} Tage` : 'Heute neu'))));
+            h('b', null, T(g).title),
+            h('small', null, done ? L(`✓ Gelöst${streak > 1 ? ` · ${streak} Tage` : ''}`, `✓ Solved${streak > 1 ? ` · ${streak} days` : ''}`) : (streak > 0 ? L(`Serie: ${streak} Tage`, `Streak: ${streak} days`) : L('Heute neu', 'New today')))));
         a.addEventListener('click', () => { sfx.play('tap'); rememberPlay(g); });
         box.append(a);
       }
@@ -302,13 +318,13 @@
 
     function renderChips() {
       const recentIds = store.get('recent', []);
-      const opts = [{ id: 'alle', title: 'Alle' }];
-      if (favs().length) opts.push({ id: 'favoriten', title: '★ Favoriten' });
-      if (recentIds.length) opts.push({ id: 'zuletzt', title: 'Zuletzt' });
+      const opts = [{ id: 'alle', title: L('Alle', 'All') }];
+      if (favs().length) opts.push({ id: 'favoriten', title: L('★ Favoriten', '★ Favorites') });
+      if (recentIds.length) opts.push({ id: 'zuletzt', title: L('Zuletzt', 'Recent') });
       opts.push(...categories.filter((c) => games.some((g) => g.category === c.id)));
       if (!opts.some((o) => o.id === current)) current = 'alle';
       chips.replaceChildren(...opts.map((c) => {
-        const b = h('button.chip', { type: 'button', role: 'tab', 'data-id': c.id, class: 'chip' + (c.id === current ? ' active' : '') }, c.title);
+        const b = h('button.chip', { type: 'button', role: 'tab', 'data-id': c.id, class: 'chip' + (c.id === current ? ' active' : '') }, catTitle(c));
         b.addEventListener('click', () => { current = c.id; store.set('hub.category', current); render(); });
         return b;
       }));
@@ -320,14 +336,14 @@
       qClear.classList.toggle('hidden', !term);
       let out = [];
       if (term) {
-        const hits = games.filter((g) => norm(`${g.title} ${g.subtitle} ${(categories.find((c) => c.id === g.category) || {}).title || ''}`).includes(term));
-        out = hits.length ? [gridOf(hits)] : [h('p.empty', null, 'Kein Spiel gefunden.')];
+        const hits = games.filter((g) => norm(`${g.title} ${g.subtitle} ${g.title_en || ''} ${g.subtitle_en || ''} ${(categories.find((c) => c.id === g.category) || {}).title || ''} ${(categories.find((c) => c.id === g.category) || {}).title_en || ''}`).includes(term));
+        out = hits.length ? [gridOf(hits)] : [h('p.empty', null, L('Kein Spiel gefunden.', 'No game found.'))];
       } else if (current === 'alle') {
         const recent = store.get('recent', []).map((id) => games.find((g) => g.id === id)).filter(Boolean).slice(0, 4);
-        if (recent.length && games.length > 8) out.push(section('Zuletzt gespielt', recent));
+        if (recent.length && games.length > 8) out.push(section(L('Zuletzt gespielt', 'Recently played'), recent));
         for (const c of categories) {
           const list = games.filter((g) => g.category === c.id);
-          if (list.length) out.push(section(c.title, list));
+          if (list.length) out.push(section(catTitle(c), list));
         }
       } else if (current === 'favoriten') {
         out = [gridOf(favs().map((id) => games.find((g) => g.id === id)).filter(Boolean))];

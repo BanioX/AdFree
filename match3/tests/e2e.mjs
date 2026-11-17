@@ -67,9 +67,17 @@ await page.goto(BASE + '/match3/');
 await page.evaluate(() => { localStorage.clear(); });
 await page.goto(BASE + '/match3/');
 await page.waitForSelector('.tut-next', { timeout: 8000 });
-await page.waitForTimeout(1300);
-await shot('01-tutorial');
-for (let k = 0; k < 4; k++) { await page.locator('.tut-next').tap(); await page.waitForTimeout(450); }
+// Jeder Schritt hat eine animierte Mini-Szene (Brett im Spielstil + Finger); Bild mitten in der Animation
+const tutMid = [1450, 2200, 2150, 1750];
+for (let k = 0; k < 4; k++) {
+  await page.waitForTimeout(tutMid[k]);
+  assert.ok(await page.$('.tut-stage .m3t-board'), `Schritt ${k + 1}: Mini-Brett`);
+  assert.ok(await page.$('.tut-stage .tut-finger'), `Schritt ${k + 1}: Finger`);
+  const t = await page.textContent('.tut-text');
+  assert.ok(t.split(/[.!?]/).filter((x) => x.trim()).length === 1 && t.length <= 80, `Schritt ${k + 1}: ein kurzer Satz («${t}»)`);
+  await shot(`01-tutorial-${k + 1}`);
+  await page.locator('.tut-next').tap();
+}
 await page.waitForSelector('.tut-next', { state: 'detached', timeout: 5000 });
 log('Tutorial gezeigt und abgeschlossen');
 
@@ -78,6 +86,9 @@ await page.waitForSelector('.gm-primary');
 await page.waitForTimeout(400);
 await shot('02-menu');
 assert.match(await page.textContent('.gm-primary'), /Spielen/);
+assert.match(await page.textContent('.gm-primary'), /Level 1/);
+assert.ok(await page.$('.m3-hero .m3-gems'), 'Titelbild ohne laufendes Spiel: Juwelen');
+assert.ok(await page.$('.m3-worldcard .m3-wc-path i.cur'), 'Welt-Karte zeigt das aktuelle Level');
 assert.ok(await page.$('a.icon-btn[href="../"]'), 'Zurück zur Startseite');
 const noScroll = await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth);
 assert.ok(noScroll, 'kein horizontales Scrollen');
@@ -91,6 +102,12 @@ await page.waitForSelector('.m3-intro', { state: 'detached', timeout: 6000 });
 assert.ok(await page.$('.m3-coach'), 'Coach-Mark in Level 1');
 await page.waitForTimeout(700);
 await shot('03b-coach');
+// «?» im laufenden Spiel
+await page.locator('.m3-bar button.icon-btn').first().tap();
+await page.waitForSelector('.tut-next');
+await page.locator('.tut-skip').tap();
+await page.waitForSelector('.tut-backdrop', { state: 'detached' });
+assert.ok(await page.$('.m3-coach'), 'Coach-Mark bleibt bis zum ersten Zug');
 const fits = await page.evaluate(() => {
   const el = document.querySelector('.m3-play');
   const tools = document.querySelector('.m3-tools').getBoundingClientRect();
@@ -115,6 +132,7 @@ for (let k = 0; k < 60 && !won; k++) {
   await playMove(k);
 }
 if (!won) { await page.waitForSelector('.m3-win', { timeout: 30000 }); won = true; }
+assert.equal(await page.$('.m3-coach'), null, 'Coach-Mark verschwindet nach dem ersten Zug');
 await page.waitForTimeout(1600);
 await shot('05-win');
 assert.ok(await page.$('.m3-winstars span.on'), 'mindestens ein Stern');
@@ -162,8 +180,16 @@ log('Hammer funktioniert');
 await page.locator('.m3-bar a.icon-btn').first().tap();
 await page.waitForSelector('.gm-primary');
 assert.match(await page.textContent('.gm-primary'), /Weiterspielen/);
-assert.match(await page.textContent('.gm-primary'), /Level 2/);
+assert.match(await page.textContent('.gm-primary'), /Level 2 · noch \d+ Züge/);
+assert.ok(await page.$('.m3-hero.live canvas.m3-preview'), 'Titelbild zeigt das laufende Brett');
 await page.waitForTimeout(450); // Doppeltipp-Schutz von setupPage()
+await shot('06b-menu-progress');
+// «?» im Menü öffnet die Anleitung jederzeit wieder
+await page.locator('.gm-topbar button.icon-btn').first().tap();
+await page.waitForSelector('.tut-next');
+await page.locator('.tut-skip').tap();
+await page.waitForSelector('.tut-backdrop', { state: 'detached' });
+await page.waitForTimeout(450);
 
 // ---------- 5) Levelkarte ----------
 await page.locator('.gm-sec', { hasText: 'Levelkarte' }).tap();
@@ -234,6 +260,13 @@ const small = await page.evaluate(() => ({
 log('375×667', JSON.stringify(small));
 assert.ok(small.tools && small.scroll && small.cs >= 36, 'passt auf kleine iPhones');
 await shot('11-small');
+await page.locator('.m3-bar a.icon-btn').first().tap();
+await page.waitForSelector('.gm-primary');
+await page.waitForTimeout(500);
+const pb = await page.evaluate(() => document.querySelector('.gm-primary').getBoundingClientRect().bottom);
+assert.ok(pb <= 667, `Hauptknopf ohne Scrollen sichtbar (${pb})`);
+await shot('12-menu-small');
+log('Menü 375×667: Hauptknopf sichtbar');
 
 await browser.close();
 if (errors.length) { console.error('Konsolenfehler:\n' + errors.join('\n')); process.exit(1); }

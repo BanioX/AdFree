@@ -1,6 +1,6 @@
 // End-to-End-Test der Wortsuche (iPhone 13, Touch).
 // Voraussetzung: statischer Server im Repo-Wurzelverzeichnis:
-//   python3 -m http.server 8209 --bind 127.0.0.1
+//   python3 -m http.server 8142 --bind 127.0.0.1
 // Ausführen: node wordsearch/tests/e2e.mjs   (Screenshots → wordsearch/tests/out/)
 
 import { createRequire } from 'node:module';
@@ -9,7 +9,7 @@ import { fileURLToPath } from 'node:url';
 import assert from 'node:assert/strict';
 
 const { chromium, devices } = createRequire(import.meta.url)('playwright');
-const BASE = process.env.BASE || 'http://127.0.0.1:8209/wordsearch/';
+const BASE = process.env.BASE || 'http://127.0.0.1:8142/wordsearch/';
 const OUT = fileURLToPath(new URL('./out/', import.meta.url));
 mkdirSync(OUT, { recursive: true });
 
@@ -90,6 +90,9 @@ try {
   await page.waitForTimeout(200);
   await page.screenshot({ path: OUT + '02-menu.png' });
   assert.match(await page.locator('.gm-primary').innerText(), /Spielen/);
+  assert.match(await page.locator('.gm-primary').innerText(), /Tiere/, 'erstes Rätsel: Tiere');
+  assert.equal(await page.locator('.logo').count(), 1, 'frisch: Logo als Titelbild');
+  assert.equal(await page.locator('.album .al-cell').count() > 50, true, 'Sammlung sichtbar');
   await tap(page.locator('.gm-primary'));
   await page.waitForFunction(() => location.hash === '#play/leicht' && window.__wordsearch);
   await page.waitForTimeout(500);
@@ -98,8 +101,10 @@ try {
   await page.screenshot({ path: OUT + '03-play-leicht.png' });
 
   const pz = await page.evaluate(() => window.__wordsearch.puzzle);
-  assert.equal(pz.size, 8);
-  assert.equal(pz.words.length, 8);
+  // Allererstes Rätsel: klein und schnell gelöst
+  assert.equal(pz.size, 7);
+  assert.equal(pz.words.length, 6);
+  assert.equal(pz.theme, 'tiere');
 
   // 3) Zwei Wörter echt wischen (eines rückwärts)
   await swipe(page, cdp, pz.words[0], wordEnd(pz.words[0]));
@@ -109,6 +114,7 @@ try {
   await page.waitForTimeout(400);
   let found = await page.evaluate(() => window.__wordsearch.state.found.length);
   assert.equal(found, 2, 'zwei Wörter gefunden');
+  assert.match(await page.locator('.praise').innerText(), /Schnell! ×2/, 'Kombo-Lob');
   // Fehlwisch zählt nicht
   await swipe(page, cdp, { r: 0, c: 0 }, { r: 0, c: 1 }, 3);
   await page.waitForTimeout(200);
@@ -120,6 +126,17 @@ try {
   await page.waitForTimeout(250);
   assert.ok(await page.locator('.hint-ring').count() >= 1, 'Tipp-Ring sichtbar');
   assert.equal(await page.evaluate(() => window.__wordsearch.state.hints), 1);
+
+  // 4b) «?» im Spiel: Tutorial öffnet, Zeit steht still
+  await tap(page.locator('.play-screen .topbar .icon-btn').last());
+  await page.waitForSelector('.tut-stage');
+  const e0 = await page.evaluate(() => window.__wordsearch.state.elapsed);
+  await page.waitForTimeout(1500);
+  const e1 = await page.evaluate(() => window.__wordsearch.state.elapsed);
+  assert.ok(e1 - e0 < 300, `Zeit pausiert während Tutorial (${Math.round(e1 - e0)} ms)`);
+  await tap(page.locator('.tut-skip'));
+  await page.waitForTimeout(400);
+  assert.equal(await page.locator('.tut-stage').count(), 0);
 
   // 5) Wortliste einklappen / ausklappen
   await tap(page.locator('.wh-toggle'));
@@ -172,6 +189,7 @@ try {
   // 9) Zurück ins Menü, Tagesrätsel
   await tap(page.locator('.topbar .icon-btn').first());
   await page.waitForSelector('.gm-daily');
+  assert.equal(await page.locator('.ws-live .board').count(), 1, 'Live-Vorschau des laufenden Rätsels');
   assert.equal(await page.locator('.gm-daily.done').count(), 0);
   await tap(page.locator('.gm-daily'));
   await page.waitForFunction(() => location.hash === '#daily' && window.__wordsearch);
@@ -196,6 +214,16 @@ try {
   await tap(page.locator('.theme-tile[data-theme="kaeserei"]'));
   await page.waitForFunction(() => window.__wordsearch && window.__wordsearch.puzzle.theme === 'kaeserei');
   log('Themenwahl ok');
+
+  // 10b) Drittes Rätsel = Bonusrätsel: geheimes Wort gibt goldene Kapsel
+  assert.ok(await page.evaluate(() => !!window.__wordsearch.puzzle.bonus), 'Bonuswort vorhanden');
+  assert.equal(await page.locator('.wchip.bonus').count(), 1);
+  const bonusOk = await page.evaluate(() => window.__wordsearch.solveBonus());
+  await page.waitForTimeout(300);
+  assert.ok(bonusOk && await page.evaluate(() => window.__wordsearch.state.bonusFound), 'Bonuswort gefunden');
+  assert.equal(await page.locator('.g-bonus .bonus-cap').count(), 1);
+  assert.match(await page.locator('.praise').innerText(), /Bonuswort/);
+  log('Bonuswort ok');
 
   // 11) Statistik
   await tap(page.locator('.topbar .icon-btn').first());

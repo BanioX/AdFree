@@ -95,6 +95,7 @@ export class PlayView {
 
   destroy() {
     this.destroyed = true;
+    if (this.coach) this.coach.el.remove();
     cancelAnimationFrame(this.raf);
     window.removeEventListener('resize', this.onResize);
     if (this.ro) this.ro.disconnect();
@@ -136,6 +137,7 @@ export class PlayView {
     this.oy = L.oy;
     this.sprites.setSize(s * dpr, this.symbols);
     this.cloudCache = null;
+    this.placeCoach();
     this.invalidate();
   }
 
@@ -175,6 +177,7 @@ export class PlayView {
     try { this.canvas.setPointerCapture(e.pointerId); } catch { /* ignore */ }
     const p = this.toLogic(e.clientX, e.clientY);
     this.hint = null;
+    this.clearCoach();
     const hit = this.hitTarget(p);
     this.pointer = { id: e.pointerId, sx: e.clientX, sy: e.clientY, hit, moved: false };
     if (!hit && p.y < LAUNCH_Y - 0.6) this.updateAim(p);
@@ -257,6 +260,53 @@ export class PlayView {
     this.invalidate();
   }
 
+  /**
+   * Coach-Mark (erstes Level): Zielhilfe bleibt stehen, ein Ring pulsiert am Ziel und ein Finger
+   * zeigt die Wischbewegung – bis zur ersten Berührung.
+   */
+  setCoach(move) {
+    this.clearCoach();
+    if (!move || this.destroyed) return;
+    this.showHint(move);
+    if (!this.hint || !this.hint.trace.target) return;
+    this.hint.sticky = true;
+    const el = document.createElement('div');
+    el.className = 'bz-coach';
+    el.innerHTML = '<i class="bz-coach-ring"></i><i class="bz-coach-finger"></i>';
+    this.host.append(el);
+    this.coach = { el, angle: move.angle, target: this.hint.trace.target };
+    this.placeCoach();
+  }
+
+  placeCoach() {
+    const c = this.coach;
+    if (!c) return;
+    const t = c.target;
+    const x = this.X(this.disp.x(t.r, t.c)), y = this.Y(this.disp.y(t.r));
+    const ring = c.el.firstChild, finger = c.el.lastChild;
+    c.el.style.setProperty('--cs', `${this.s * 2.4}px`);
+    ring.style.left = `${x}px`;
+    ring.style.top = `${y}px`;
+    // Finger: startet über dem Werfer und wischt in Zielrichtung
+    const a = (c.angle * Math.PI) / 180;
+    const fx = this.X(LAUNCH_X + Math.cos(a) * 2.6), fy = this.Y(LAUNCH_Y - Math.sin(a) * 2.6);
+    finger.style.left = `${fx}px`;
+    finger.style.top = `${fy}px`;
+    const len = this.s * 5.5;
+    finger.style.setProperty('--dx', `${Math.cos(a) * len}px`);
+    finger.style.setProperty('--dy', `${-Math.sin(a) * len}px`);
+  }
+
+  clearCoach() {
+    const c = this.coach;
+    if (!c) return;
+    this.coach = null;
+    if (this.hint && this.hint.sticky) this.hint = null;
+    c.el.classList.add('gone');
+    setTimeout(() => c.el.remove(), 350);
+    this.invalidate();
+  }
+
   // ---------- Schuss ----------
 
   fire(angle) {
@@ -330,6 +380,7 @@ export class PlayView {
     if (drops.length >= 12) this.banner('Fantastisch!', 1.5, '#ffd23a', popEnd - t + 0.2);
     else if (drops.length >= 7) this.banner('Wunderbar!', 1.35, '#ffd23a', popEnd - t + 0.2);
     else if (total >= 9) this.banner('Super!', 1.25, '#ffd23a', popEnd - t + 0.1);
+    else if (ev.path && ev.path.length > 2 && pops.length >= 3 && ev.kind === 'normal') this.banner('Bandenschuss!', 1.1, '#ffd23a', popEnd - t + 0.05);
     if (ev.earned) {
       const slot = Math.max(0, g.specials.length - 1);
       const from = ev.target || { x: LAUNCH_X, y: 8 };
@@ -571,7 +622,7 @@ export class PlayView {
     if (this.swapAnim && t - this.swapAnim.t0 < 0.25) active = true;
     if (t - this.introT0 < 1.4) active = true;
     if (this.aim || this.hint || g.armed >= 0) active = true;
-    if (this.hint && t - this.hint.t0 > 3.2) this.hint = null;
+    if (this.hint && !this.hint.sticky && t - this.hint.t0 > 3.2) this.hint = null;
 
     // Siegesbonus
     if (this.bonus) {

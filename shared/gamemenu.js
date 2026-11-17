@@ -24,15 +24,18 @@
 import { h, icon, soundButton, backButton } from './ui.js';
 import { sfx } from './sfx.js';
 import { todayKey } from './storage.js';
+import { L, lang } from './i18n.js';
 
-const MONTHS = ['Jan.', 'Feb.', 'März', 'Apr.', 'Mai', 'Juni', 'Juli', 'Aug.', 'Sept.', 'Okt.', 'Nov.', 'Dez.'];
+const MONTHS = lang === 'en'
+  ? ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+  : ['Jan.', 'Feb.', 'März', 'Apr.', 'Mai', 'Juni', 'Juli', 'Aug.', 'Sept.', 'Okt.', 'Nov.', 'Dez.'];
 
 export function gameMenu(opts) {
   const root = h('div.gm');
   if (opts.accent) root.style.setProperty('--accent', opts.accent);
 
   // Topbar
-  const helpBtn = h('button.icon-btn', { type: 'button', 'aria-label': 'So geht’s' });
+  const helpBtn = h('button.icon-btn', { type: 'button', 'aria-label': L('So geht’s', 'How to play') });
   helpBtn.innerHTML = '<span class="gm-q">?</span>';
   helpBtn.addEventListener('click', () => { sfx.play('click'); opts.onHelp && opts.onHelp(); });
   const topbar = h('div.topbar.gm-topbar', null,
@@ -64,7 +67,7 @@ export function gameMenu(opts) {
   const content = h('div.gm-content', null,
     hero, primaryWrap, dailyWrap, modesWrap, secondaryWrap, statsWrap, sectionsWrap,
     opts.onHelp ? h('button.gm-howto', { type: 'button', onclick: () => { sfx.play('click'); opts.onHelp(); } },
-      h('span', { html: icon('hint', { size: 18 }) }), 'So geht’s') : null);
+      h('span', { html: icon('hint', { size: 18 }) }), L('So geht’s', 'How to play')) : null);
 
   const scroll = h('div.scroll.gm-scroll', null, content);
   root.append(topbar, scroll);
@@ -87,12 +90,14 @@ export function gameMenu(opts) {
     const now = new Date();
     const badge = h('div.gm-cal', null, h('span.gm-cal-m', null, MONTHS[now.getMonth()]), h('span.gm-cal-d', null, String(now.getDate())));
     const status = d.done
-      ? `✓ Gelöst${d.streak > 1 ? ` · ${d.streak} Tage in Folge` : ''}`
-      : (d.streak > 0 ? `Serie: ${d.streak} ${d.streak === 1 ? 'Tag' : 'Tage'} – heute weitermachen` : 'Heute noch offen');
+      ? L(`✓ Gelöst${d.streak > 1 ? ` · ${d.streak} Tage in Folge` : ''}`, `✓ Solved${d.streak > 1 ? ` · ${d.streak}-day streak` : ''}`)
+      : (d.streak > 0
+        ? L(`Serie: ${d.streak} ${d.streak === 1 ? 'Tag' : 'Tage'} – heute weitermachen`, `Streak: ${d.streak} ${d.streak === 1 ? 'day' : 'days'} – keep it going today`)
+        : L('Heute noch offen', 'Not solved yet today'));
     const card = h('button.gm-daily' + (d.done ? '.done' : ''), { type: 'button', 'data-day': todayKey() },
       badge,
       h('span.gm-daily-text', null,
-        h('b', null, d.label || 'Tagesrätsel'),
+        h('b', null, d.label || L('Tagesrätsel', 'Daily puzzle')),
         h('small', null, d.sub ? `${d.sub} · ${status}` : status)),
       h('span.gm-chev', { html: icon('back', { size: 18 }) }));
     card.addEventListener('click', () => { sfx.play('tap'); d.onClick && d.onClick(); });

@@ -13,6 +13,7 @@ ohne Änderungen am Spielcode erweitern.
 | `data/seeds.js` | Beweisbar lösbare Partie-Nummern und Tagesrätsel (automatisch erzeugt) |
 | `howto.js` | «So geht's»-Schritte mit animierten Mini-Demos |
 | `cardface.js` | Kartengesichter (Bildkarten sind kleine SVG-Figuren) |
+| `logic/unlocks.js` | Sammlung: welche Rücken/Tische nach wie vielen Siegen frei werden, Sterne pro Sieg |
 | `logic/` | Regeln, Löser, Tipps, Statistik (reine Logik, mit `node --test` getestet) |
 
 ## Neuer Kartenrücken
@@ -31,6 +32,8 @@ In `data/backs.js` einen Eintrag in `BACKS` ergänzen:
   (Kachel wird wiederholt) oder `{ body: '<svg-inhalt>' }` für ein Motiv über die ganze Karte (Raum 100 × 140).
   Alternativ kann ein Rücken mit `svg: '<svg …>…</svg>'` ein komplett eigenes Bild mitbringen.
 - `medallion: true` legt ein ovales Schmuckmedaillon in die Mitte.
+- Freischalten (optional): in `logic/unlocks.js` eine Zeile `{ wins: 30, kind: 'back', id: 'wald' }` ergänzen.
+  Ohne Eintrag ist der Rücken von Anfang an frei.
 
 ## Neuer Tisch
 
@@ -43,6 +46,7 @@ In `data/tables.js` einen Eintrag in `TABLES` ergänzen:
 - `base` Grundfarbe, `light` Lichtfleck oben, `dark` Rand (Vignette).
 - `texture`: `felt` (Filz), `linen` (Leinen), `wood` (Holz) oder `none`.
 - `ink`: `light` bei dunklen Tischen (helle Schrift/Umrisse), `dark` bei hellen Tischen.
+- Freischalten wie beim Rücken mit `kind: 'table'` in `logic/unlocks.js`.
 
 ## Lösbare Partien und Tagesrätsel
 
@@ -72,18 +76,23 @@ jeden Tag neu. Klondike des Tages zählt für die Tagesserie der Startseite (`ma
 Spider (1 Farbe) und FreeCell des Tages sind Zugaben. Die Listen reichen für mehr als ein Jahr ohne
 Wiederholung; zum Verlängern einfach mehr Nummern erzeugen.
 
+Einstiegspartien: Die allererste Partie einer Spielart ist eine besonders gutmütige Nummer
+(`FIRST_DEAL` in `deals.js`) – ein Spieler, der immer nur den Tipp nimmt, gewinnt sie (Test in
+`tests/content.test.mjs`).
+
 ## «So geht's»
 
-`howto.js` liefert die Schritte für `/shared/tutorial.js`. Jeder Schritt hat Titel, **einen** kurzen
-Satz und eine animierte Demo (Karten auf grünem Filz, Finger tippt). Neue Schritte nach demselben
-Muster ergänzen (höchstens 4). Die ausführlichen Regeln je Spielart stehen im Blatt «Regeln»
-(`HELP` in `app.js`).
+`howto.js` liefert mit `tutorialFor(spielart)` die Schritte für `/shared/tutorial.js`: ein Grund-Tutorial
+(Klondike + Spielarten, id `solitaire`) und je eines für Spider und FreeCell (`solitaire-spider`,
+`solitaire-freecell`), das beim ersten Spiel dieser Spielart automatisch erscheint. Jeder Schritt hat
+Titel (2–4 Wörter), **einen** kurzen Satz und eine animierte Demo (echte Kartengesichter auf grünem
+Filz, Finger tippt oder zieht). Höchstens 4 Schritte pro Tutorial.
 
 ## Prüfen
 
 ```sh
 node --test solitaire/tests/*.test.mjs        # Regeln, Löser, Inhalte (Rücken, Tische, Partie-Listen)
-python3 -m http.server 8201 --bind 127.0.0.1  # im Repo-Wurzelverzeichnis
+python3 -m http.server 8134 --bind 127.0.0.1  # im Repo-Wurzelverzeichnis
 node solitaire/tests/e2e.mjs                  # spielt im iPhone-Browser eine Partie bis zum Sieg
 ```
 

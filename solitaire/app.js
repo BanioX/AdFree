@@ -143,7 +143,9 @@ function boardPreview(sess) {
   const cw = Math.floor((W - 16 - gap * (cols - 1)) / cols);
   const ch = Math.round(cw * 1.42);
   const t = TABLES.find((x) => x.id === settings.table) || TABLES[0];
-  const wrap = h('div.hero-board' + (st.game === 'spider' ? '.compact' : ''), { style: { width: W + 'px', '--cw': cw + 'px', '--ch': ch + 'px', background: tableBackground(t) } });
+  const wrap = h('div.hero-board' + (st.game === 'spider' ? '.compact' : ''), { style: { width: W + 'px', background: tableBackground(t) } });
+  wrap.style.setProperty('--cw', cw + 'px');
+  wrap.style.setProperty('--ch', ch + 'px');
   const add = (id, x, y, up) => {
     const el = h('div.mini-card' + (up ? '.up' : ''));
     el.innerHTML = (up ? faceHTML(st.codes[id], settings) : '') + '<div class="back"></div>';
@@ -180,9 +182,17 @@ function boardPreview(sess) {
     });
   });
   wrap.style.height = Math.round(Math.min(maxH, bottom) + 8) + 'px';
-  const pct = Math.round((foundTotal(st) / st.codes.length) * 100);
-  wrap.append(h('span.hb-badge', null, `${pct} %`));
+  wrap.append(h('span.hb-badge', null, `${progressPct(st)} %`));
   return wrap;
+}
+
+/** Fortschritt einer Partie in Prozent (Spider: halb Aufdecken/Geben, halb fertige Folgen). */
+function progressPct(st) {
+  const n = st.codes.length;
+  const found = foundTotal(st);
+  if (st.game !== 'spider') return Math.round((found / n) * 100);
+  const open = n - hiddenCount(st) - st.piles[LAYOUTS.spider.stock].length;
+  return Math.round(((open / n) * 0.5 + (found / n) * 0.5) * 100);
 }
 
 function totalWins() { return Stats.totals(loadStats()).won + store.get('solitaire.dailyWins', 0); }
@@ -240,7 +250,7 @@ function showMenu() {
   const sess = loadSession(mode);
   const running = sess && sess.started && !sess.won;
   const solvableTxt = settings.solvable && mode !== 'spider4' ? 'lösbar' : (mode === 'spider4' ? 'knifflig' : '');
-  const pct = running ? Math.round((foundTotal(sess.st) / sess.st.codes.length) * 100) : 0;
+  const pct = running ? progressPct(sess.st) : 0;
   const primary = running
     ? { label: 'Weiterspielen', sub: `${modeLabel(mode)} · ${pct} % · ${Stats.formatTime(sess.time)}`, onClick: () => go('play/' + mode) }
     : { label: e.played ? 'Neue Partie' : 'Spielen', sub: `${modeLabel(mode)}${solvableTxt ? ' · ' + solvableTxt : ''}`, onClick: () => go('play/' + mode) };
@@ -643,7 +653,7 @@ class Game {
       const r = this.board.pileRect(p, true);
       const b = h('div.found-burst');
       b.style.cssText = `left:${r.x}px;top:${r.y}px;width:${r.w}px;height:${r.h}px`;
-      for (let i = 0; i < 10; i++) b.append(h('i', { style: { '--a': (i * 36) + 'deg' } }));
+      for (let i = 0; i < 10; i++) { const d = h('i'); d.style.setProperty('--a', (i * 36) + 'deg'); b.append(d); }
       this.boardEl.append(b);
       setTimeout(() => b.remove(), 800);
     }, delay);

@@ -568,3 +568,8 @@
   transition: opacity .25s, transform .35s var(--ease-spring);
 }
 .tut-pill.show { opacity: 1; transform: translate(-50%, 0) scale(1); }
+
+/* Drei Nebenknöpfe im Menü: Symbol über dem Text, damit nichts abgeschnitten wird */
+.sol-menu .gm-secondary:has(> .gm-sec:nth-child(3)) .gm-sec { flex-direction: column; gap: 3px; padding: 8px 4px; min-height: 60px; }
+.sol-menu .gm-secondary:has(> .gm-sec:nth-child(3)) .gm-sec-text { align-items: center; }
+.sol-menu .gm-secondary:has(> .gm-sec:nth-child(3)) .gm-sec-text b { font-size: 14px; }

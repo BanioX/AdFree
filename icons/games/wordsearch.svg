@@ -1,29 +1,19 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
   <defs>
-    <linearGradient id="b" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#eef8e4"/><stop offset="1" stop-color="#bfe3a2"/></linearGradient>
+    <linearGradient id="b" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f1f9e8"/><stop offset="1" stop-color="#b9e09a"/></linearGradient>
   </defs>
   <rect width="100" height="100" fill="url(#b)"/>
-  <ellipse cx="50" cy="89" rx="32" ry="4.5" fill="#3f7a27" opacity=".16"/>
-  <rect x="13" y="13" width="74" height="74" rx="13" fill="#fffdf7" stroke="#4a3418" stroke-width="1.8"/>
-  <!-- Buchstabenraster als Punkte -->
-  <g fill="#e3d6c4">
-    <circle cx="25" cy="25.5" r="2.8"/><circle cx="41.7" cy="25.5" r="2.8"/><circle cx="58.3" cy="25.5" r="2.8"/><circle cx="75" cy="25.5" r="2.8"/>
-    <circle cx="25" cy="58.5" r="2.8"/><circle cx="41.7" cy="75" r="2.8"/>
-  </g>
-  <!-- gefundene Wörter: grüne Kapsel waagrecht, rosa Kapsel diagonal -->
-  <line x1="25" y1="75" x2="58.3" y2="42" stroke="#ff8fa3" stroke-width="12" stroke-linecap="round" opacity=".6"/>
-  <line x1="25" y1="42" x2="75" y2="42" stroke="#9bd36a" stroke-width="14" stroke-linecap="round"/>
-  <line x1="25" y1="42" x2="75" y2="42" stroke="#5a9e3c" stroke-width="14" stroke-linecap="round" opacity=".18"/>
-  <g fill="#3a2a2a">
-    <circle cx="25" cy="42" r="3.6"/><circle cx="41.7" cy="42" r="3.6"/><circle cx="58.3" cy="42" r="3.6"/><circle cx="75" cy="42" r="3.6"/>
-  </g>
-  <g fill="#b0485c">
-    <circle cx="25" cy="75" r="3.3"/><circle cx="41.7" cy="58.5" r="3.3"/>
-  </g>
+  <ellipse cx="50" cy="90" rx="33" ry="4.5" fill="#3f7a27" opacity=".16"/>
+  <rect x="12" y="12" width="76" height="76" rx="15" fill="#fffdf7" stroke="#4a3418" stroke-width="2.2"/>
+  <!-- gefundene Wörter: rosa schräg, grün waagrecht -->
+  <line x1="28" y1="72" x2="72" y2="28" stroke="#ff8fa3" stroke-width="16" stroke-linecap="round" opacity=".75"/>
+  <line x1="28" y1="50" x2="72" y2="50" stroke="#8fd05e" stroke-width="18" stroke-linecap="round"/>
+  <path d="M24.4 22.4V33.6M32 22.4L24.4 29.2M27.2 26.8L32.16 33.6M50 22.4a4.48 5.6 0 1 0 0.01 0ZM46.4 66.4V77.6H54" fill="none" stroke="#cdbda8" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M68 22.4H76L68 33.6H76M24 44.4V55.6M32 44.4V55.6M24 50H32M46 44.4V51.6a4 4 0 0 0 8 0V44.4M67.6 44.4H76.4M72 44.4V55.6M23.52 77.6L28 66.4L32.48 77.6M25.44 73.6H30.56" fill="none" stroke="#3a2a2a" stroke-width="3.8" stroke-linecap="round" stroke-linejoin="round"/>
   <!-- Lupe -->
-  <circle cx="66" cy="66" r="13.5" fill="#ffffff" fill-opacity=".72" stroke="#4a3418" stroke-width="3.4"/>
-  <circle cx="66" cy="66" r="5" fill="#f29a1f"/>
-  <path d="M59.5 61.5a8 8 0 0 1 5-4.6" fill="none" stroke="#ffffff" stroke-width="2.6" stroke-linecap="round"/>
-  <path d="M75.8 75.8l9.4 9.4" stroke="#4a3418" stroke-width="7.4" stroke-linecap="round"/>
-  <path d="M76.6 76.6l8 8" stroke="#f29a1f" stroke-width="3.6" stroke-linecap="round"/>
+  <path d="M79 79l9 9" stroke="#4a3418" stroke-width="8.4" stroke-linecap="round"/>
+  <path d="M80 80l7.3 7.3" stroke="#f29a1f" stroke-width="4" stroke-linecap="round"/>
+  <circle cx="69" cy="69" r="13.5" fill="#fff6dc" stroke="#4a3418" stroke-width="3.6"/>
+  <path d="M74 62H64.5V76H74M64.5 69H72" fill="none" stroke="#e07f12" stroke-width="4.2" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M61.6 63.4a8.4 8.4 0 0 1 4.6-5" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round"/>
 </svg>

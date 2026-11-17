@@ -82,6 +82,7 @@ In `data/worlds.js` einen Eintrag an `WORLDS` anhängen:
 - `sky`: drei helle Pastellfarben (oben → unten).
 - `colors`: ids aus `data/colors.js`; die ersten werden bevorzugt.
 - `pets`: Emoji, die in «Befreien»-Leveln in den Blasen stecken.
+  Befreite Tierchen landen im «Tierchen-Album» des Startbildschirms (gleiche Emoji zählen zusammen).
 
 Nach der letzten Welt beginnt die Liste von vorne («Blumenwiese II» …), die Level selbst sind
 trotzdem neu.
@@ -96,7 +97,7 @@ trotzdem neu.
 
 ```
 node --test bubbles/tests/*.test.mjs                    # Format, Lösbarkeit aller 240 Level, Physik
-python3 -m http.server 8222 --bind 127.0.0.1 &          # im Repo-Wurzelverzeichnis
+python3 -m http.server 8145 --bind 127.0.0.1 &          # im Repo-Wurzelverzeichnis
 node bubbles/tests/e2e.mjs                              # Ablauf im iPhone-Browser
 ```
 

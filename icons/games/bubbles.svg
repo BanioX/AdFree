@@ -1,41 +1,68 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
   <defs>
     <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#cfe8ff"/>
-      <stop offset=".6" stop-color="#e7f3ff"/>
-      <stop offset="1" stop-color="#fff3e6"/>
+      <stop offset="0" stop-color="#b9ddff"/>
+      <stop offset=".58" stop-color="#e2f1ff"/>
+      <stop offset="1" stop-color="#ffefd9"/>
     </linearGradient>
-    <radialGradient id="gl" cx=".36" cy=".32" r=".75">
-      <stop offset="0" stop-color="#fff" stop-opacity=".85"/>
-      <stop offset=".35" stop-color="#fff" stop-opacity=".12"/>
-      <stop offset="1" stop-color="#fff" stop-opacity="0"/>
+    <radialGradient id="gl" cx=".34" cy=".3" r=".78">
+      <stop offset="0" stop-color="#fff" stop-opacity=".9"/>
+      <stop offset=".3" stop-color="#fff" stop-opacity=".28"/>
+      <stop offset=".75" stop-color="#fff" stop-opacity="0"/>
+      <stop offset="1" stop-color="#2a1238" stop-opacity=".22"/>
     </radialGradient>
-    <symbol id="b" viewBox="-10 -10 20 20" overflow="visible">
-      <circle r="9.6" fill="currentColor"/>
-      <circle r="9.6" fill="url(#gl)"/>
-      <circle r="9.1" fill="none" stroke="#fff" stroke-opacity=".55" stroke-width="1"/>
-      <ellipse cx="-3.4" cy="-4.2" rx="3" ry="1.9" transform="rotate(-35 -3.4 -4.2)" fill="#fff" opacity=".9"/>
+    <symbol id="b" viewBox="-13 -13 26 26" overflow="visible">
+      <circle r="12.4" fill="currentColor"/>
+      <circle r="12.4" fill="url(#gl)"/>
+      <circle r="12.2" fill="none" stroke="#3a1e46" stroke-opacity=".28" stroke-width="1.3"/>
+      <ellipse cx="-4.6" cy="-5.6" rx="4.1" ry="2.4" transform="rotate(-38 -4.6 -5.6)" fill="#fff" opacity=".92"/>
+      <circle cx="5.6" cy="5" r="1.2" fill="#fff" opacity=".6"/>
     </symbol>
   </defs>
   <rect width="100" height="100" fill="url(#sky)"/>
-  <path d="M0 0h100v12c-6 5-12 5-17 1-6 5-13 5-18 0-6 5-13 5-18 0-6 5-13 5-18 0-6 5-12 5-17 0-5 4-9 4-12 2z" fill="#fff" opacity=".95"/>
   <!-- Blasen-Wabe -->
-  <use href="#b" x="10" y="12" width="20" height="20" color="#f0475e"/>
-  <use href="#b" x="30" y="12" width="20" height="20" color="#f0475e"/>
-  <use href="#b" x="50" y="12" width="20" height="20" color="#3d8ef0"/>
-  <use href="#b" x="70" y="12" width="20" height="20" color="#ffd23a"/>
-  <use href="#b" x="20" y="29.3" width="20" height="20" color="#49c463"/>
-  <use href="#b" x="40" y="29.3" width="20" height="20" color="#3d8ef0"/>
-  <use href="#b" x="60" y="29.3" width="20" height="20" color="#ffd23a"/>
-  <use href="#b" x="30" y="46.6" width="20" height="20" color="#9a62ee"/>
+  <use href="#b" x="0" y="10" width="26" height="26" color="#f0475e"/>
+  <use href="#b" x="25" y="10" width="26" height="26" color="#3d8ef0"/>
+  <use href="#b" x="50" y="10" width="26" height="26" color="#ff7cc6"/>
+  <use href="#b" x="75" y="10" width="26" height="26" color="#49c463"/>
+  <use href="#b" x="12.5" y="31.6" width="26" height="26" color="#ffd23a"/>
+  <!-- Blase mit Küken -->
+  <circle cx="50.5" cy="44.6" r="12.4" fill="#e6dafd"/>
+  <circle cx="50.5" cy="44.6" r="12.4" fill="#9a62ee" opacity=".28"/>
+  <g transform="translate(50.5 46.2)">
+    <circle r="8.4" fill="#ffd23a" stroke="#4a3418" stroke-width="1.4"/>
+    <path d="M-2.2 1.3 L0 4.1 L2.2 1.3 Z" fill="#ff9a2e" stroke="#4a3418" stroke-width="1" stroke-linejoin="round"/>
+    <circle cx="-3.1" cy="-1.5" r="1.35" fill="#3a2a2a"/>
+    <circle cx="3.1" cy="-1.5" r="1.35" fill="#3a2a2a"/>
+    <ellipse cx="-5" cy="1.6" rx="1.6" ry="1" fill="#ff8a7a" opacity=".55"/>
+    <ellipse cx="5" cy="1.6" rx="1.6" ry="1" fill="#ff8a7a" opacity=".55"/>
+    <path d="M-1.3 -8.2 q1.3 -2.8 2.6 0" fill="none" stroke="#4a3418" stroke-width="1.2" stroke-linecap="round"/>
+  </g>
+  <circle cx="50.5" cy="44.6" r="11.9" fill="none" stroke="#9a62ee" stroke-opacity=".75" stroke-width="1.6"/>
+  <ellipse cx="44.6" cy="37.6" rx="3.6" ry="2" transform="rotate(-38 44.6 37.6)" fill="#fff" opacity=".95"/>
+  <!-- Wolkendecke -->
+  <path d="M0 0h100v9c-3 4.5-9 5.5-12.5 2-3.5 4-9.5 4-12.5 0-3.5 4-9.5 4-12.5 0-3.5 4-9.5 4-12.5 0-3.5 4-9.5 4-12.5 0-3.5 4-9.5 4-12.5 0-3.5 4-9.5 4-12.5 0-3.5 3.5-9.5 3.5-12.5-1z" fill="#fff"/>
+  <!-- Platzende Blase -->
+  <g transform="translate(75.5 44.6)">
+    <circle r="11" fill="none" stroke="#ff7cc6" stroke-width="2.4" stroke-dasharray="4 4.2" opacity=".9"/>
+    <g fill="#ff7cc6">
+      <circle cx="0" cy="-15.5" r="2.6"/>
+      <circle cx="14" cy="-7" r="2.3"/>
+      <circle cx="15" cy="7" r="2.6"/>
+      <circle cx="-13" cy="9" r="2.1"/>
+      <circle cx="5" cy="15" r="2.2"/>
+    </g>
+    <path d="M0 -5.5 L1.6 -1.6 L5.5 0 L1.6 1.6 L0 5.5 L-1.6 1.6 L-5.5 0 L-1.6 -1.6 Z" fill="#fff" stroke="#ffd23a" stroke-width="1.2" stroke-linejoin="round"/>
+  </g>
   <!-- Zielhilfe -->
-  <g fill="#fff">
-    <circle cx="57" cy="76" r="2.1"/>
-    <circle cx="62" cy="68" r="2.1" opacity=".9"/>
-    <circle cx="67" cy="60" r="2.1" opacity=".8"/>
-    <circle cx="72" cy="52" r="2.1" opacity=".65"/>
+  <g fill="#fff" stroke="#ff7cc6" stroke-width="1.2">
+    <circle cx="57.5" cy="69" r="2.3"/>
+    <circle cx="62.5" cy="62" r="2.1"/>
+    <circle cx="67.3" cy="55.4" r="1.9"/>
   </g>
   <!-- Werfer -->
-  <ellipse cx="50" cy="94" rx="20" ry="5" fill="#fff" opacity=".8"/>
-  <use href="#b" x="38" y="73" width="24" height="24" color="#ff7cc6"/>
+  <ellipse cx="50" cy="95" rx="22" ry="5.5" fill="#fff" opacity=".9"/>
+  <circle cx="50" cy="82" r="16.5" fill="#fff" opacity=".55"/>
+  <use href="#b" x="35" y="67" width="30" height="30" color="#ff7cc6"/>
+  <path d="M50 87.6c-3.2-2.3-5.6-4.2-5.6-6.6 0-1.7 1.3-3 2.9-3 1.1 0 2.1.6 2.7 1.6.6-1 1.6-1.6 2.7-1.6 1.6 0 2.9 1.3 2.9 3 0 2.4-2.4 4.3-5.6 6.6z" fill="#fff" opacity=".55"/>
 </svg>

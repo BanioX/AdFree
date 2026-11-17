@@ -33,8 +33,31 @@
 .pt-meter .fg { stroke: #fff; stroke-linecap: round; stroke-dasharray: 113.1; stroke-dashoffset: 113.1; transition: stroke-dashoffset .5s var(--ease-out); }
 .ink-dark .pt-meter .fg { stroke: var(--accent); }
 .pt-meter.full .fg { stroke: #ffd84d; }
-.pt-meter b { position: absolute; top: 23px; transform: translateY(-50%); font-size: 12.5px; font-weight: 900; font-variant-numeric: tabular-nums; }
+.pt-meter b { position: absolute; top: 23px; transform: translateY(-50%); font-size: 11.5px; letter-spacing: -.02em; font-weight: 900; font-variant-numeric: tabular-nums; }
 .pt-meter small { font-size: 10.5px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; opacity: .8; margin-top: 3px; }
+
+/* Lob («Herz komplett!») */
+.pt-praise {
+  position: absolute;
+  left: 50%;
+  z-index: 9300;
+  padding: 10px 22px;
+  border-radius: 999px;
+  background: #fff;
+  color: var(--accent);
+  font: 900 20px/1.1 var(--font);
+  white-space: nowrap;
+  pointer-events: none;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, .3), 0 0 0 3px rgba(255, 216, 77, .9);
+  animation: pt-praise 1.5s var(--ease-out) forwards;
+}
+@keyframes pt-praise {
+  0% { opacity: 0; transform: translate(-50%, 10px) scale(.6); }
+  14% { opacity: 1; transform: translate(-50%, 0) scale(1.08); }
+  24% { transform: translate(-50%, 0) scale(1); }
+  78% { opacity: 1; transform: translate(-50%, -8px) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -26px) scale(.96); }
+}
 
 /* Coach-Hinweis unten am Tisch */
 .cg-coach.pt-coach { top: auto; bottom: 12px; }

@@ -1,0 +1,6 @@
+/* Bäckerdutzend – eigene Styles (Basis: ../shared/style.css, ../lib/cards/cards.css, ../lib/cards/patience.css) */
+
+:root { --accent: #a8792a; --accent-2: #f2d49b; }
+
+/* leere Stapel im klassischen Spiel: bleiben leer (gesperrt) */
+.pslot.pt-col .bk-lock { width: 38%; height: 38%; opacity: .55; }

@@ -128,14 +128,15 @@ export function foundationPiles(st) {
   return piles;
 }
 
-/** Fortschritt 0..1: Karten, die in ihrer Farbreihe richtig auf ihrem Vorgänger liegen. */
+/** Fortschritt 0..1: fertige Reihen zählen voll, Karten richtig auf ihrem Vorgänger (bzw. König
+ *  zuunterst) zu 60 %. */
 export function progress(st) {
-  let n = st.done.length * 13;
+  let n = 0;
   for (let c = 0; c < COLS; c++) {
     const col = st.cols[c];
     for (let i = st.down[c]; i < col.length; i++) {
       if ((i === 0 && rankOf(col[i]) === 13) || (i > st.down[c] && fits(col[i], col[i - 1]))) n++;
     }
   }
-  return Math.min(1, n / 52);
+  return Math.min(1, (st.done.length * 13 + n * 0.6) / 52);
 }

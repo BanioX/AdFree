@@ -90,7 +90,21 @@ Seed aus dem Datum.
 `accent` = Knöpfe, `ink` = eigene Zahlen, `sel` = gewähltes Feld, `same` = gleiche Zahlen,
 `peer` = Reihe/Spalte/Block, `line`/`thick` = feine und dicke Linien, `wave` = Welle bei fertiger
 Reihe/Spalte/Block. Helle, ruhige Töne wählen; die Zahlen müssen gut lesbar bleiben.
-Im Einstellungsfenster haben bis zu sechs Farbpunkte in einer Reihe Platz.
+Im Einstellungsfenster und im Startbildschirm («Farben sammeln») stehen sechs Farbpunkte pro Reihe;
+der Name muss unter den Punkt passen (höchstens 8 Zeichen, ein Test prüft das).
+
+Optionale Felder:
+
+- `unlock: 20` – die Farbe wird erst mit so vielen **Sternen** freigeschaltet (Reihenfolge aufsteigend).
+  Sterne: jedes gelöste Rätsel bringt 1–3 ★ (3 = ohne Fehler und ohne Tipp), jedes fünfte Rätsel
+  einer Stufe ist ein **Goldrätsel** und zählt doppelt. Die Summe steht in `sudoku.stars`.
+- `cell: '#fffaf0'` – Papierfarbe der Felder (Standard weiss), `given: '#4a3418'` – Farbe der Vorgaben.
+
+## Erstes Rätsel
+
+Das allererste Rätsel (Leicht Nr. 1, noch nichts gelöst) wird mit `gentler()` aus `puzzles.js`
+etwas sanfter gemacht: zusätzliche Zahlen aus der Lösung, bis nur noch 28 Felder frei sind –
+bevorzugt in fast vollen Reihen/Spalten/Blöcken, damit schnell die ersten «Reihe fertig!» kommen.
 
 ## Tipp-Texte
 

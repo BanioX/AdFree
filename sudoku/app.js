@@ -593,9 +593,11 @@ async function openSettings() {
       sw('hideDone', 'Fertige Zahlen ausblenden'),
       sw('showTimer', 'Uhr anzeigen'),
       h('label.set-row', null, h('span.set-txt', null, h('b', null, 'Ton')), soundIn)));
+  const themeBefore = settings.theme;
   if (play) play.modalOpen = true;
   await showModal({ title: 'Einstellungen', content, buttons: [{ label: 'Fertig', value: true, primary: true }] });
   if (play) { play.modalOpen = false; play._lastTick = performance.now(); play.render(); }
+  else if (screen === 'menu' && settings.theme !== themeBefore) renderMenu();
 }
 
 // ---------- Router ----------

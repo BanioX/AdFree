@@ -9,7 +9,9 @@ import { MODES, newDeal } from '../logic/rules.js';
 import { solveSeed, solveState } from '../logic/solve.js';
 import { replayWins } from '../logic/replay.js';
 import { faceHTML } from '../cardface.js';
-import { dailyDeal, dayNumber, DAILY_VARIANTS } from '../deals.js';
+import { dailyDeal, dayNumber, DAILY_VARIANTS, FIRST_DEAL } from '../deals.js';
+import { findHint } from '../logic/hints.js';
+import { doMove, stockAction, autoFoundationMove, isWon } from '../logic/rules.js';
 
 const HEX = /^#[0-9a-f]{6}$/i;
 
@@ -112,4 +114,39 @@ test('Kartengesichter: alle 52 Karten, beide Beschriftungen', () => {
   }
   assert.match(faceHTML(10, { labels: 'BDK' }), />B</);
   assert.match(faceHTML(12, { labels: 'JQK' }), />K</);
+});
+
+test('Einstiegspartien: lösbar und schon mit «immer den Tipp nehmen» zu gewinnen', () => {
+  for (const [mode, seed] of Object.entries(FIRST_DEAL)) {
+    assert.ok(SOLVABLE[mode].seeds.includes(seed), `${mode} #${seed} in der Liste`);
+    const st = newDeal(mode, seed);
+    const hist = [];
+    for (let k = 0; k < 400 && !isWon(st); k++) {
+      const h = findHint(st, hist);
+      assert.ok(h, `${mode} #${seed}: Tipp vorhanden (Zug ${k})`);
+      const ops = h.kind === 'stock' ? stockAction(st).ops : doMove(st, h.from, h.index, h.to);
+      hist.push({ ops });
+      for (let m = autoFoundationMove(st); m; m = autoFoundationMove(st)) doMove(st, m.from, m.index, m.to);
+    }
+    assert.ok(isWon(st), `${mode} #${seed} mit Tipps gewonnen`);
+  }
+});
+
+test('Sammlung: Freischaltungen zeigen auf echte Designs, Standard ist frei', async () => {
+  const { UNLOCKS, isUnlocked, newlyUnlocked, nextUnlock, starsFor } = await import('../logic/unlocks.js');
+  const seen = new Set();
+  for (const u of UNLOCKS) {
+    const list = u.kind === 'back' ? BACKS : TABLES;
+    assert.ok(list.some((x) => x.id === u.id), `${u.kind} ${u.id} existiert`);
+    assert.ok(!seen.has(u.kind + u.id), 'keine Doppel');
+    seen.add(u.kind + u.id);
+  }
+  assert.ok(isUnlocked('back', DEFAULT_BACK, 0) && isUnlocked('table', DEFAULT_TABLE, 0), 'Standard frei');
+  assert.ok(BACKS.filter((b) => isUnlocked('back', b.id, 0)).length >= 4, 'mind. 4 Rücken von Anfang an');
+  assert.ok(newlyUnlocked(0, 1).length >= 1, 'erster Sieg schaltet etwas frei');
+  assert.ok(isUnlocked('back', 'klee', 0, ['back:klee']), 'gewählte Designs bleiben frei');
+  assert.equal(nextUnlock(999), null);
+  assert.equal(starsFor({}), 3);
+  assert.equal(starsFor({ undos: 2 }), 2);
+  assert.equal(starsFor({ hints: 3, undos: 5 }), 1);
 });

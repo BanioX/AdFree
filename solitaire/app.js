@@ -1,7 +1,7 @@
 // Solitär – Klondike, Spider & FreeCell. Menü, Spielsteuerung, Blätter, Hash-Routing.
 import { store, reportSummary, todayKey, markDailyDone, isDailyDone, dailyStreak } from '../shared/storage.js';
 import { sfx } from '../shared/sfx.js';
-import { icon, h, toast, showModal, celebrate, setupPage, soundButton, backButton, sleep } from '../shared/ui.js';
+import { icon, h, toast, showModal, confirmDialog, celebrate, setupPage, soundButton, backButton, sleep } from '../shared/ui.js';
 import {
   MODES, LAYOUTS, newDeal, validState, canPick, canDrop, tapTargets, doMove, stockAction,
   revertOps, autoFoundationMove, isWon, kindOf, hiddenCount, foundTotal, makeCode,
@@ -15,7 +15,8 @@ import { TABLES, DEFAULT_TABLE, tableBackground } from './data/tables.js';
 import { nextDeal, dailyDeal, DAILY_VARIANTS, dayLabel, solve } from './deals.js';
 import { gameMenu, menuSection } from '../shared/gamemenu.js';
 import { showTutorial, maybeShowTutorial, tutorialSeen } from '../shared/tutorial.js';
-import { tutorialSteps } from './howto.js';
+import { tutorialFor } from './howto.js';
+import { UNLOCKS, isUnlocked, needWins, newlyUnlocked, nextUnlock, starsFor } from './logic/unlocks.js';
 
 const GAME_ID = 'solitaire';
 const app = document.getElementById('app');
@@ -31,6 +32,11 @@ const DEFAULTS = {
 };
 let settings = { ...DEFAULTS, ...store.get('solitaire.settings', {}) };
 const saveSettings = () => store.set('solitaire.settings', settings);
+// Bisher gewählte Designs bleiben auch nach Einführung der Sammlung frei
+if (store.get('solitaire.keep', null) == null) store.set('solitaire.keep', [`back:${settings.back}`, `table:${settings.table}`]);
+
+const STAR_SVG = '<svg viewBox="0 0 24 24"><path d="M12 2.6l2.9 6 6.5.8-4.8 4.5 1.2 6.5L12 17.2l-5.8 3.2 1.2-6.5L2.6 9.4l6.5-.8z"/></svg>';
+const PRAISE = { 3: 'Gut so!', 5: 'Super!', 8: 'Klasse!', 12: 'Fantastisch!', 16: 'Unglaublich!', 22: 'Meisterhaft!' };
 
 const loadStats = () => store.get('solitaire.stats', {});
 const saveStats = (s) => store.set('solitaire.stats', s);
@@ -128,6 +134,99 @@ function teardown() {
 
 // ================================================================ Menü
 
+/** Live-Vorschau der laufenden Partie (kleiner Spieltisch) als Titelbild. */
+function boardPreview(sess) {
+  const st = sess.st;
+  const L = LAYOUTS[st.game];
+  const cols = L.tab.length;
+  const W = 236, gap = st.game === 'spider' ? 3 : 4;
+  const cw = Math.floor((W - 16 - gap * (cols - 1)) / cols);
+  const ch = Math.round(cw * 1.42);
+  const t = TABLES.find((x) => x.id === settings.table) || TABLES[0];
+  const wrap = h('div.hero-board' + (st.game === 'spider' ? '.compact' : ''), { style: { width: W + 'px', '--cw': cw + 'px', '--ch': ch + 'px', background: tableBackground(t) } });
+  const add = (id, x, y, up) => {
+    const el = h('div.mini-card' + (up ? '.up' : ''));
+    el.innerHTML = (up ? faceHTML(st.codes[id], settings) : '') + '<div class="back"></div>';
+    el.style.transform = `translate(${x}px, ${y}px)`;
+    wrap.append(el);
+  };
+  const x0 = 8, y0 = 8;
+  const colX = (i) => x0 + i * (cw + gap);
+  // Obere Reihe: Talon/Zellen links, Ablagen rechts
+  const topRow = [];
+  if (st.game === 'klondike') topRow.push([0, L.stock], [1, L.waste]);
+  if (st.game === 'freecell') L.cells.forEach((p, i) => topRow.push([i, p]));
+  if (st.game === 'spider') topRow.push([0, L.stock]);
+  const nf = st.game === 'spider' ? 8 : 4;
+  L.found.forEach((p, i) => topRow.push([cols - nf + i, p]));
+  for (const [i, p] of topRow) {
+    const a = st.piles[p];
+    if (!a.length) { wrap.append(h('div.hb-slot', { style: { transform: `translate(${colX(i)}px, ${y0}px)` } })); continue; }
+    const id = a[a.length - 1];
+    add(id, colX(i), y0, p === L.stock ? false : st.up[id]);
+  }
+  // Spalten: verdeckte Karten eng, offene weiter aufgefächert (höchstens 9 je Spalte)
+  const ty = y0 + ch + 6, maxH = 150;
+  let bottom = ty + ch;
+  L.tab.forEach((p, i) => {
+    const a = st.piles[p].slice(-9);
+    let y = ty;
+    const hid = a.filter((id) => !st.up[id]).length;
+    const upStep = Math.min(ch * 0.3, (maxH - ty - ch - hid * 3) / Math.max(1, a.length - hid - 1));
+    a.forEach((id, k) => {
+      add(id, colX(i), y, st.up[id]);
+      y += st.up[id] ? upStep : 3;
+      if (k === a.length - 1) bottom = Math.max(bottom, y - (st.up[id] ? upStep : 3) + ch);
+    });
+  });
+  wrap.style.height = Math.round(Math.min(maxH, bottom) + 8) + 'px';
+  const pct = Math.round((foundTotal(st) / st.codes.length) * 100);
+  wrap.append(h('span.hb-badge', null, `${pct} %`));
+  return wrap;
+}
+
+function totalWins() { return Stats.totals(loadStats()).won + store.get('solitaire.dailyWins', 0); }
+function keepList() { return store.get('solitaire.keep', []); }
+function unlocked(kind, id) { return isUnlocked(kind, id, totalWins(), keepList()); }
+function unlockName(u) {
+  const list = u.kind === 'back' ? BACKS : TABLES;
+  const it = list.find((x) => x.id === u.id);
+  return it ? it.name : u.id;
+}
+function unlockSwatch(u) {
+  if (u.kind === 'back') {
+    const b = BACKS.find((x) => x.id === u.id);
+    return h('span.coll-sw.back', { style: { backgroundImage: backDataURL(b) } });
+  }
+  const t = TABLES.find((x) => x.id === u.id);
+  return h('span.coll-sw.table', { style: { background: tableBackground(t) } });
+}
+
+/** «Sammlung»: Fortschritt bis zum nächsten Kartenrücken / Tisch. */
+function collectionCard() {
+  const wins = totalWins();
+  const total = BACKS.length + TABLES.length;
+  const have = BACKS.filter((b) => unlocked('back', b.id)).length + TABLES.filter((t) => unlocked('table', t.id)).length;
+  const next = nextUnlock(wins);
+  const prev = UNLOCKS.filter((u) => u.wins <= wins).reduce((m, u) => Math.max(m, u.wins), 0);
+  const frac = next ? (wins - prev) / Math.max(1, next.wins - prev) : 1;
+  const left = next ? next.wins - wins : 0;
+  const fan = h('span.coll-fan');
+  const owned = BACKS.filter((b) => unlocked('back', b.id)).slice(-3);
+  owned.forEach((b) => fan.append(h('span.coll-sw.back', { style: { backgroundImage: backDataURL(b) } })));
+  const nextSw = next ? unlockSwatch(next) : null;
+  if (nextSw) { nextSw.classList.add('locked'); nextSw.innerHTML = icon('lock', { size: 16 }); fan.append(nextSw); }
+  const b = h('button.coll-card', { type: 'button' },
+    fan,
+    h('span.coll-text', null,
+      h('b', null, `${have} von ${total} Designs`),
+      h('small', null, next ? `Nächstes: «${unlockName(next)}» – noch ${left} ${left === 1 ? 'Sieg' : 'Siege'}` : 'Alles freigeschaltet – wunderbar!'),
+      h('span.coll-bar', null, h('i', { style: { width: Math.round(frac * 100) + '%' } }))),
+    h('span.gm-chev', { html: icon('back', { size: 18 }) }));
+  b.addEventListener('click', () => showSettings());
+  return b;
+}
+
 function showMenu() {
   teardown();
   applyTheme();
@@ -141,9 +240,10 @@ function showMenu() {
   const sess = loadSession(mode);
   const running = sess && sess.started && !sess.won;
   const solvableTxt = settings.solvable && mode !== 'spider4' ? 'lösbar' : (mode === 'spider4' ? 'knifflig' : '');
+  const pct = running ? Math.round((foundTotal(sess.st) / sess.st.codes.length) * 100) : 0;
   const primary = running
-    ? { label: 'Weiterspielen', sub: `${modeLabel(mode)} · ${Stats.formatTime(sess.time)} · ${sess.moves} ${sess.moves === 1 ? 'Zug' : 'Züge'}`, onClick: () => go('play/' + mode) }
-    : { label: 'Spielen', sub: `${modeLabel(mode)}${solvableTxt ? ' · ' + solvableTxt : ''}`, onClick: () => go('play/' + mode) };
+    ? { label: 'Weiterspielen', sub: `${modeLabel(mode)} · ${pct} % · ${Stats.formatTime(sess.time)}`, onClick: () => go('play/' + mode) }
+    : { label: e.played ? 'Neue Partie' : 'Spielen', sub: `${modeLabel(mode)}${solvableTxt ? ' · ' + solvableTxt : ''}`, onClick: () => go('play/' + mode) };
 
   const kd = dailyDone('klondike');
   const kds = loadSession('daily-klondike');
@@ -178,11 +278,32 @@ function showMenu() {
     dl.append(b);
   }
 
+  const rerender = () => {
+    const y = menu.scroller.scrollTop;
+    showMenu();
+    const sc = app.querySelector('.gm-scroll');
+    if (sc) sc.scrollTop = y;
+  };
+
+  const secondary = [];
+  if (running) {
+    secondary.push({
+      label: 'Neue Partie', icon: 'plus', onClick: async () => {
+        const ok = await confirmDialog('Neue Partie?', `Die laufende Partie (${pct} %) zählt dann als nicht gewonnen.`, 'Neue Partie');
+        if (ok) { freshNext = true; go('play/' + mode); }
+      },
+    });
+  }
+  secondary.push({ label: 'Statistik', icon: 'star', onClick: () => showStats(mode) });
+  secondary.push({ label: 'Design', icon: 'settings', onClick: () => showSettings() });
+
+  const stars = store.get('solitaire.stars', {});
   const menu = gameMenu({
     id: GAME_ID,
     title: 'Solitär',
-    tagline: 'Klondike, Spider & FreeCell',
+    tagline: running ? 'Deine Partie wartet auf dich' : 'Klondike, Spider & FreeCell',
     accent: '#2f9e6e',
+    art: running ? boardPreview(sess) : null,
     primary,
     daily,
     modes: {
@@ -191,25 +312,18 @@ function showMenu() {
         const f = FAMILIES[key];
         const last = store.get('solitaire.variant.' + key, f.modes[0]);
         store.set('solitaire.mode', f.modes.includes(last) ? last : f.modes[0]);
-        const y = menu.scroller.scrollTop;
-        showMenu();
-        const sc = app.querySelector('.gm-scroll');
-        if (sc) sc.scrollTop = y;
+        rerender();
       },
     },
-    secondary: [
-      { label: 'Statistik', icon: 'star', onClick: () => showStats(mode) },
-      { label: 'Design', icon: 'settings', onClick: () => showSettings() },
-      { label: 'Regeln', icon: 'grid', onClick: () => showHelp(fam) },
-    ],
+    secondary,
     stats: [
       { label: 'Gewonnen', value: e.won },
-      { label: 'Quote', value: e.played ? Stats.winRate(e) + '%' : '–' },
+      { label: 'Sterne', value: '★ ' + (stars[mode] || 0) },
       { label: 'Bestzeit', value: Stats.formatTime(e.bestTime) },
       { label: 'Serie', value: e.streak },
     ],
-    sections: [menuSection('Weitere Tagesrätsel', dl)],
-    onHelp: () => showTutorialNow(),
+    sections: [menuSection('Sammlung', collectionCard()), menuSection('Weitere Tagesrätsel', dl)],
+    onHelp: () => showTutorialFor(fam),
   });
   app.append(menu);
 
@@ -222,13 +336,9 @@ function showMenu() {
       const c = h('button.chip' + (m === mode ? '.active' : ''), { type: 'button', 'data-mode': m }, MODES[m].sub);
       c.addEventListener('click', () => {
         if (m === mode) return;
-        sfx.play('click');
         store.set('solitaire.mode', m);
         store.set('solitaire.variant.' + fam, m);
-        const y = menu.scroller.scrollTop;
-        showMenu();
-        const sc = app.querySelector('.gm-scroll');
-        if (sc) sc.scrollTop = y;
+        rerender();
       });
       vars.append(c);
     }
@@ -236,11 +346,14 @@ function showMenu() {
   }
 
   report();
-  maybeShowTutorial({ id: GAME_ID, steps: tutorialSteps(settings), accent: '#2f9e6e' });
+  const t = tutorialFor('klondike', settings);
+  maybeShowTutorial({ id: t.id, steps: t.steps, accent: '#2f9e6e' });
 }
 
-function showTutorialNow() {
-  return showTutorial({ id: GAME_ID, steps: tutorialSteps(settings), accent: '#2f9e6e' });
+/** Tutorial der Spielart (Klondike = Grund-Tutorial). */
+function showTutorialFor(fam) {
+  const t = tutorialFor(fam, settings);
+  return showTutorial({ id: t.id, steps: t.steps, accent: '#2f9e6e', title: fam === 'klondike' ? 'So geht’s' : `So geht ${t.title}` });
 }
 
 function setThemeColor(c) {
@@ -250,9 +363,13 @@ function setThemeColor(c) {
 
 // ================================================================ Spiel
 
+let freshNext = false; // «Neue Partie» aus dem Menü: beim Öffnen neu austeilen
+
 async function openGame({ mode, daily }) {
   teardown();
   const tok = routeTok;
+  const fresh = freshNext && !daily;
+  freshNext = false;
   applyTheme();
   let sess;
   if (daily) {
@@ -270,14 +387,17 @@ async function openGame({ mode, daily }) {
     sess = loadSession(mode);
     if (!sess || sess.won) sess = null;
   }
-  const g = new Game(sess, mode || DAILY_VARIANTS[daily].mode);
+  const m = mode || DAILY_VARIANTS[daily].mode;
+  const g = new Game(sess, m);
   game = g;
   g.mount();
-  if (!tutorialSeen(GAME_ID)) {
-    await maybeShowTutorial({ id: GAME_ID, steps: tutorialSteps(settings), accent: '#2f9e6e' });
+  // Beim ersten Spiel einer Spielart: kurzes Tutorial, bevor ausgeteilt wird
+  const t = tutorialFor(familyOf(m), settings);
+  if (!tutorialSeen(t.id)) {
+    await maybeShowTutorial({ id: t.id, steps: t.steps, accent: '#2f9e6e', title: t.id === GAME_ID ? undefined : `So geht ${t.title}` });
     if (g.dead) return;
   }
-  if (!sess) await g.deal();
+  if (!sess || fresh) await g.deal();
   else g.show(!!sess.fresh);
 }
 
@@ -290,6 +410,19 @@ class Game {
     this.finishActs = null;
     this.lastT = performance.now();
     this.saveTick = 0;
+    this.paused = 0;
+    this.combo = 0;
+  }
+
+  /** Zeit anhalten (Tutorial, Einstellungen offen). */
+  pause() { this.tickTime(); this.paused++; }
+  resume() { this.paused = Math.max(0, this.paused - 1); this.lastT = performance.now(); }
+
+  /** «?» im laufenden Spiel: Tutorial der Spielart, Uhr steht still. */
+  async help() {
+    this.pause();
+    await showTutorialFor(this.st.game);
+    this.resume();
   }
 
   get st() { return this.s.st; }
@@ -303,13 +436,13 @@ class Game {
     this.hudTitle = h('b');
     this.hudTime = h('span');
     this.hudMoves = h('span');
-    const back = backButton('#', () => { sfx.play('click'); go(''); });
+    const back = backButton('#', () => go(''));
     back.classList.add('white-btn');
     const snd = soundButton();
     snd.classList.add('white-btn');
     const hud = h('div.hud', null, this.hudTitle, h('small', null, this.hudTime, this.hudMoves));
     const helpB = h('button.icon-btn.white-btn', { type: 'button', 'aria-label': 'So geht’s', html: '<span class="gm-q">?</span>' });
-    helpB.addEventListener('click', () => { sfx.play('click'); showTutorialNow(); });
+    helpB.addEventListener('click', () => this.help());
     this.top = h('div.topbar.game-top', null, back, hud, helpB, snd);
     this.boardEl = h('div.sol-board');
     const tb = h('div.toolbar');
@@ -323,7 +456,7 @@ class Game {
     this.btnNew = tool('refresh', 'Neu', () => this.askNew());
     this.btnHint = tool('hint', 'Tipp', () => this.hint());
     this.btnUndo = tool('undo', 'Zurück', () => this.undo());
-    this.btnSet = tool('settings', 'Design', () => showSettings(this));
+    this.btnSet = tool('settings', 'Design', () => { this.pause(); showSettings(this).then(() => this.resume()); });
     app.append(this.top, this.boardEl, tb);
     this.board = new Board(this.boardEl, {
       onMove: (p, i, t) => this.playerMove(p, i, t, 'drag'),
@@ -400,7 +533,7 @@ class Game {
     const now = performance.now();
     const dt = (now - this.lastT) / 1000;
     this.lastT = now;
-    if (this.s && this.s.started && !this.s.won && document.visibilityState === 'visible' && dt < 5) {
+    if (this.s && this.s.started && !this.s.won && !this.paused && document.visibilityState === 'visible' && dt < 5) {
       this.s.time += dt;
       if (++this.saveTick % 5 === 0) this.save();
     }
@@ -411,7 +544,6 @@ class Game {
     if (!this.s) return;
     const s = this.s;
     this.hudTitle.textContent = s.daily ? DAILY_VARIANTS[s.daily].title : modeLabel(s.mode);
-    this.hudTime.innerHTML = icon('refresh', { size: 14 }).replace('refresh', 'clock') + Stats.formatTime(s.time);
     this.hudTime.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>${Stats.formatTime(s.time)}`;
     this.hudMoves.textContent = `${s.moves} ${s.moves === 1 ? 'Zug' : 'Züge'}`;
     this.btnUndo.disabled = !s.hist.length || s.won;
@@ -471,31 +603,75 @@ class Game {
     sfx.play(tk === 'found' ? 'pop' : 'place');
     if (ops.some((o) => o.o === 'flip')) setTimeout(() => sfx.play('click'), 160);
     const moving = st.piles[t].slice(-ops[0].n);
+    const hidBefore = hiddenCount(st) + ops.filter((o) => o.o === 'flip').length;
     this.board.update({ ids: moving, stagger: how === 'drag' ? 0 : 22, dur: how === 'drag' ? 190 : undefined });
+    if (tk === 'found') this.burstAt(t, how === 'drag' ? 170 : 240);
     if (runDone) this.celebrateRun();
-    this.autoMoves(turn);
+    const auto = this.autoMoves(turn);
+    this.feedback(turn, { hidBefore, auto, runDone });
     this.afterTurn();
+  }
+
+  /** Lob für Serien: jeder Zug, der eine Karte ablegt oder aufdeckt, verlängert die Serie. */
+  feedback(turn, { hidBefore, auto = 0, runDone = false, stock = false }) {
+    const st = this.st;
+    const gain = turn.ops.some((o) => (o.o === 'mv' && kindOf(st, o.t) === 'found') || o.o === 'flip');
+    if (gain) this.combo++;
+    else if (!stock) this.combo = 0;
+    const hidAfter = hiddenCount(st);
+    let msg = null;
+    if (hidBefore > 0 && hidAfter === 0 && st.game !== 'freecell' && !isWon(st)) msg = 'Alles aufgedeckt!';
+    else if (runDone) msg = 'Folge komplett!';
+    else if (auto >= 3) msg = 'Kettenreaktion!';
+    else if (gain && PRAISE[this.combo]) msg = PRAISE[this.combo];
+    if (msg && !isWon(st)) this.praise(msg);
+  }
+
+  praise(text) {
+    if (this.praiseEl) this.praiseEl.remove();
+    const el = h('div.praise', null, text);
+    this.praiseEl = el;
+    this.boardEl.append(el);
+    setTimeout(() => sfx.play('sparkle'), 180);
+    setTimeout(() => { el.classList.add('out'); setTimeout(() => el.remove(), 400); }, 1100);
+  }
+
+  /** Funken auf einer Ablage, sobald die Karte dort landet. */
+  burstAt(p, delay = 240) {
+    setTimeout(() => {
+      if (this.dead || !this.board.geo) return;
+      const r = this.board.pileRect(p, true);
+      const b = h('div.found-burst');
+      b.style.cssText = `left:${r.x}px;top:${r.y}px;width:${r.w}px;height:${r.h}px`;
+      for (let i = 0; i < 10; i++) b.append(h('i', { style: { '--a': (i * 36) + 'deg' } }));
+      this.boardEl.append(b);
+      setTimeout(() => b.remove(), 800);
+    }, delay);
   }
 
   /** Sichere Karten automatisch auf die Ablage (gehört zum selben Zug). */
   autoMoves(turn) {
-    if (!settings.autoFound || this.st.game === 'spider') return;
+    if (!settings.autoFound || this.st.game === 'spider') return 0;
     let n = 0;
+    const targets = [];
     for (;;) {
       const m = autoFoundationMove(this.st);
       if (!m) break;
       turn.ops.push(...doMove(this.st, m.from, m.index, m.to));
+      targets.push(m.to);
       n++;
     }
     if (n) {
       this.board.update({ delay: 160, stagger: 90 });
       for (let k = 0; k < Math.min(n, 6); k++) setTimeout(() => sfx.play('pop'), 200 + k * 90);
+      targets.forEach((p, k) => this.burstAt(p, 330 + k * 90));
     }
+    return n;
   }
 
   celebrateRun() {
-    setTimeout(() => sfx.play('sparkle'), 250);
-    toast('Folge komplett! ✨', 1200);
+    const f = LAYOUTS.spider.found.filter((q) => this.st.piles[q].length).pop();
+    if (f != null) this.burstAt(f, 420);
   }
 
   stock() {
@@ -511,22 +687,25 @@ class Game {
     }
     this.board.clearFlash();
     this.begin();
+    const hidBefore = hiddenCount(st);
     const turn = { ops: r.ops };
     this.s.hist.push(turn);
     this.s.moves++;
     const op = r.ops[0];
+    let runDone = false;
     if (op.o === 'recycle') { sfx.play('whoosh'); this.board.update({ dur: 260, stagger: 6 }); }
     else if (op.o === 'deal') {
       sfx.play('whoosh');
       const ids = L.tab.map((p) => st.piles[p][st.piles[p].length - 1]);
       this.board.update({ ids, stagger: 45, dur: 260 });
-      if (r.ops.some((o) => o.o === 'mv' && o.n === 13)) this.celebrateRun();
+      if (r.ops.some((o) => o.o === 'mv' && o.n === 13)) { runDone = true; this.celebrateRun(); }
     } else {
       sfx.play('tap');
       const w = st.piles[L.waste];
       this.board.update({ ids: w.slice(-op.n), stagger: 50, dur: 230 });
     }
-    this.autoMoves(turn);
+    const auto = this.autoMoves(turn);
+    this.feedback(turn, { hidBefore, auto, runDone, stock: true });
     this.afterTurn();
   }
 
@@ -535,6 +714,8 @@ class Game {
     const turn = this.s.hist.pop();
     revertOps(this.st, turn.ops);
     this.s.moves = Math.max(0, this.s.moves - (turn.count || 1));
+    this.s.undos = (this.s.undos || 0) + 1;
+    this.combo = 0;
     this.board.clearFlash();
     sfx.play('click');
     this.board.update({ dur: 220, stagger: 12 });
@@ -631,6 +812,8 @@ class Game {
     }
     if (!hnt) hnt = findHint(st, this.s.hist);
     if (!hnt) { this.showStuck(true); return; }
+    this.s.hints = (this.s.hints || 0) + 1;
+    this.save();
     sfx.play('sparkle');
     if (hnt.kind === 'stock') {
       const sp = st.piles[L.stock];
@@ -715,6 +898,9 @@ class Game {
     this.board.locked = true;
     this.hideFinish();
     let result = null;
+    const winsBefore = totalWins();
+    s.stars = starsFor(s);
+    if (!s.daily) store.update('solitaire.stars', {}, (o) => ({ ...o, [s.mode]: (o[s.mode] || 0) + s.stars }));
     if (s.daily) {
       if (s.daily === 'klondike') markDailyDone(GAME_ID, s.day);
       store.set(`solitaire.daily.${s.daily}.${s.day}`, true);
@@ -723,6 +909,7 @@ class Game {
       result = Stats.recordWin(loadStats(), s.mode, { time: Math.round(s.time), moves: s.moves });
       saveStats(result.stats);
     }
+    s.unlocks = newlyUnlocked(winsBefore, totalWins()).map((u) => u.kind + ':' + u.id);
     this.save();
     report();
     this.renderHud();
@@ -752,16 +939,26 @@ class Game {
     if (result && result.records.time) badges.append(h('span.badge', { html: icon('star', { size: 15 }) + 'Neue Bestzeit' }));
     if (result && result.records.moves) badges.append(h('span.badge', { html: icon('bolt', { size: 15 }) + 'Wenigste Züge' }));
     if (e && e.won === 1) badges.append(h('span.badge', { html: icon('heart', { size: 15 }) + 'Erster Sieg' }));
-    const content = h('div.win', null, art,
+    const nStars = s.stars || starsFor(s);
+    const starRow = h('div.win-stars', null, [1, 2, 3].map((k) => h('span' + (k <= nStars ? '.on' : ''), { style: { animationDelay: (again ? 0 : 250 + k * 220) + 'ms' }, html: STAR_SVG })));
+    const starNote = h('p.win-note', null, nStars === 3 ? 'Ganz ohne Hilfe – perfekt!' : nStars === 2 ? 'Fast ohne Hilfe – stark!' : 'Geschafft! Mit weniger Hilfen gibt’s mehr Sterne.');
+    const unlockRow = h('div.win-unlocks');
+    for (const key of s.unlocks || []) {
+      const [kind, id] = key.split(':');
+      const u = { kind, id };
+      unlockRow.append(h('div.win-unlock', null, unlockSwatch(u),
+        h('span', null, h('small', null, kind === 'back' ? 'Neuer Kartenrücken' : 'Neuer Tisch'), h('b', null, unlockName(u)))));
+    }
+    const content = h('div.win', null, art, starRow, starNote,
       h('p', null, s.daily ? `${DAILY_VARIANTS[s.daily].title} vom ${dayLabel(s.day)} gelöst!` : `${modeLabel(s.mode)} – ${s.label}`),
       h('div.win-stats', null, stat(Stats.formatTime(s.time), 'Zeit'), stat(String(s.moves), 'Züge'), third),
-      badges);
+      badges, (s.unlocks || []).length ? unlockRow : null);
+    if (!again && nStars) [1, 2, 3].slice(0, nStars).forEach((k) => setTimeout(() => sfx.play('pop'), 250 + k * 220 + 150));
     const buttons = s.daily
       ? [{ label: 'Freies Spiel', value: 'free', primary: true, icon: 'play' }, { label: 'Zum Menü', value: 'menu', ghost: true }]
       : [{ label: 'Neue Partie', value: 'new', primary: true, icon: 'refresh' }, { label: 'Zum Menü', value: 'menu', ghost: true }];
     const v = await showModal({ title: again ? 'Schon gelöst!' : s.daily ? 'Tagesrätsel gelöst!' : 'Gewonnen!', content, buttons, dismissible: false });
     if (this.dead) return;
-    sfx.play('click');
     if (v === 'new') { this.busy = false; this.board.locked = false; this.deal(); }
     else if (v === 'free') go('play/' + s.mode);
     else go('');
@@ -788,7 +985,6 @@ class Game {
   }
 
   async askNew() {
-    sfx.play('click');
     const s = this.s;
     const buttons = s.daily
       ? [{ label: 'Neu beginnen', value: 'restart', primary: true, icon: 'rotate' }, { label: 'Freies Spiel', value: 'free', icon: 'play' }, { label: 'Abbrechen', value: null, ghost: true }]
@@ -827,22 +1023,32 @@ function toggleRow(label, sub, get, set) {
     const v = !get();
     set(v);
     sw.classList.toggle('on', v);
-    sfx.play('click');
   });
   return row;
 }
 
+function lockedToast(kind, id) {
+  const left = needWins(kind, id) - totalWins();
+  toast(`Noch ${left} ${left === 1 ? 'Sieg' : 'Siege'} bis zum Freischalten`);
+}
+
 function showSettings(g = null) {
   const content = h('div.sheet');
+  const wins = totalWins();
+  const nx = nextUnlock(wins);
+  content.append(h('p.coll-note', null, nx ? `Mit jedem Sieg kommen neue Designs dazu – du hast ${wins} ${wins === 1 ? 'Sieg' : 'Siege'}.` : 'Alle Designs sind freigeschaltet.'));
   content.append(h('h3', null, 'Kartenrücken'));
   const backs = h('div.pick-grid');
   const renderBacks = () => {
     backs.replaceChildren();
     for (const b of BACKS) {
+      const open = unlocked('back', b.id);
       const sw = h('span.sw', { style: { backgroundImage: backDataURL(b) } });
-      const btn = h('button.pick' + (settings.back === b.id ? '.active' : ''), { type: 'button', 'aria-label': b.name }, sw, h('span', null, b.name));
+      if (!open) sw.append(h('span.lock', { html: icon('lock', { size: 16 }) + `<b>${needWins('back', b.id)}</b>` }));
+      const btn = h('button.pick' + (settings.back === b.id ? '.active' : '') + (open ? '' : '.locked'), { type: 'button', 'aria-label': b.name }, sw, h('span', null, b.name));
       btn.addEventListener('click', () => {
-        settings.back = b.id; saveSettings(); applyTheme(); sfx.play('tap'); renderBacks();
+        if (!open) { lockedToast('back', b.id); btn.classList.remove('sp-shake'); void btn.offsetWidth; btn.classList.add('sp-shake'); return; }
+        settings.back = b.id; saveSettings(); applyTheme(); renderBacks();
       });
       backs.append(btn);
     }
@@ -855,10 +1061,13 @@ function showSettings(g = null) {
   const renderTables = () => {
     tables.replaceChildren();
     for (const t of TABLES) {
+      const open = unlocked('table', t.id);
       const sw = h('span.sw', { style: { background: tableBackground(t) } });
-      const btn = h('button.pick.table' + (settings.table === t.id ? '.active' : ''), { type: 'button', 'aria-label': t.name }, sw, h('span', null, t.name));
+      if (!open) sw.append(h('span.lock', { html: icon('lock', { size: 16 }) + `<b>${needWins('table', t.id)}</b>` }));
+      const btn = h('button.pick.table' + (settings.table === t.id ? '.active' : '') + (open ? '' : '.locked'), { type: 'button', 'aria-label': t.name }, sw, h('span', null, t.name));
       btn.addEventListener('click', () => {
-        settings.table = t.id; saveSettings(); sfx.play('tap'); renderTables();
+        if (!open) { lockedToast('table', t.id); btn.classList.remove('sp-shake'); void btn.offsetWidth; btn.classList.add('sp-shake'); return; }
+        settings.table = t.id; saveSettings(); renderTables();
         if (g) {
           app.style.setProperty('--table-bg', tableBackground(t));
           app.classList.toggle('ink-dark', t.ink === 'dark');
@@ -883,7 +1092,7 @@ function showSettings(g = null) {
   for (const [k, l] of [['BDK', 'B D K'], ['JQK', 'J Q K']]) {
     const b = h('button' + (settings.labels === k ? '.active' : ''), { type: 'button' }, l);
     b.addEventListener('click', () => {
-      settings.labels = k; saveSettings(); sfx.play('click');
+      settings.labels = k; saveSettings();
       seg.querySelectorAll('button').forEach((x) => x.classList.toggle('active', x === b));
       if (g) g.board.setOptions({ labels: k });
     });
@@ -899,7 +1108,6 @@ function showSettings(g = null) {
       b.addEventListener('click', () => {
         store.set('solitaire.variant.klondike', m);
         if (familyOf(selectedMode()) === 'klondike') store.set('solitaire.mode', m);
-        sfx.play('click');
         seg2.querySelectorAll('button').forEach((x) => x.classList.toggle('active', x === b));
       });
       seg2.append(b);
@@ -934,7 +1142,7 @@ function showStats(mode) {
   };
   for (const m of Object.keys(MODES)) {
     const c = h('button.chip', { type: 'button', 'data-m': m }, m === 'freecell' ? 'FreeCell' : m.startsWith('klondike') ? `Klondike ${MODES[m].draw}` : `Spider ${MODES[m].suits}♠`);
-    c.addEventListener('click', () => { current = m; sfx.play('click'); render(); });
+    c.addEventListener('click', () => { current = m; render(); });
     chips.append(c);
   }
   content.append(chips, sub, body);
@@ -955,71 +1163,6 @@ function showStats(mode) {
       showStats(current);
     }
   });
-}
-
-const HELP = {
-  klondike: {
-    title: 'Klondike',
-    cards: [[1, 13], [0, 12], [3, 11]],
-    text: [
-      'Ziel: Alle Karten nach Farben von <b>Ass bis König</b> auf die vier Ablagen oben legen.',
-      'In den Spalten legst du <b>absteigend</b> und <b>abwechselnd Rot auf Schwarz</b>. Verdeckte Karten drehen sich um, sobald sie frei liegen.',
-      'In eine leere Spalte passt nur ein <b>König</b>. Tippe auf den Talon, um neue Karten zu ziehen – bei «Ziehe 3» drei auf einmal.',
-    ],
-  },
-  spider: {
-    title: 'Spider',
-    cards: [[0, 9], [0, 8], [0, 7]],
-    text: [
-      'Ziel: In den Spalten Folgen von <b>König bis Ass in derselben Farbe</b> bauen – fertige Folgen räumen sich von selbst ab.',
-      'Absteigend darfst du auf jede Farbe legen, <b>verschieben</b> lassen sich aber nur gleichfarbige Folgen. Leere Spalten nehmen jede Karte.',
-      'Der Talon gibt jeder Spalte eine neue Karte – das geht nur, wenn keine Spalte leer ist. Mit 1 Farbe ist es entspannt, mit 4 Farben eine echte Knobelei.',
-    ],
-  },
-  freecell: {
-    title: 'FreeCell',
-    cards: [[3, 6], [2, 5], [1, 4]],
-    text: [
-      'Alle Karten liegen offen – reine Überlegung, fast jede Partie geht auf.',
-      'Lege absteigend <b>Rot auf Schwarz</b> und sammle die Farben von Ass bis König auf den Ablagen oben rechts.',
-      'Die <b>vier freien Zellen</b> oben links nehmen je eine Karte auf. Ganze Folgen verschiebst du, wenn genug Zellen oder Spalten frei sind.',
-    ],
-  },
-  bedienung: {
-    title: 'Bedienung',
-    cards: [[1, 1], [0, 2], [3, 3]],
-    list: [
-      '<b>Antippen:</b> Die Karte springt auf den besten Platz – zuerst auf die Ablage. Nochmals tippen probiert ein anderes Ziel.',
-      '<b>Ziehen:</b> Karte oder ganzen Stapel mit dem Finger verschieben.',
-      '<b>Tipp</b> zeigt einen guten Zug, <b>Zurück</b> nimmt Züge zurück – so oft du willst.',
-      'Liegen alle Karten offen, erscheint <b>«Automatisch beenden»</b>.',
-      'Dein Spielstand wird immer gespeichert. Unter <b>Design</b> wählst du Kartenrücken und Tisch.',
-    ],
-  },
-};
-
-function showHelp(fam = 'klondike') {
-  const content = h('div.sheet');
-  const seg = h('div.seg');
-  const body = h('div.help-body');
-  let cur = fam;
-  const render = () => {
-    seg.querySelectorAll('button').forEach((b) => b.classList.toggle('active', b.dataset.k === cur));
-    const d = HELP[cur];
-    const art = h('div.help-art');
-    d.cards.forEach(([s, r], i) => art.append(miniCard(makeCode(s, r), { x: 50 + i * 40, y: i * 5, rot: -8 + i * 8 })));
-    body.replaceChildren(art);
-    if (d.text) d.text.forEach((t) => body.append(h('p', { html: t })));
-    if (d.list) body.append(h('ul', null, d.list.map((t) => h('li', { html: t }))));
-  };
-  for (const k of ['bedienung', 'klondike', 'spider', 'freecell']) {
-    const b = h('button', { type: 'button', 'data-k': k }, HELP[k].title);
-    b.addEventListener('click', () => { cur = k; sfx.play('click'); render(); });
-    seg.append(b);
-  }
-  content.append(h('div.help-tabs', null, seg), body);
-  render();
-  return showModal({ title: 'Regeln', content, buttons: [{ label: 'Alles klar', value: true, primary: true }] });
 }
 
 // ================================================================ Start

@@ -3,7 +3,8 @@
 //   2. node sudoku/tests/e2e.mjs            (Screenshots landen in sudoku/tests/out/)
 // Prüft: Start über die Kachel der Startseite, «So geht's», Menü, ganze Runde per Tippen bis zum
 // Sieg-Blatt, Neuladen mitten im Spiel, Notizen, Rückgängig, Tipp, Pause, Einstellungen, Statistik,
-// Tagesrätsel, «3 Fehler»-Modus, Worker, kleines iPhone (375 px) ohne Scrollen, keine Konsolenfehler.
+// Tagesrätsel, «3 Fehler»-Modus, Worker, kleines iPhone (375 px) ohne Scrollen, keine Konsolenfehler,
+// Sterne nach dem ersten Sieg. (Bilder für die Sichtprüfung von Tutorial, Coach-Mark, Lob, Gold: tests/shots.mjs)
 import { createRequire } from 'node:module';
 import assert from 'node:assert/strict';
 import { mkdirSync } from 'node:fs';
@@ -254,6 +255,11 @@ async function main() {
   assert.equal(g.done, true);
   const stats1 = await page.evaluate(() => JSON.parse(localStorage.getItem('spielpause.sudoku.stats')));
   assert.equal(stats1.leicht.won, 1, 'Sieg gezählt');
+  // Sterne verbucht (1–3), Belohnung im Sieg-Blatt
+  const stars1 = await page.evaluate(() => JSON.parse(localStorage.getItem('spielpause.sudoku.stars')));
+  assert.ok(stars1 >= 1 && stars1 <= 3, 'Sterne verbucht: ' + stars1);
+  assert.ok(await page.locator('.sp-modal .win-plus').count(), '«+N ★» im Sieg-Blatt');
+  assert.equal(g.meta.first, true, 'erstes Rätsel ist extra sanft');
   const summary = await page.evaluate(() => JSON.parse(localStorage.getItem('spielpause.summary.sudoku')));
   assert.ok(summary && summary.text, 'reportSummary gesetzt');
   log('Summary:', summary.text);

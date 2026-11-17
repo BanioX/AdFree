@@ -141,10 +141,10 @@
 .blocks-map .scroll { padding-bottom: var(--safe-bottom); }
 .hero-art { position: relative; display: inline-block; padding: 34px 4px 0; }
 .hero-art .mini-board:first-child { filter: drop-shadow(0 8px 16px rgba(70, 45, 20, .18)); }
-.hero-art.preview { padding: 8px 0 0; }
+.hero-art.preview { padding: 14px 0 0; }
 .hero-art.preview .mini-board { filter: drop-shadow(0 10px 18px rgba(70, 45, 20, .2)); }
 .hero-goals {
-  position: absolute; top: -6px; right: -18px; display: flex; align-items: center; gap: 6px;
+  position: absolute; top: 0; right: -24px; display: flex; align-items: center; gap: 6px;
   padding: 5px 10px 5px 7px; border-radius: 999px; background: var(--surface);
   box-shadow: 0 4px 12px rgba(70, 45, 20, .18), 0 0 0 2px var(--world, var(--accent));
   animation: bp-badge 2.8s ease-in-out infinite;

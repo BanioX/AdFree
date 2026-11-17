@@ -53,9 +53,7 @@ function goalBadge(status) {
   for (const g of status.slice(0, 3)) {
     let ic;
     if (g.type === 'gems') ic = h('img', { src: gemIconUrl(g.key, 28), alt: '' });
-    else if (g.type === 'picture') ic = h('span.hg-txt', null, '🖼️');
-    else if (g.type === 'lines') ic = h('span.hg-txt', null, '🧱');
-    else ic = h('span.hg-txt', null, '🎯');
+    else ic = h('span.hg-txt', null, GOAL_EMOJI[g.type]);
     const n = g.type === 'picture' ? '?' : fmt(g.need - g.have);
     badge.append(h('span.hg', null, ic, h('b', null, n)));
   }

@@ -102,6 +102,7 @@ async function run() {
   await shot(page, 'e2e-03-level1-intro');
   await wait(page, 3200);
   check(await ev(page, () => !!(window.__blocks.view.hint && window.__blocks.view.hint.persist)), 'Coach-Mark zeigt den ersten Zug');
+  check(await page.locator('.coach-finger').count() === 1, 'Coach-Finger zeigt die Ziehbewegung');
   await shot(page, 'e2e-04-coach');
   let moves = 0;
   for (let i = 0; i < 12; i++) {
@@ -114,6 +115,7 @@ async function run() {
     await wait(page, 450);
   }
   check(await ev(page, () => window.__blocks.game.won), `Level 1 gewonnen (${moves} Teile)`);
+  check(await page.locator('.coach-finger').count() === 0, 'Coach-Finger nach dem ersten Zug weg');
   await page.locator('.win-stars').waitFor({ state: 'visible', timeout: 5000 });
   await wait(page, 900);
   check((await dialogTitle(page)) === 'Level 1 geschafft!', 'Sieg-Blatt erscheint');
@@ -370,6 +372,11 @@ async function qaChecks(browser, errors) {
   check(sc2 > sc1 && s2.played === s1.played && s2.total === s0.total + sc2, `nach Rettung: Zuwachs gezählt (${sc1} → ${sc2})`);
   await page.getByRole('button', { name: 'Zum Menü' }).click();
   await wait(page, 500);
+
+  console.log('QA: Hauptknopf auf 375×667 ohne Scrollen');
+  const primBox = await page.locator('.gm-primary').boundingBox();
+  check(primBox && primBox.y + primBox.height <= 667, `Hauptknopf sichtbar (unten bei ${primBox && Math.round(primBox.y + primBox.height)})`);
+  check(await page.locator('.skin-opt.locked').count() >= 1, 'Aussehen zum Freischalten mit Schloss');
 
   console.log('QA: Statistik passt auf 375×667');
   await page.getByRole('button', { name: 'Statistik' }).click();

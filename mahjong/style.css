@@ -19,8 +19,21 @@
 
 /* ---------- Menü (gemeinsamer Startbildschirm + eigene Teile) ---------- */
 .menu-screen { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
-.gm-art.custom { overflow: visible; }
-.fan { position: relative; height: 118px; width: 250px; margin: 6px auto 0; }
+/* Titelbild: kleiner Spieltisch (Tischfarbe), Fächer oder Live-Vorschau des laufenden Spiels */
+.mj-hero {
+  position: relative; width: 268px; height: 136px; max-width: 100%; border-radius: 24px; overflow: hidden;
+  background:
+    radial-gradient(110% 80% at 50% 25%, rgba(255,255,255,.55), rgba(255,255,255,0) 70%),
+    linear-gradient(180deg, var(--table-1), var(--table-2));
+  box-shadow: inset 0 2px 8px rgba(120, 80, 30, .12), inset 0 0 0 1px rgba(120, 80, 30, .06);
+}
+.mj-hero.dark-table { background: radial-gradient(110% 80% at 50% 25%, rgba(255,255,255,.12), rgba(255,255,255,0) 70%), linear-gradient(180deg, var(--table-1), var(--table-2)); }
+.mj-hero.live { cursor: pointer; }
+.mj-hero-board { position: absolute; inset: 6px 8px 12px; }
+.mj-hero-board canvas { pointer-events: none; }
+.mj-hero-bar { position: absolute; left: 22px; right: 22px; bottom: 7px; height: 5px; border-radius: 3px; background: rgba(120, 90, 60, .16); overflow: hidden; }
+.mj-hero-bar i { display: block; height: 100%; border-radius: 3px; background: linear-gradient(90deg, var(--gold), var(--accent)); }
+.fan { position: absolute; left: 0; top: 0; width: 100%; height: 100%; }
 .fan canvas { position: absolute; left: 50%; top: 50%; transform-origin: 50% 80%; filter: drop-shadow(0 6px 8px rgba(90, 40, 20, .18)); }
 .fan canvas:nth-child(1) { animation: mj-float 5s ease-in-out infinite; }
 .fan canvas:nth-child(2) { animation: mj-float 5s ease-in-out -1.2s infinite; }
@@ -41,6 +54,28 @@
 }
 .jall span { display: grid; transform: rotate(180deg); color: var(--text-3); }
 .jall:active { transform: scale(.98); }
+
+/* Tische (freischaltbare Spielfeld-Farben) */
+.tables { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
+.tbl {
+  display: flex; flex-direction: column; align-items: center; gap: 3px; min-width: 0; padding: 8px 2px 7px;
+  border: 0; border-radius: 16px; background: var(--surface); box-shadow: var(--shadow); color: var(--text);
+  transition: transform .15s var(--ease-out), box-shadow .2s;
+}
+.tbl:active { transform: scale(.94); }
+.tbl .sw {
+  width: 42px; height: 42px; border-radius: 13px; display: grid; place-items: center;
+  box-shadow: inset 0 0 0 1px rgba(90, 60, 30, .14), 0 2px 4px rgba(90, 60, 30, .12);
+}
+.tbl .sw .ok { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; background: var(--accent); color: #fff; }
+.tbl .sw .lk { color: rgba(60, 45, 30, .55); display: grid; }
+.tbl b { font-size: 12.5px; font-weight: 800; white-space: nowrap; }
+.tbl small { font-size: 11px; font-weight: 750; color: var(--text-3); white-space: nowrap; }
+.tbl.on { box-shadow: 0 0 0 3px var(--accent), var(--shadow); }
+.tbl.on small { color: var(--accent); }
+.tbl.locked { background: var(--surface-2); box-shadow: none; }
+.tbl.locked .sw { filter: saturate(.35) brightness(.98); opacity: .75; }
+.tbl.locked small { color: #b77905; }
 .star-chip { color: #b77905; }
 
 /* ---------- Spielfläche ---------- */
@@ -72,9 +107,15 @@
 
 .combo {
   position: absolute; left: 50%; top: 12px; z-index: 4; transform: translateX(-50%);
-  padding: 6px 14px; border-radius: 999px; background: rgba(43, 36, 32, .86); color: #fff;
-  font-weight: 800; font-size: 15px; pointer-events: none; opacity: 0; white-space: nowrap;
+  display: flex; align-items: baseline; gap: 8px;
+  padding: 7px 16px; border-radius: 999px; background: rgba(43, 36, 32, .88); color: #fff;
+  font-weight: 800; font-size: 14px; pointer-events: none; opacity: 0; white-space: nowrap;
+  box-shadow: 0 6px 16px rgba(40, 25, 10, .22);
 }
+.combo b { font-size: 17px; font-weight: 900; color: #ffd36b; letter-spacing: -.01em; }
+.combo span { opacity: .85; font-size: 13px; }
+.combo.hot { background: linear-gradient(90deg, #c0573e, #e08a2c); }
+.combo.hot b { color: #fff; }
 .combo.show { animation: mj-combo 1.1s var(--ease-out) both; }
 @keyframes mj-combo {
   0% { opacity: 0; transform: translate(-50%, 8px) scale(.8); }
@@ -153,6 +194,19 @@
 .win-facts div { background: var(--surface-2); border-radius: 14px; padding: 8px 6px; }
 .win-facts b { display: block; font-size: 20px; color: var(--text); font-variant-numeric: tabular-nums; }
 .win-facts span { font-size: 12.5px; font-weight: 700; }
+.badge-table {
+  display: flex; align-items: center; gap: 10px; margin: 10px auto 0; padding: 8px 14px 8px 8px; width: fit-content;
+  border-radius: 16px; background: var(--surface-2); text-align: left; animation: mj-star .5s .5s var(--ease-spring) both;
+}
+.badge-table .sw { width: 34px; height: 34px; border-radius: 10px; box-shadow: inset 0 0 0 1px rgba(90, 60, 30, .15); flex: 0 0 auto; }
+.badge-table b { display: block; color: var(--text); font-size: 14.5px; }
+.badge-table small { display: block; font-size: 12px; font-weight: 650; }
+.board-wrap.dark-table {
+  background: radial-gradient(110% 80% at 50% 30%, rgba(255,255,255,.1), rgba(255,255,255,0) 70%), linear-gradient(180deg, var(--table-1), var(--table-2));
+  box-shadow: inset 0 2px 10px rgba(0, 0, 0, .35);
+}
+.dark-table .coach-bubble, .dark-table .combo:not(.hot) { background: rgba(255, 250, 240, .95); color: #2b2420; }
+.dark-table .combo:not(.hot) b { color: #c0573e; }
 .badge-new { display: inline-block; margin-top: 6px; padding: 3px 10px; border-radius: 999px; background: #fff1c9; color: #9a6b00; font-weight: 800; font-size: 13px; }
 
 .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; text-align: center; margin-bottom: 4px; }
@@ -221,9 +275,10 @@
 .coach.out { opacity: 0; }
 .coach-ring {
   position: absolute; transform: translate(-50%, -50%); border-radius: 12px;
-  border: 3px solid var(--gold); box-shadow: 0 0 0 4px rgba(231, 169, 35, .25);
-  animation: mj-coach 1.1s ease-in-out infinite;
+  border: 3.5px solid var(--gold); box-shadow: 0 0 0 5px rgba(231, 169, 35, .22), 0 0 18px rgba(231, 169, 35, .55);
+  animation: mj-coach 1.1s ease-in-out infinite; transition: opacity .25s;
 }
+.coach-ring.done { opacity: 0; }
 @keyframes mj-coach { 0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 1; } 50% { transform: translate(-50%, -50%) scale(1.08); opacity: .7; } }
 .coach-bubble {
   position: absolute; transform: translateX(-50%); white-space: nowrap;

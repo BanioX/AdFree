@@ -30,9 +30,28 @@ const CONFETTI = ['#c0573e', '#e7a923', '#2f8a73', '#f48fb1', '#ffffff', '#5b8de
 
 // ------------------------------------------------------------ Gespeicherte Daten
 
-const settings = Object.assign({ tileset: 'klassisch', highlightFree: false, dimBlocked: true }, store.get(K.settings, {}));
+const settings = Object.assign({ tileset: 'klassisch', table: 'sand', highlightFree: false, dimBlocked: true }, store.get(K.settings, {}));
 if (!tilesets.some((t) => t.id === settings.tileset)) settings.tileset = 'klassisch';
 const saveSettings = () => store.set(K.settings, settings);
+
+// Tische (Spielfeld-Farben) – werden mit Sternen der Reise freigeschaltet
+const TABLES = [
+  { id: 'sand', name: 'Sand', stars: 0, c1: '#f6eddd', c2: '#e9d8bc' },
+  { id: 'jade', name: 'Jade', stars: 4, c1: '#e4f2e9', c2: '#bddccb' },
+  { id: 'himmel', name: 'Himmel', stars: 12, c1: '#e8f0fb', c2: '#c3d5ee' },
+  { id: 'rose', name: 'Rosé', stars: 24, c1: '#fcebec', c2: '#efc6cc' },
+  { id: 'nacht', name: 'Nacht', stars: 40, c1: '#454b61', c2: '#2a2f40', dark: true },
+];
+const tableById = (id) => TABLES.find((t) => t.id === id) || TABLES[0];
+function currentTable() {
+  const t = tableById(settings.table);
+  return t.stars <= totalStars(getProgress()) ? t : TABLES[0];
+}
+function applyTable(el, t = currentTable()) {
+  el.style.setProperty('--table-1', t.c1);
+  el.style.setProperty('--table-2', t.c2);
+  el.classList.toggle('dark-table', !!t.dark);
+}
 
 const getProgress = () => {
   const p = store.get(K.progress, null);
@@ -148,7 +167,7 @@ window.addEventListener('pagehide', () => { if (screen && screen.save) screen.sa
 
 function iconBtn(name, onClick, label) {
   const b = h('button.icon-btn', { type: 'button', 'aria-label': label || name, html: icon(name) });
-  b.addEventListener('click', () => { sfx.play('click'); onClick(); });
+  b.addEventListener('click', () => onClick());
   return b;
 }
 
@@ -187,7 +206,7 @@ function onTapUp(btn, fn) {
 
 function helpBtn() {
   const b = h('button.icon-btn', { type: 'button', 'aria-label': 'So geht’s', html: '<span class="gm-q">?</span>' });
-  b.addEventListener('click', () => { sfx.play('click'); showHelp(); });
+  b.addEventListener('click', () => showHelp());
   return b;
 }
 
@@ -195,19 +214,53 @@ function helpBtn() {
 
 function tileCanvas(setId, face, w) { return BoardView.tileImage(setId, face, w); }
 
-function menuArt(setId) {
+function menuFan(setId) {
   const set = tilesetById(setId);
   const fan = h('div.fan');
   const fanFaces = set.kind === 'drawn' ? [0, 31, 35, 9] : [0, 7, 35, 39];
-  const angles = [-16, -5, 6, 17];
-  const xs = [-86, -32, 22, 76];
+  const angles = [-13, -4.5, 4.5, 13];
+  const xs = [-80, -27, 27, 80];
+  const TW = 48;
   fanFaces.forEach((f, k) => {
-    const c = tileCanvas(set.id, f, 50);
+    const c = tileCanvas(set.id, f, TW);
     const m = Number(c.dataset.margin);
-    c.style.transform = `translate(${xs[k] - 25 - m}px, ${-40 - m + Math.abs(angles[k]) * 0.9}px) rotate(${angles[k]}deg)`;
+    c.style.transform = `translate(${xs[k] - TW / 2 - m}px, ${-40 - m + Math.abs(angles[k]) * 0.85}px) rotate(${angles[k]}deg)`;
     fan.append(c);
   });
   return fan;
+}
+
+/**
+ * Titelbild im Menü: kleiner Spieltisch in der gewählten Tischfarbe.
+ * Läuft ein Spiel, zeigt er eine Live-Vorschau des echten Bretts (antippen = weiterspielen),
+ * sonst einen Fächer aus Steinen des gewählten Steinsatzes.
+ */
+function heroArt(cur) {
+  const box = h('div.mj-hero');
+  applyTable(box);
+  let view = null;
+  if (cur) {
+    const host = h('div.mj-hero-board');
+    box.classList.add('live');
+    box.append(host, h('div.mj-hero-bar', null, h('i', { style: { width: Math.round(cur.progress * 100) + '%' } })));
+    box.setAttribute('role', 'button');
+    box.setAttribute('aria-label', 'Weiterspielen');
+    box.addEventListener('click', () => go('spiel'));
+    view = new BoardView(host, {});
+    view.setOptions({ tileset: settings.tileset, dimBlocked: false, highlightFree: false });
+    view.setBoard(cur.board, cur.faces, cur.present);
+  } else {
+    box.append(menuFan(settings.tileset));
+  }
+  return {
+    box,
+    setTileset(id) {
+      if (view) view.setOptions({ tileset: id });
+      else box.replaceChildren(menuFan(id));
+    },
+    setTable(t) { applyTable(box, t); },
+    destroy() { if (view) view.destroy(); view = null; },
+  };
 }
 
 function levelCard(def, idx, progress, nextIdx, minis) {
@@ -226,12 +279,10 @@ function levelCard(def, idx, progress, nextIdx, minis) {
     starsEl);
   btn.addEventListener('click', () => {
     if (!unlocked) {
-      sfx.play('error');
       btn.classList.remove('sp-shake'); void btn.offsetWidth; btn.classList.add('sp-shake');
       toast('Schliesse zuerst ein anderes Layout ab');
       return;
     }
-    sfx.play('tap');
     startLevel(idx);
   });
   minis.push([cv, L, st?.wins > 0, unlocked]);
@@ -256,20 +307,64 @@ async function chooseEndless() {
   if (v) startEndless(v);
 }
 
+/** Abschnitt «Tische»: Spielfeld-Farben, freigeschaltet mit Sternen. */
+function tablesSection(stars, onPick) {
+  const row = h('div.tables');
+  const render = () => {
+    row.replaceChildren();
+    const curId = currentTable().id;
+    for (const t of TABLES) {
+      const locked = t.stars > stars;
+      const b = h('button', { type: 'button', class: 'tbl' + (locked ? ' locked' : '') + (t.id === curId ? ' on' : ''), 'data-id': t.id, 'aria-label': `Tisch ${t.name}` },
+        h('span.sw', { style: { background: `radial-gradient(100% 80% at 40% 25%, rgba(255,255,255,.5), rgba(255,255,255,0) 70%), linear-gradient(160deg, ${t.c1}, ${t.c2})` } },
+          locked ? h('span.lk', { html: icon('lock', { size: 16 }) }) : (t.id === curId ? h('span.ok', { html: icon('check', { size: 16 }) }) : null)),
+        h('b', null, t.name),
+        h('small', null, locked ? `★ ${t.stars}` : (t.id === curId ? 'Aktiv' : 'Frei')));
+      b.addEventListener('click', () => {
+        if (locked) {
+          b.classList.remove('sp-shake'); void b.offsetWidth; b.classList.add('sp-shake');
+          const need = t.stars - stars;
+          toast(`Noch ${need} ${need === 1 ? 'Stern' : 'Sterne'} bis «${t.name}»`);
+          return;
+        }
+        if (t.id === curId) return;
+        settings.table = t.id;
+        saveSettings();
+        render();
+        onPick(t);
+      });
+      row.append(b);
+    }
+  };
+  render();
+  const unlocked = TABLES.filter((t) => t.stars <= stars).length;
+  return menuSection(`Tische · ${unlocked}/${TABLES.length}`, row);
+}
+
 function showMenu() {
   const progress = getProgress();
   const cur = loadCur();
   const stats = getStats();
 
   const nextIdx = nextLevelIndex(progress);
-  const primary = cur
-    ? { label: 'Weiter', sub: `${cur.meta.kind === 'daily' ? 'Tagesrätsel' : (cur.layout.name || 'Spiel')} · ${Math.round(cur.progress * 100)} % abgeräumt`, onClick: () => go('spiel') }
-    : { label: 'Spielen', sub: `Level ${nextIdx + 1}: ${layouts[nextIdx].name}`, onClick: () => startLevel(nextIdx) };
+  let primary;
+  if (cur) {
+    const pct = Math.round(cur.progress * 100);
+    const idx = cur.meta.kind === 'level' ? layouts.findIndex((l) => l.id === cur.meta.ref) : -1;
+    const where = idx >= 0 ? `Level ${idx + 1} · ${cur.layout.name}`
+      : cur.meta.kind === 'endless' ? `Zufall · ${cur.layout.name || 'Spiel'}`
+        : (cur.meta.kind === 'daily' ? 'Tagesrätsel' : (cur.layout.name || 'Spiel'));
+    primary = { label: 'Weiterspielen', sub: `${where} · ${pct} %`, onClick: () => go('spiel') };
+  } else {
+    const st = levelState(progress, layouts[nextIdx].id);
+    const starsTxt = st?.wins > 0 ? ` · ${'★'.repeat(st.stars || 0)}${'☆'.repeat(3 - (st.stars || 0))}` : '';
+    primary = { label: 'Spielen', sub: `Level ${nextIdx + 1} · ${layouts[nextIdx].name}${starsTxt}`, onClick: () => startLevel(nextIdx) };
+  }
 
   const dDef = dailyDef();
   const daily = {
     done: isDailyDone(ID),
-    sub: `${dDef.name} · ${parseLayout(dDef).tiles.length} Steine`,
+    sub: dDef.name,
     streak: dailyStreak(ID),
     onClick: () => go('daily'),
   };
@@ -279,12 +374,13 @@ function showMenu() {
   const minis = [];
   const strip = h('div.jstrip', null, layouts.map((def, idx) => levelCard(def, idx, progress, nextIdx, minis)));
   const allBtn = h('button.jall', { type: 'button' }, `Alle ${layouts.length} Layouts`, h('span', { html: icon('back', { size: 16 }) }));
-  allBtn.addEventListener('click', () => { sfx.play('click'); go('reise'); });
+  allBtn.addEventListener('click', () => go('reise'));
   const journeyHead = h('div.journey-head', null,
     h('span', null, `${done}/${layouts.length}`),
     h('div.bar', null, h('i', { style: { width: Math.round((done / layouts.length) * 100) + '%' } })),
     h('span', null, `★ ${stars}`));
 
+  const hero = heroArt(cur);
   const best = stats.best || {};
   const bestAny = [best.klein, best.mittel, best.gross].filter(Boolean);
   const menu = gameMenu({
@@ -292,7 +388,7 @@ function showMenu() {
     title: 'Mahjong',
     tagline: 'Gleiche Steine paarweise abräumen',
     accent: '#c0573e',
-    art: menuArt(settings.tileset),
+    art: hero.box,
     primary,
     daily,
     modes: {
@@ -302,8 +398,7 @@ function showMenu() {
       onChange(id) {
         settings.tileset = id;
         saveSettings();
-        const art = menu.querySelector('.gm-art');
-        if (art) art.replaceChildren(menuArt(id));
+        hero.setTileset(id);
       },
     },
     secondary: [
@@ -317,12 +412,15 @@ function showMenu() {
       { label: 'Bestzeit', value: bestAny.length ? fmtTime(Math.min(...bestAny)) : '–' },
       { label: 'Tage-Serie', value: dailyStreak(ID) },
     ],
-    sections: [menuSection('Reise', journeyHead, strip, allBtn)],
+    sections: [
+      menuSection('Reise', journeyHead, strip, allBtn),
+      tablesSection(stars, (t) => hero.setTable(t)),
+    ],
     onHelp: () => showHelp(),
     backHref: '../',
   });
   menu.classList.add('screen', 'menu-screen');
-  mount(menu, {});
+  mount(menu, { destroy() { hero.destroy(); } });
   requestAnimationFrame(() => {
     paintMinis(minis);
     const c = strip.querySelector('.lv.current');
@@ -345,7 +443,7 @@ function showJourney() {
   const pct = Math.round((done / layouts.length) * 100);
   const el = h('div.screen', null,
     h('div.topbar', null,
-      backButton('./', () => { sfx.play('click'); goBackToMenu(); }),
+      backButton('./', () => goBackToMenu()),
       h('div.title', null, 'Reise'),
       h('span.chip.star-chip', { html: icon('star', { size: 16 }) + `<span>${stars}/${layouts.length * 3}</span>` })),
     h('div.scroll', null,
@@ -452,6 +550,8 @@ function showGame(session, slot, { fresh = false } = {}) {
   let tipCount = store.get(K.hints, 0);
   let alive = true;
   let winning = false;
+  let halfShown = session.progress >= 0.5;
+  let coachPair = null;
 
   const persist = () => {
     if (slot === 'daily') store.set(K.daily, { date: session.meta.date, save: session.serialize() });
@@ -462,6 +562,7 @@ function showGame(session, slot, { fresh = false } = {}) {
   const subEl = h('small');
   const progI = h('i');
   const wrap = h('div.board-wrap');
+  applyTable(wrap);
   const fitBtn = h('button.icon-btn.fit-btn', { type: 'button', 'aria-label': 'Einpassen', html: icon('expand') });
   const comboEl = h('div.combo');
   wrap.append(fitBtn, comboEl);
@@ -478,7 +579,7 @@ function showGame(session, slot, { fresh = false } = {}) {
 
   const el = h('div.screen.game', null,
     h('div.topbar', null,
-      backButton('./', () => { sfx.play('click'); leave(); }),
+      backButton('./', () => leave()),
       h('div.title', null, nameEl, subEl),
       h('div.right', null,
         helpBtn(),
@@ -515,9 +616,9 @@ function showGame(session, slot, { fresh = false } = {}) {
   const view = new BoardView(wrap, {
     onTap,
     onZoomChange: (z) => { fitBtn.classList.toggle('show', z); if (z) hideCoach(); },
-    onBurst: () => sfx.play('sparkle'),
+    onBurst: () => { if (combo >= 3) sfx.play('sparkle'); },
   });
-  fitBtn.addEventListener('click', () => { sfx.play('click'); view.fit(true); });
+  fitBtn.addEventListener('click', () => view.fit(true));
   view.setOptions(settings);
   view.setBoard(session.board, session.faces, session.present);
   active = { session, view, slot };
@@ -546,6 +647,7 @@ function showGame(session, slot, { fresh = false } = {}) {
     const r = session.hint();
     if (!r) return;
     const W = view.cam.w, H = W * TILE.ratio;
+    coachPair = r.pair.slice();
     coachEl = h('div.coach');
     let top = Infinity, bottom = 0;
     for (const i of r.pair) {
@@ -565,6 +667,14 @@ function showGame(session, slot, { fresh = false } = {}) {
     bubble.style.top = y + 'px';
     coachEl.append(bubble);
     wrap.append(coachEl);
+  }
+  /** Erster Stein des Coach-Paars gewählt: Ring dort ausblenden, Partner zeigen. */
+  function coachPicked(i) {
+    if (!coachEl || !coachPair) return;
+    const k = coachPair.indexOf(i);
+    coachEl.querySelectorAll('.coach-ring').forEach((ring, j) => ring.classList.toggle('done', j === k));
+    const bubble = coachEl.querySelector('.coach-bubble');
+    if (bubble) bubble.textContent = k >= 0 ? 'Jetzt den passenden Stein antippen' : 'Tippe die zwei gleichen Steine an';
   }
   function hideCoach() {
     if (!coachEl) return;
@@ -591,7 +701,7 @@ function showGame(session, slot, { fresh = false } = {}) {
     if (busy || session.won) return;
     view.clearHint();
     hintBtn.classList.remove('pulse');
-    if (i < 0) { if (sel >= 0) { select(-1); sfx.play('click'); } return; }
+    if (i < 0) { if (sel >= 0) select(-1); return; }
     if (!session.isFree(i)) {
       sfx.play('thud');
       view.shake(i);
@@ -604,10 +714,10 @@ function showGame(session, slot, { fresh = false } = {}) {
       }
       return;
     }
-    if (sel === -1) { select(i); sfx.play('tap'); return; }
-    if (sel === i) { select(-1); sfx.play('click'); return; }
+    if (sel === -1) { select(i); sfx.play('tap'); coachPicked(i); return; }
+    if (sel === i) { select(-1); coachPicked(-1); return; }
     if (session.canMatch(sel, i)) doMatch(sel, i);
-    else { select(i); sfx.play('tap'); }
+    else { select(i); sfx.play('tap'); coachPicked(i); }
   }
 
   async function doMatch(a, b) {
@@ -621,7 +731,10 @@ function showGame(session, slot, { fresh = false } = {}) {
     const now = performance.now();
     combo = now - lastMatch < 3200 ? combo + 1 : 1;
     lastMatch = now;
+    const left = session.pairsLeft;
     if (combo >= 3) showCombo(combo);
+    else if (!session.won && session.n >= 40 && !halfShown && session.progress >= 0.5) { halfShown = true; showPraise('Halbzeit!', 'Weiter so'); }
+    else if (!session.won && left === 3 && session.n >= 24) showPraise('Fast geschafft!', 'Noch 3 Paare');
     store.update(K.stats, {}, (s) => ({ ...s, pairs: (s.pairs || 0) + 1 }));
     persist();
     renderHud();
@@ -655,11 +768,16 @@ function showGame(session, slot, { fresh = false } = {}) {
     }
   }
 
-  function showCombo(n) {
-    comboEl.textContent = `Serie ×${n}`;
+  function showPraise(big, small) {
+    comboEl.replaceChildren(h('b', null, big), small ? h('span', null, small) : null);
     comboEl.classList.remove('show');
     void comboEl.offsetWidth;
     comboEl.classList.add('show');
+  }
+  function showCombo(n) {
+    const praise = n >= 10 ? 'Unglaublich!' : n >= 7 ? 'Fantastisch!' : n >= 5 ? 'Toll!' : 'Super!';
+    showPraise(praise, `Serie ×${n}`);
+    comboEl.classList.toggle('hot', n >= 5);
   }
 
   function doUndo() {
@@ -762,7 +880,6 @@ function showGame(session, slot, { fresh = false } = {}) {
   }
 
   async function showMore() {
-    sfx.play('click');
     const v = await showModal({
       title: session.meta.kind === 'daily' ? 'Tagesrätsel' : (session.layout.name || 'Mahjong'),
       html: `<p>${session.n} Steine · ${Math.round(session.progress * 100)} % abgeräumt · ${fmtTime(session.elapsed)}</p>`,
@@ -834,6 +951,7 @@ function recordWin(session) {
   });
   if (session.meta.kind === 'level') {
     const p = getProgress();
+    const starsBefore = totalStars(p);
     const st = p.levels[session.meta.ref] || { stars: 0, best: 0, wins: 0, plays: 1 };
     res.prevBest = st.best || 0;
     res.newBest = !!st.best && time < st.best;
@@ -843,6 +961,8 @@ function recordWin(session) {
     st.wins = (st.wins || 0) + 1;
     p.levels[session.meta.ref] = st;
     store.set(K.progress, p);
+    const starsAfter = totalStars(p);
+    res.newTable = TABLES.find((t) => t.stars > starsBefore && t.stars <= starsAfter) || null;
   }
   if (session.meta.kind === 'daily') {
     markDailyDone(ID, session.meta.date || todayKey());
@@ -860,6 +980,12 @@ async function showWinSheet(session, res) {
   const extra = [];
   if (res.newBest) extra.push(h('div.badge-new', null, '🏆 Neue Bestzeit!'));
   else if (res.firstClear && kind === 'level') extra.push(h('div.badge-new', null, '✨ Neues Layout geschafft'));
+  if (res.newTable) {
+    const t = res.newTable;
+    extra.push(h('div.badge-table', null,
+      h('span.sw', { style: { background: `linear-gradient(160deg, ${t.c1}, ${t.c2})` } }),
+      h('span', null, h('b', null, `Neuer Tisch: ${t.name}`), h('small', null, 'Im Menü unter «Tische» wählen'))));
+  }
   if (kind === 'daily') {
     const st = dailyStreak(ID);
     extra.push(h('div.badge-new', null, st > 1 ? `🔥 ${st} Tage in Folge` : '📅 Tagesrätsel gelöst'));
@@ -908,7 +1034,6 @@ function showSettings(onChange) {
       for (const f of faces) mini.append(tileCanvas(t.id, f, 30));
       const b = h('button.setopt', { type: 'button', class: 'setopt' + (settings.tileset === t.id ? ' on' : '') }, mini, t.name);
       b.addEventListener('click', () => {
-        sfx.play('tap');
         settings.tileset = t.id;
         saveSettings();
         renderSets();
@@ -924,7 +1049,6 @@ function showSettings(onChange) {
       settings[key] = !settings[key];
       sw.classList.toggle('on', settings[key]);
       saveSettings();
-      sfx.play('click');
       if (onChange) onChange();
     });
     return h('div.toggle-row', null, h('span', null, label, sub ? h('small', null, sub) : null), sw);

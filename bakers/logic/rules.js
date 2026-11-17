@@ -82,14 +82,15 @@ export const foundCount = (st) => st.found[0] + st.found[1] + st.found[2] + st.f
 export function legalMoves(st) {
   const out = [];
   for (let c = 0; c < COLS; c++) if (canFound(st, c)) out.push({ t: 'f', from: c });
-  let emptyUsed = false;
   for (let from = 0; from < COLS; from++) {
     const n = st.cols[from].length;
     if (!n) continue;
+    let emptyDone = false; // alle leeren Stapel sind gleichwertig: nur einer als Ziel
     for (let to = 0; to < COLS; to++) {
       if (!canMove(st, from, to)) continue;
       if (!st.cols[to].length) {
-        if (n === 1 || emptyUsed) continue;
+        if (n === 1 || emptyDone) continue;
+        emptyDone = true;
       }
       out.push({ t: 'm', from, idx: n - 1, to });
     }

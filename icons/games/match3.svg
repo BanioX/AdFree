@@ -1,23 +1,39 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
   <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffeef4"/><stop offset="1" stop-color="#f6b9cf"/></linearGradient>
-    <radialGradient id="r" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="#ffc2cf"/><stop offset=".5" stop-color="#ff4d6d"/><stop offset="1" stop-color="#c9184a"/></radialGradient>
-    <radialGradient id="b" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="#d3ecff"/><stop offset=".5" stop-color="#4dabf7"/><stop offset="1" stop-color="#1c6fd1"/></radialGradient>
-    <radialGradient id="y" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="#fff6cc"/><stop offset=".5" stop-color="#ffd43b"/><stop offset="1" stop-color="#f59f00"/></radialGradient>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff0f5"/><stop offset="1" stop-color="#f7b6cd"/></linearGradient>
+    <radialGradient id="glow" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#fff" stop-opacity=".95"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
+    <linearGradient id="sb" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8fd0ff"/><stop offset="1" stop-color="#2a7be0"/></linearGradient>
+    <linearGradient id="sg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8ef0a8"/><stop offset="1" stop-color="#1e9e52"/></linearGradient>
   </defs>
   <rect width="100" height="100" fill="url(#bg)"/>
-  <ellipse cx="50" cy="84" rx="34" ry="5" fill="#a3215a" opacity=".14"/>
-  <g transform="translate(50 56) scale(1.14) translate(-50 -56)">
-  <!-- Raute (links) -->
-  <path d="M25 40l13 16-13 16-13-16z" fill="url(#b)" stroke="#123f86" stroke-width="2.2" stroke-linejoin="round"/>
-  <path d="M25 47l6 9-6 9-6-9z" fill="#fff" opacity=".35"/>
-  <!-- Stern (rechts) -->
-  <path d="M75 39l4.4 9.6 10.4 1.2-7.7 7.1 2.1 10.3L75 62l-9.2 5.2 2.1-10.3-7.7-7.1 10.4-1.2z" fill="url(#y)" stroke="#a86a00" stroke-width="2.2" stroke-linejoin="round"/>
-  <!-- Herz (Mitte) -->
-  <path d="M50 76C36 67 27 58 27.5 46.5 28 37.5 36 32 43 35c3 1.3 5.3 3.6 7 6.5 1.7-2.9 4-5.2 7-6.5 7-3 15 2.5 15.5 11.5C73 58 64 67 50 76z" fill="url(#r)" stroke="#8a1036" stroke-width="2.4" stroke-linejoin="round"/>
-  <ellipse cx="39" cy="44" rx="5.5" ry="3.2" fill="#fff" opacity=".85" transform="rotate(-35 39 44)"/>
+  <circle cx="50" cy="52" r="34" fill="url(#glow)"/>
+  <ellipse cx="50" cy="86" rx="30" ry="4.5" fill="#a3215a" opacity=".15"/>
+  <!-- Saphir links -->
+  <g transform="translate(-3 -1) rotate(-14 19 62)">
+    <path d="M19 49l10 13-10 13-10-13z" fill="url(#sb)" stroke="#173f7a" stroke-width="2.2" stroke-linejoin="round"/>
+    <path d="M19 54l5 8-5 8-5-8z" fill="#fff" opacity=".4"/>
   </g>
+  <!-- Smaragd rechts -->
+  <g transform="rotate(12 81 62)">
+    <path d="M76 51h10l6 6v10l-6 6H76l-6-6V57z" fill="url(#sg)" stroke="#145a30" stroke-width="2.2" stroke-linejoin="round"/>
+    <path d="M77.5 56h7l3 3v6l-3 3h-7l-3-3v-6z" fill="#fff" opacity=".32"/>
+  </g>
+  <!-- grosses Juwel (Brillant) -->
+  <g stroke="#5c1233" stroke-linejoin="round">
+    <path d="M34 28h32l15 15-31 39-31-39z" fill="#e33f7c" stroke-width="2.6"/>
+    <path d="M34 28L19 43h15z" fill="#ff8db3" stroke-width="1.3"/>
+    <path d="M34 28h16L34 43z" fill="#ffc4d8" stroke-width="1.3"/>
+    <path d="M50 28L34 43h32z" fill="#ffe3ed" stroke-width="1.3"/>
+    <path d="M50 28h16L66 43z" fill="#ff9fc1" stroke-width="1.3"/>
+    <path d="M66 28l15 15H66z" fill="#f2669a" stroke-width="1.3"/>
+    <path d="M19 43h15l16 39z" fill="#f05b92" stroke-width="1.3"/>
+    <path d="M34 43h16v39z" fill="#ff7aa8" stroke-width="1.3"/>
+    <path d="M50 43h16L50 82z" fill="#d42f6c" stroke-width="1.3"/>
+    <path d="M66 43h15L50 82z" fill="#b01f57" stroke-width="1.3"/>
+    <path d="M34 28h32l15 15-31 39-31-39z" fill="none" stroke-width="2.6"/>
+  </g>
+  <path d="M38 33l5-2.5-3.5 7z" fill="#fff" opacity=".9"/>
   <!-- Funkeln -->
-  <path d="M80 16l2 4.8 4.8 2-4.8 2L80 29.6l-2-4.8-4.8-2 4.8-2z" fill="#fff" stroke="#a3215a" stroke-width="1.3" stroke-linejoin="round"/>
-  <path d="M20 18l1.4 3.3 3.3 1.4-3.3 1.4L20 27.4l-1.4-3.3-3.3-1.4 3.3-1.4z" fill="#ffd43b" stroke="#a86a00" stroke-width="1.2" stroke-linejoin="round"/>
+  <path d="M80 13l2.1 5 5 2.1-5 2.1L80 27.2l-2.1-5-5-2.1 5-2.1z" fill="#fff" stroke="#a3215a" stroke-width="1.3" stroke-linejoin="round"/>
+  <path d="M21 17l1.5 3.5 3.5 1.5-3.5 1.5L21 27l-1.5-3.5-3.5-1.5 3.5-1.5z" fill="#ffd43b" stroke="#a86a00" stroke-width="1.2" stroke-linejoin="round"/>
 </svg>

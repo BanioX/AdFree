@@ -1,6 +1,6 @@
 # Spielpause
 
-**39 entspannte Spiele in einer App – ganz ohne Werbung, ohne Käufe, ohne Konto.**
+**40 entspannte Spiele in einer App – ganz ohne Werbung, ohne Käufe, ohne Konto.**
 
 Spielpause ist eine Web-App (PWA) für das iPhone: im Safari öffnen, auf den Home-Bildschirm legen,
 und sie startet wie eine normale App – im Vollbild und auch offline. Alle Spielstände bleiben auf dem Gerät.
@@ -58,6 +58,7 @@ iPhones und lässt sich mit dem Lautsprecher-Knopf auf leise / normal / aus stel
 | 🔵 **Brücken** | Logikrätsel | Inseln verbinden, ohne dass sich Brücken kreuzen | Zahl auf der Insel, deutsch und englisch | |
 | 🔵 **Binärrätsel** | Logikrätsel | Gleich viele Nullen und Einsen, ohne drei gleiche | 6×6 und 8×8, deutsch und englisch | |
 | 🟡 **Lichter aus** | Logikrätsel | Ein Tipp schaltet das Licht und die Nachbarn | ohne Uhr, deutsch und englisch | |
+| 🟣 **Grösser-Kleiner** | Logikrätsel | Zahlenquadrat, das Zeichen zeigt zur kleineren Zahl | 4×4 und 5×5, deutsch und englisch | |
 
 Jedes Spiel bekommt einen einheitlichen **Startbildschirm** (ein Knopf zum Weiterspielen, Tagesrätsel,
 Modus, Statistik) und eine **kurze, animierte Anleitung** («So geht's»), die beim ersten Start

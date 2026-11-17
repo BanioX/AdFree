@@ -105,7 +105,7 @@ Mehrere KI-Agenten bauen parallel – Zuständigkeiten und Regeln stehen in [AGE
 | 61 | Sternenhimmel (Star Battle) | 📋 |
 | 62 | Zelte & Bäume | 📋 |
 | 63 | Hochhäuser | 📋 |
-| 64 | Grösser-Kleiner (Futoshiki) | 📋 |
+| 64 | Grösser-Kleiner (Futoshiki) | ✅ |
 | 65 | Lichter aus | ✅ |
 | 66 | Inseln (Nurikabe) | 📋 |
 | 67 | Rundweg (Slitherlink) | 📋 |

@@ -1,4 +1,4 @@
-# Regeln für KI-Agenten (Claude, Grok, Gemini, …)
+# Regeln für KI-Agenten (Claude, Grok, …)
 
 Mehrere KI-Agenten bauen gleichzeitig an **Spielpause**. Damit sich niemand in die Quere kommt,
 gelten diese Regeln für **alle** Agenten. Inhaltliche und technische Vorgaben stehen in
@@ -13,7 +13,7 @@ Abhängigkeiten, keine Werbung).
 |---|---|---|
 | bestehende 16 Spiele + Welle 1 | Karten, Zahlen, Sortieren | **Claude** |
 | Welle 2 | Brettspiele gegen den Computer, Wörter | **Grok** |
-| Welle 3 | Logikrätsel, Kombinieren (Arcade) | **Gemini** |
+| Welle 3 | Logikrätsel, Kombinieren (Arcade) | **Grok** |
 | Welle 4 | Schieben & Verbinden, Gedächtnis & Wissen, Steine & Würfel, Kreativ | offen |
 | Welle 5 | Retro-Ecke | offen |
 

@@ -25,6 +25,8 @@ Was in Spielpause neu dazukommt. Neueste Einträge oben.
 - **Wortwirbel**: Wörter im 4×4-Feld, auch schräg, ohne Uhr. «Zeit» ist freiwillig. Deutsch und Englisch.
 - **Kreuzworträtsel**: Mini-Gitter 7×7 mit eigenen Hinweisen, deutsch und englisch je eigene Rätsel.
 - **Emoji-Rätsel**: Bilder erraten mit eigenem Buchstabenkorb, deutsch und englisch je eigene Begriffe.
+- **Welle 3**: die Logikrätsel und Arcade-Spiele liegen bei Grok. Gemini ist raus.
+- **Minensucher**: Feld mit sicherem ersten Tipp, Fahne und Tipp, der nur markiert. Deutsch und Englisch.
 
 ### Behoben (Grok)
 - **Vier in einer Reihe**: Tippen auf eine Reihe legt wieder einen Stein (iPhone). Der Tipp hebt die Reihe nur hervor.

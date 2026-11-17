@@ -94,12 +94,12 @@ Mehrere KI-Agenten bauen parallel – Zuständigkeiten und Regeln stehen in [AGE
 | 56 | Kreuzworträtsel (Mini) | ✅ |
 | 57 | Emoji-Rätsel – Begriffe erraten | ✅ |
 
-## Welle 3 · Gemini
+## Welle 3 · Grok
 
 **Logikrätsel** (gemeinsames Rätselgitter)
 | # | Spiel | Stand |
 |--:|---|:-:|
-| 58 | Minensucher | 📋 |
+| 58 | Minensucher | ✅ |
 | 59 | Brücken (Hashi) | 📋 |
 | 60 | Binärrätsel | 📋 |
 | 61 | Sternenhimmel (Star Battle) | 📋 |

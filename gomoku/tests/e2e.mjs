@@ -1,0 +1,37 @@
+import { createRequire } from 'node:module';
+import { mkdirSync } from 'node:fs';
+import assert from 'node:assert/strict';
+const { chromium } = createRequire('/tmp/pw/node_modules/playwright-core/index.js')('playwright-core');
+const BASE = process.env.BASE || 'http://127.0.0.1:8765/gomoku/';
+const OUT = new URL('./out/', import.meta.url).pathname;
+mkdirSync(OUT, { recursive: true });
+const errors = [];
+const browser = await chromium.launch({ executablePath: '/usr/bin/google-chrome', args: ['--no-sandbox', '--disable-dev-shm-usage'] });
+const page = await browser.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1, isMobile: true, hasTouch: true });
+await page.addInitScript(() => localStorage.setItem('spielpause.tutorial.gomoku', 'true'));
+page.on('pageerror', (e) => errors.push(e.message));
+page.on('console', (m) => { if (m.type() === 'error' && !/Failed to load resource/.test(m.text())) errors.push(m.text()); });
+await page.goto(BASE);
+await page.waitForSelector('.gm-primary');
+await page.screenshot({ path: OUT + '01-menu.png' });
+await page.locator('.gm-primary').tap();
+await page.waitForSelector('.go-cell');
+await page.screenshot({ path: OUT + '02-board.png' });
+const mid = await page.evaluate(() => {
+  const el = document.querySelector('.go-cell .bd-coach')?.parentElement || document.querySelector('.go-cell');
+  const r = el.getBoundingClientRect();
+  return { x: r.x + r.width / 2, y: r.y + r.height / 2 };
+});
+await page.touchscreen.tap(mid.x, mid.y);
+await page.waitForFunction(() => window.__sp && !window.__sp.busy() && window.__sp.state().n >= 2, null, { timeout: 8000 });
+await page.screenshot({ path: OUT + '03-played.png' });
+const fit = await page.evaluate(() => {
+  const b = document.querySelector('.go').getBoundingClientRect();
+  const t = document.querySelector('.bd-tools').getBoundingClientRect();
+  return { board: b.bottom, tools: t.top, h: innerHeight, w: b.width, iw: innerWidth };
+});
+assert.ok(fit.board <= fit.tools + 2, JSON.stringify(fit));
+assert.ok(fit.w <= fit.iw + 1);
+assert.deepEqual(errors, []);
+await browser.close();
+console.log('gomoku e2e ok');

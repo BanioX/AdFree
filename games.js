@@ -45,6 +45,10 @@ export const games = [
   { id: 'bubbles', title: 'Blasenzauber', tile: 'Blasen\u00ADzauber', subtitle: 'Seifenblasen abschiessen', category: 'action', color: '#4fa3e3', added: '2026-11-17' },
   { id: 'jigsaw', title: 'Puzzle', subtitle: 'Bilder Teil für Teil', category: 'kreativ', color: '#9a6b4f', added: '2026-11-17' },
   { id: 'vierer', title: 'Vier in einer Reihe', tile: 'Vier in\u00A0einer Reihe', subtitle: 'Vier Steine in einer Linie', category: 'brett', color: '#2f7de1', added: '2026-11-17' },
+  { id: 'reversi', title: 'Reversi', subtitle: 'Steine einschliessen und umdrehen', category: 'brett', color: '#1f8a4c', added: '2026-11-17' },
+  { id: 'kalaha', title: 'Kalaha', subtitle: 'Samen säen, Vorrat füllen', category: 'brett', color: '#c4843a', added: '2026-11-17' },
+  { id: 'gomoku', title: 'Fünf in einer Reihe', tile: 'Fünf in\u00A0einer Reihe', subtitle: 'Fünf Steine in einer Linie', category: 'brett', color: '#8a5a2b', added: '2026-11-17' },
+  { id: 'dame', title: 'Dame', subtitle: 'Schlagen, bis die Dame fliegt', category: 'brett', color: '#c45c26', added: '2026-11-17' },
 ];
 
 export function gameById(id) {

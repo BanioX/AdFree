@@ -61,17 +61,27 @@ function allBuiltin() {
   return IM.builtinPacks();
 }
 
-function nextImage(afterKey, tier) {
-  const packs = allBuiltin();
-  const flat = packs.flatMap((p) => p.images);
+/** Nächstes noch nicht gelöstes Bild in `list` nach `afterKey` (ringsum); `null`, wenn alle gelöst sind. */
+function nextUnsolved(list, afterKey, tier) {
   const done = SV.doneMap();
-  const start = Math.max(0, flat.findIndex((d) => d.key === afterKey) + 1);
-  for (let n = 0; n < flat.length; n++) {
-    const d = flat[(start + n) % flat.length];
-    if (d.key === afterKey) continue;
-    if (!(done[d.key] || []).includes(tier)) return d;
+  const start = Math.max(0, list.findIndex((d) => d.key === afterKey) + 1);
+  for (let n = 0; n < list.length; n++) {
+    const d = list[(start + n) % list.length];
+    if (d.key !== afterKey && !(done[d.key] || []).includes(tier)) return d;
   }
-  return flat[start % flat.length];
+  return null;
+}
+
+/** Nach einem Farbenzauber-Bild: das nächste Bild im selben Pack (Zufallsbild erst, wenn das Pack fertig ist). */
+async function nextPaintImage(desc, tier) {
+  const packs = await IM.paintPacks().catch(() => []);
+  const pack = packs.find((p) => p.id === desc.packId) || packs.find((p) => p.images.some((d) => d.key === desc.key));
+  return pack ? nextUnsolved(pack.images, desc.key, tier) : null;
+}
+
+function nextImage(afterKey, tier) {
+  const flat = allBuiltin().flatMap((p) => p.images);
+  return nextUnsolved(flat, afterKey, tier) || flat[Math.max(0, flat.findIndex((d) => d.key === afterKey) + 1) % flat.length];
 }
 
 function startImage(key, tier = getTier(), rotate = SV.getPref('rotate', false)) {
@@ -384,6 +394,9 @@ function yesterdayKey() {
 /** Sofort beim Einrasten des letzten Teils: Stand löschen, Abzeichen und Statistik verbuchen. */
 function onSolved(slot, parsed, info) {
   SV.dropSave(slot);
+  // Neuladen (oder iOS beendet die App im Hintergrund) während Abschluss/Gewinn-Blatt: zurück ins Menü,
+  // nicht dasselbe Bild von vorn
+  if (location.hash) history.replaceState(null, '', location.pathname + location.search);
   SV.markDone(parsed.key, parsed.tier);
   const res = recordWin(SV.getStats(), { tier: parsed.tier, ms: info.time, pieces: info.pieces, day: todayKey(), yesterday: yesterdayKey() });
   SV.setStats(res.stats);
@@ -416,12 +429,15 @@ async function onWin(parsed, desc, info, solved) {
   const v = await showModal({ title: 'Geschafft!', content, buttons, dismissible: false });
   if (v === 'next') {
     const head = parsed.key.split('/')[0];
-    if (head === 'zufall' || head === 'foto' || head === 'farben' || head === 'fgen') startImage(`zufall/${IM.newRandomSeed()}`, parsed.tier, parsed.rotate);
-    else startImage(nextImage(parsed.key, parsed.tier).key, parsed.tier, parsed.rotate);
+    let next = null;
+    if (head === 'farben' || head === 'fgen') next = await nextPaintImage(desc, parsed.tier);
+    else if (head !== 'zufall' && head !== 'foto') next = nextImage(parsed.key, parsed.tier);
+    startImage(next ? next.key : `zufall/${IM.newRandomSeed()}`, parsed.tier, parsed.rotate);
   } else if (v === 'more') {
     SV.setPref('tier', nextTier);
     startImage(parsed.key, nextTier, parsed.rotate);
-  } else go('');
+  } else if (location.hash) go('');
+  else route();
 }
 
 // ---------- Statistik ----------

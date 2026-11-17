@@ -8,7 +8,7 @@ import { icon, h, toast, showModal, celebrate, setupPage, soundButton, backButto
 import { gameMenu, menuSection } from '../shared/gamemenu.js';
 import { showTutorial, tutorialSeen, markTutorialSeen } from '../shared/tutorial.js';
 import { Game, zenLevel } from './engine.js';
-import { getLevel, setLevelStore, worldIndex, worldInfo, PER_WORLD, MIN_LEVELS, features } from './levels.js';
+import { getLevel, setLevelStore, worldIndex, worldInfo, PER_WORLD, MIN_LEVELS, features, VERSION as LEVEL_VERSION } from './levels.js';
 import { BoardView } from './board.js';
 import { spriteURL, iceURL, GEM_COLORS } from './sprites.js';
 import { gemNames, winTitles, loseTitles, loseTitlesMid, loseTitlesFar, firstTips, zenMilestones } from './data/texts.js';
@@ -29,6 +29,13 @@ setLevelStore({
   get: (k) => store.get(`${ID}.lv.${k}`, null),
   set: (k, v) => store.set(`${ID}.lv.${k}`, v),
 });
+// Zwischengespeicherte Level einer älteren Generator-Version aufräumen
+try {
+  const pre = `spielpause.${ID}.lv.`;
+  for (const k of Object.keys(localStorage)) {
+    if (k.startsWith(pre) && !k.startsWith(`${pre}${LEVEL_VERSION}:`)) localStorage.removeItem(k);
+  }
+} catch { /* egal */ }
 
 // ---------- Daten ----------
 

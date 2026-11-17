@@ -1,5 +1,6 @@
-// Startbildschirm (shared/gamemenu.js): Modus (Klassisch 8×8 / 10×10 / Abenteuer), grosser
-// Spielen/Weiter-Knopf, Nebenknöpfe, Kennzahlen, aktuelle Welt und Aussehen.
+// Startbildschirm (shared/gamemenu.js): Live-Vorschau des nächsten Levels bzw. Spielstands,
+// grosser Spielen/Weiter-Knopf, Modus (Abenteuer / Klassisch 8×8 / 10×10), Nebenknöpfe,
+// Kennzahlen, aktuelle Welt und Aussehen.
 
 import { h, icon, confirmDialog } from '../../shared/ui.js';
 import { gameMenu, menuSection } from '../../shared/gamemenu.js';
@@ -8,6 +9,7 @@ import { LEVELS_PER_WORLD } from '../data/worlds.js';
 import { pictures } from '../data/pictures.js';
 import { Board } from '../core/board.js';
 import { miniBoard, showStats, showAlbum, skinPicker } from './sheets.js';
+import { gemIconUrl } from './sprites.js';
 import { showHelp } from './tutorial.js';
 import {
   getSettings, saveSettings, currentSkin, loadClassic, saveClassic, loadLevelSave, getAdv, totalStars,
@@ -19,6 +21,23 @@ const fmt = (n) => Number(n || 0).toLocaleString('de-CH');
 
 export const GOAL_EMOJI = { gems: '💎', picture: '🖼️', lines: '🧱', score: '🎯' };
 
+/** Brett als Zeichenzeilen für miniBoard (Steine, Edelsteine, verdeckte Bildfelder). */
+function boardRows(b) {
+  const rows = [];
+  for (let r = 0; r < b.n; r++) {
+    let line = '';
+    for (let c = 0; c < b.n; c++) {
+      const i = r * b.n + c;
+      if (b.gems[i]) line += 'rbgyp'[b.gems[i] - 1];
+      else if (b.cells[i]) line += String(b.cells[i] - 1);
+      else line += b.cover[i] ? ',' : '.';
+    }
+    rows.push(line);
+  }
+  return rows;
+}
+
+/** Titelbild ohne Spielstand: kleines Brett, ein Teil schwebt darüber. */
 function heroArt(skin) {
   const wrap = h('div.hero-art');
   const board = miniBoard(skin, ['.......', '6.....0', '6.5..30', '61...30'], 24);
@@ -28,22 +47,28 @@ function heroArt(skin) {
   return wrap;
 }
 
-/** Vorschau eines gespeicherten Bretts (Live-Titelbild). */
-function boardPreview(skin, saved) {
+/** Ziel-Abzeichen wie im Spiel (Edelstein-Symbol, Bild, Linien, Punkte) mit Anzahl. */
+function goalBadge(status) {
+  const badge = h('div.hero-goals');
+  for (const g of status.slice(0, 3)) {
+    let ic;
+    if (g.type === 'gems') ic = h('img', { src: gemIconUrl(g.key, 28), alt: '' });
+    else if (g.type === 'picture') ic = h('span.hg-txt', null, '🖼️');
+    else if (g.type === 'lines') ic = h('span.hg-txt', null, '🧱');
+    else ic = h('span.hg-txt', null, '🎯');
+    const n = g.type === 'picture' ? '?' : fmt(g.need - g.have);
+    badge.append(h('span.hg', null, ic, h('b', null, n)));
+  }
+  return badge;
+}
+
+/** Live-Titelbild: das Brett des Spielstands bzw. des nächsten Levels, mit Ziel-Abzeichen. */
+function boardPreview(skin, boardData, status) {
   try {
-    const b = Board.deserialize(saved.board);
-    const rows = [];
-    for (let r = 0; r < b.n; r++) {
-      let line = '';
-      for (let c = 0; c < b.n; c++) {
-        const i = r * b.n + c;
-        const g = b.gems[i] ? 'rbgyp'[b.gems[i] - 1] : null;
-        line += g || (b.cells[i] ? String(b.cells[i] - 1) : '.');
-      }
-      rows.push(line);
-    }
+    const b = Board.deserialize(boardData);
     const wrap = h('div.hero-art.preview');
-    wrap.append(miniBoard(skin, rows, b.n === 10 ? 13 : 16));
+    wrap.append(miniBoard(skin, boardRows(b), b.n === 10 ? 13 : 16));
+    if (status && status.length) wrap.append(goalBadge(status));
     return wrap;
   } catch {
     return heroArt(skin);
@@ -73,7 +98,7 @@ export function mountMenu(app, nav) {
       const raw = loadClassic(size);
       const saved = raw && !raw.over && raw.moves > 0 ? raw : null;
       const c = stats.classic[size];
-      art = saved ? boardPreview(skin, saved) : heroArt(skin);
+      art = saved ? boardPreview(skin, saved.board) : heroArt(skin);
       primary = saved
         ? { label: 'Weiterspielen', sub: `${fmt(saved.score)} Punkte · ${size}×${size}`, onClick: () => nav.classic(size) }
         : { label: 'Spielen', sub: `Klassisch ${size}×${size}${c.best ? ` · Rekord ${fmt(c.best)}` : ''}`, onClick: () => nav.classic(size) };
@@ -91,12 +116,13 @@ export function mountMenu(app, nav) {
         });
       }
       secondary.push({ label: 'Statistik', icon: 'star', onClick: showStats });
-      kpis = [
+      // Kennzahlen erst, wenn es etwas zu zeigen gibt (keine Reihe voller Striche beim ersten Mal)
+      kpis = c.played > 0 ? [
         { label: 'Rekord', value: c.best ? fmt(c.best) : '–' },
         { label: 'Spiele', value: fmt(c.played) },
         { label: 'Beste Kombo', value: c.bestCombo ? `${c.bestCombo}×` : '–' },
         { label: 'Längste Serie', value: c.bestStreak ? `${c.bestStreak}×` : '–' },
-      ];
+      ] : null;
     } else {
       const sv = loadLevelSave();
       const resume = sv && !sv.won && sv.moves > 0 && sv.level <= adv.max ? sv.level : null;
@@ -104,21 +130,30 @@ export function mountMenu(app, nav) {
       const lv = getLevel(n);
       const type = goalTypeOf(n);
       const what = lv.title || goalLabel(type);
-      art = resume ? boardPreview(skin, sv) : heroArt(skin);
-      primary = resume
-        ? { label: 'Weiterspielen', sub: `Level ${n} · ${what}`, onClick: () => nav.level(n) }
-        : { label: n > 1 ? `Weiter – Level ${n}` : 'Spielen', sub: `${GOAL_EMOJI[type]} ${what}`, onClick: () => nav.level(n) };
+      let status = null;
+      try {
+        const g = resume ? Game.deserialize(sv) : Game.fromLevel(lv);
+        status = g ? g.goalStatus() : null;
+      } catch { status = null; }
+      art = boardPreview(skin, resume ? sv.board : lv.board, status);
+      art.classList.add('lv-preview');
+      art.style.setProperty('--world', worldOf(n).data.color);
+      primary = {
+        label: resume ? 'Weiterspielen' : n > 1 ? 'Weiter' : 'Spielen',
+        sub: `Level ${n} · ${what}`,
+        onClick: () => nav.level(n),
+      };
       secondary = [
         { label: 'Karte', icon: 'grid', onClick: () => nav.map() },
         { label: 'Album', icon: 'image', onClick: showAlbum },
         { label: 'Statistik', icon: 'star', onClick: showStats },
       ];
-      kpis = [
+      kpis = adv.wins > 0 ? [
         { label: 'Level', value: fmt(adv.max) },
         { label: 'Sterne', value: fmt(totalStars(adv)) },
         { label: 'Bilder', value: `${adv.pics.length}/${pictures.length}` },
         { label: 'Edelsteine', value: fmt(adv.gems) },
-      ];
+      ] : null;
       // aktuelle Welt
       const w = worldOf(n);
       let doneInWorld = 0, starsInWorld = 0;
@@ -147,9 +182,9 @@ export function mountMenu(app, nav) {
         label: 'Modus',
         value: mode,
         options: [
+          { id: 'adventure', label: 'Abenteuer', sub: `Level ${adv.max}` },
           { id: 'classic8', label: 'Klassisch', sub: '8×8' },
           { id: 'classic10', label: 'Klassisch', sub: '10×10' },
-          { id: 'adventure', label: 'Abenteuer', sub: `Level ${adv.max}` },
         ],
         onChange(id) {
           if (id === 'adventure') saveSettings({ tab: 'adventure' });

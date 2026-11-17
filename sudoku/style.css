@@ -4,6 +4,7 @@
   --accent: #4a7bd0;
   --ink: #3567c2;
   --given: #2c2a33;
+  --b-cell: #fff;
   --b-sel: #c4d7f7;
   --b-same: #dce7fa;
   --b-peer: #eef3fb;
@@ -46,7 +47,7 @@
 .mbox:nth-child(3) { border-top-right-radius: 12px; overflow: hidden; }
 .mbox:nth-child(7) { border-bottom-left-radius: 12px; overflow: hidden; }
 .mbox:nth-child(9) { border-bottom-right-radius: 12px; overflow: hidden; }
-.mini span { background: #fff; display: grid; place-items: center; font: 600 8.5px/1 var(--digit-font); color: var(--given); }
+.mini span { background: var(--b-cell); display: grid; place-items: center; font: 600 8.5px/1 var(--digit-font); color: var(--given); }
 .mini span.u { color: var(--ink); background: var(--b-peer); }
 
 /* Titelbild im Startbildschirm (gameMenu): Live-Vorschau des Bretts */
@@ -59,7 +60,6 @@
   background: var(--accent); color: #fff; font: 800 13px/1.2 var(--font); box-shadow: 0 4px 10px rgba(50, 60, 100, .22);
 }
 .menu .gm-seg button small { letter-spacing: 1px; }
-.menu .foot { margin: 0; }
 /* Drei Nebenknöpfe: Symbol über dem Text, damit nichts abgeschnitten wird */
 .menu .gm-secondary.three .gm-sec { flex-direction: column; gap: 3px; padding: 10px 4px 9px; text-align: center; }
 .menu .gm-secondary.three .gm-sec-text { align-items: center; max-width: 100%; }
@@ -82,7 +82,6 @@
 .seg.seg5 button { font-size: 13.5px; min-height: 40px; }
 .seg button:active { transform: scale(.95); }
 .seg button.active { background: var(--surface); color: var(--text); box-shadow: 0 2px 8px rgba(70, 45, 20, .12); }
-.foot { text-align: center; color: var(--text-3); font-size: 13px; font-weight: 600; margin: 6px 0 0; }
 
 /* ================= Spiel ================= */
 
@@ -137,7 +136,7 @@
 .box:nth-child(9) { border-bottom-right-radius: 14px; overflow: hidden; }
 
 .cell {
-  position: relative; background: #fff; min-width: 0; min-height: 0;
+  position: relative; background: var(--b-cell); min-width: 0; min-height: 0;
   display: grid; place-items: center; cursor: pointer;
   transition: background-color .16s ease;
 }
@@ -328,7 +327,7 @@
 /* So geht's (Tutorial-Szenen, laufen in der Bühne von shared/tutorial.js) */
 .sdt-scene { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; padding: 12px; }
 .sdt-c {
-  position: relative; background: #fff; display: grid; place-items: center;
+  position: relative; background: var(--b-cell); display: grid; place-items: center;
   font: 500 26px/1 var(--digit-font); color: var(--ink); transition: background-color .2s;
 }
 .sdt-c.given { color: var(--given); font-weight: 650; }
@@ -367,7 +366,7 @@
 .sdt-label.on { opacity: 1; transform: none; }
 .sdt-scene-notes { gap: 12px; }
 .sdt-big {
-  position: relative; width: 92px; height: 92px; border-radius: 16px; background: #fff; display: grid; place-items: center;
+  position: relative; width: 92px; height: 92px; border-radius: 16px; background: var(--b-cell); display: grid; place-items: center;
   box-shadow: inset 0 0 0 2px var(--b-thick), 0 8px 20px rgba(50, 60, 100, .12);
 }
 .sdt-big.sel, .sdt-scene-notes .sdt-big { background: var(--b-sel); }
@@ -398,12 +397,58 @@
 .sdt-tools { transition: opacity .2s, transform .2s; }
 .sdt-bubble.on { opacity: 1; transform: translate(-50%, 0); }
 
-/* Coach-Mark beim allerersten Rätsel */
-.coach-ring {
-  position: absolute; inset: -3px; z-index: 3; border-radius: 9px; pointer-events: none;
-  box-shadow: 0 0 0 3px var(--accent); animation: sd-coach 1.3s ease-in-out infinite;
+/* Effekt-Ebene über dem Brett: Lob-Texte und Coach-Mark (nicht vom Block abgeschnitten) */
+.board-fx { position: absolute; inset: 0; z-index: 3; pointer-events: none; }
+
+/* Coach-Mark beim allerersten Rätsel: weicher, atmender Ring um das erste sinnvolle Feld */
+.coach-ring { position: absolute; pointer-events: none; }
+.coach-ring::before {
+  content: ''; position: absolute; inset: -2px; border-radius: 9px;
+  box-shadow: 0 0 0 3px var(--accent), 0 0 18px 2px color-mix(in srgb, var(--accent) 45%, transparent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  animation: sd-coach 1.4s ease-in-out infinite;
 }
-@keyframes sd-coach { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.18); opacity: .55; } }
+.coach-ring i {
+  position: absolute; inset: -2px; border-radius: 9px; border: 2px solid var(--accent);
+  animation: sd-coach-out 1.4s ease-out infinite;
+}
+@keyframes sd-coach { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.08); } }
+@keyframes sd-coach-out { 0% { transform: scale(1); opacity: .8; } 100% { transform: scale(1.7); opacity: 0; } }
+
+/* Lob: «Reihe fertig!», «Doppelt!», «Super! 5 richtig in Folge» */
+.praise {
+  position: absolute; left: 50%; transform: translate(-50%, -50%);
+  display: flex; flex-direction: column; align-items: center; gap: 1px;
+  padding: 7px 16px 8px; border-radius: 99px; white-space: nowrap;
+  background: var(--surface); color: var(--accent); box-shadow: 0 8px 22px rgba(50, 60, 100, .22), 0 0 0 2px color-mix(in srgb, var(--accent) 25%, transparent);
+  animation: sd-praise 1.6s var(--ease-out) both;
+}
+.praise b { font: 850 17px/1.1 var(--font); letter-spacing: -.01em; }
+.praise small { font-size: 12px; font-weight: 750; color: var(--text-2); }
+.praise.big { padding: 9px 20px 10px; background: var(--accent); color: #fff; }
+.praise.big b { font-size: 21px; }
+.praise.big small { color: rgba(255, 255, 255, .85); }
+.praise.combo { background: linear-gradient(135deg, #ffd24a, #ffb238); color: #5a3a00; box-shadow: 0 8px 22px rgba(200, 130, 0, .3); }
+.praise.combo small { color: #7a5200; }
+.praise.out { animation: sd-praise-out .25s ease-in both; }
+@keyframes sd-praise {
+  0% { opacity: 0; transform: translate(-50%, -30%) scale(.6); }
+  14% { opacity: 1; transform: translate(-50%, -50%) scale(1.08); }
+  24% { transform: translate(-50%, -50%) scale(1); }
+  75% { opacity: 1; transform: translate(-50%, -75%); }
+  100% { opacity: 0; transform: translate(-50%, -110%); }
+}
+@keyframes sd-praise-out { to { opacity: 0; transform: translate(-50%, -90%) scale(.9); } }
+
+/* Goldrätsel (jedes 5. Rätsel einer Stufe, doppelte Sterne) */
+.title-wrap .title { display: flex; align-items: center; gap: 7px; }
+.gold-pill {
+  flex: 0 0 auto; padding: 3px 8px; border-radius: 99px; font-size: 12.5px; font-weight: 850; letter-spacing: .01em;
+  background: linear-gradient(135deg, #ffd96a, #f2b13a); color: #6a4300; box-shadow: 0 2px 6px rgba(200, 130, 0, .3);
+}
+.play.gold .board { background: linear-gradient(135deg, #f3cd63, #dfa23c); box-shadow: 0 10px 28px rgba(200, 140, 30, .25), 0 1px 3px rgba(120, 80, 0, .15); }
+.play.gold .strip-bar i { background: linear-gradient(90deg, #f3c34f, #e59a2c); }
+.play.gold .strip-r { color: #c88a12; }
 .strip.coaching .strip-l { display: inline-block; color: var(--accent); animation: sd-coach-txt .4s var(--ease-spring) both; }
 @keyframes sd-coach-txt { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
 .key.coach { animation: sd-coach-key 1.1s ease-in-out infinite; box-shadow: 0 0 0 3px var(--accent), 0 3px 10px rgba(50, 60, 100, .10); }
@@ -436,6 +481,7 @@
 }
 .theme-dots button.on { transform: scale(1.08); box-shadow: 0 0 0 3px var(--surface-2), 0 0 0 5.5px var(--c); }
 .theme-dots button:active { transform: scale(.9); }
+.theme-dots button.locked { background: var(--surface-3); color: var(--text-3); display: grid; place-items: center; box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--c) 45%, transparent); }
 
 /* ================= Statistik ================= */
 
@@ -474,9 +520,59 @@
   .tool .ic { height: 34px; }
   .tools { margin-bottom: 6px; }
   .key { height: 56px; }
-  .hero-row { margin-bottom: 12px; }
 }
 @media (max-width: 360px) {
   .tool .lb { font-size: 11px; }
   .pad { gap: 4px; }
 }
+
+/* ================= Farben sammeln (Startbildschirm) ================= */
+
+.sd-prog { padding: 14px 14px 12px; display: flex; flex-direction: column; gap: 10px; }
+.sd-prog-head { display: flex; align-items: center; gap: 12px; }
+.sd-prog-stars {
+  flex: 0 0 auto; display: inline-flex; align-items: center; gap: 4px; padding: 6px 12px 6px 9px; border-radius: 99px;
+  background: #fff3cf; color: #e2a100;
+}
+.sd-prog-stars svg { fill: currentColor; }
+.sd-prog-stars b { font: 850 19px/1 var(--digit-font); color: #8a5a00; font-variant-numeric: tabular-nums; }
+.sd-prog-txt { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.sd-prog-txt b { font-size: 15.5px; font-weight: 800; color: var(--text); }
+.sd-prog-txt small { font-size: 12.5px; font-weight: 650; color: var(--text-2); }
+.sd-prog-bar { height: 8px; border-radius: 99px; background: var(--surface-3); overflow: hidden; }
+.sd-prog-bar i { display: block; height: 100%; border-radius: 99px; background: linear-gradient(90deg, #ffd24a, #f2a92e); transition: width .9s var(--ease-out); }
+.sd-swatches { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px 4px; margin-top: 2px; }
+.sd-swatches button {
+  border: 0; background: none; padding: 0; display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 0;
+  color: var(--text-2); transition: transform .2s var(--ease-spring);
+}
+.sd-swatches button:active { transform: scale(.9); }
+.sd-swatches .dot {
+  width: 36px; height: 36px; border-radius: 50%; background: var(--c); display: grid; place-items: center;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, .14); transition: box-shadow .2s, transform .2s var(--ease-spring);
+}
+.sd-swatches button.on .dot { transform: scale(1.06); box-shadow: 0 0 0 3px var(--surface), 0 0 0 5.5px var(--c); }
+.sd-swatches button.locked .dot { background: var(--surface-2); color: var(--text-3); box-shadow: inset 0 0 0 2.5px color-mix(in srgb, var(--c) 40%, transparent); }
+.sd-swatches small { font-size: 11px; font-weight: 750; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sd-swatches button.on small { color: var(--text); }
+.sd-swatches button.locked small { color: var(--text-3); }
+
+/* Sieg-Blatt: Sterne-Belohnung */
+.win-reward { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.win-plus {
+  display: inline-flex; align-items: baseline; gap: 8px; padding: 5px 14px; border-radius: 99px;
+  background: #fff3cf; color: #8a5a00; font: 850 19px/1.2 var(--digit-font);
+  animation: sp-pop .45s var(--ease-out) .75s both;
+}
+.win-plus small { font: 800 12.5px/1 var(--font); color: #b07a00; }
+.win-next { width: 100%; display: flex; flex-direction: column; gap: 5px; }
+.win-next small { font-size: 13px; font-weight: 700; color: var(--text-2); text-align: center; }
+.win-unlock {
+  width: 100%; display: flex; align-items: center; gap: 12px; padding: 10px 10px 10px 12px; border-radius: 18px;
+  background: var(--surface-2); text-align: left; animation: sp-pop .5s var(--ease-out) .95s both;
+}
+.win-unlock > span:nth-child(2) { flex: 1 1 auto; display: flex; flex-direction: column; min-width: 0; }
+.win-unlock small { font-size: 12.5px; font-weight: 700; color: var(--text-2); }
+.win-unlock b { font-size: 17px; font-weight: 850; }
+.win-swatch { flex: 0 0 auto; width: 40px; height: 40px; border-radius: 50%; box-shadow: 0 0 0 3px var(--surface), 0 3px 10px rgba(0, 0, 0, .2); }
+.win-use { flex: 0 0 auto; min-height: 42px; padding: 0 14px; font-size: 15px; }

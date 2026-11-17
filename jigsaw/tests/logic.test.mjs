@@ -28,6 +28,16 @@ test('gridFor: andere Formate – Teile fast quadratisch, Anzahl nahe an der Stu
   }
 });
 
+test('gridFor: Stufe wird auch bei anderen Formaten exakt getroffen, wo die Teile hübsch bleiben', () => {
+  for (const a of [0.6, 0.75, 0.9, 1, 1.1, 4 / 3]) {
+    for (const n of TIERS) {
+      const { cols, rows } = gridFor(n, a);
+      if (n === 24 && a === 1) { assert.equal(cols * rows, 25); continue; } // 4×6 gäbe Teile 1.5 : 1
+      assert.equal(cols * rows, n, `${n} bei Format ${a}: ${cols}×${rows}`);
+    }
+  }
+});
+
 test('Kanten: Nachbarn teilen exakt dieselbe Kurve, Aussenränder sind gerade', () => {
   for (let seed = 1; seed <= 40; seed++) {
     const aspect = ASPECTS[seed % ASPECTS.length];

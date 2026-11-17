@@ -145,14 +145,14 @@ export class BoardView {
       bx.fill();
     }
     // Löcher im Inneren des Bretts: als gewollte Lücke zeigen (Mulde, gestrichelter Rand, Welt-Symbol)
-    const deco = (this.theme.deco && this.theme.deco[0]) || '✿';
+    const deco = this.theme.hole || (this.theme.deco && this.theme.deco[0]) || '🌼';
     for (const i of this._innerHoles()) {
       const [r, c] = this.rc(i);
       const x = ox + c * cs, y = oy + r * cs;
       bx.save();
       bx.beginPath();
       bx.roundRect(x + 2, y + 2, cs - 4, cs - 4, cs * 0.22);
-      bx.fillStyle = 'rgba(70,40,25,.13)';
+      bx.fillStyle = 'rgba(70,40,25,.16)';
       bx.fill();
       bx.beginPath();
       bx.roundRect(x + cs * 0.15, y + cs * 0.15, cs * 0.7, cs * 0.7, cs * 0.2);
@@ -160,11 +160,15 @@ export class BoardView {
       bx.lineWidth = Math.max(1.5, cs * 0.045);
       bx.strokeStyle = 'rgba(255,255,255,.8)';
       bx.stroke();
-      bx.globalAlpha = 0.6;
-      bx.font = `${Math.round(cs * 0.34)}px system-ui, "Apple Color Emoji", "Noto Color Emoji", sans-serif`;
+      bx.setLineDash([]);
+      bx.beginPath();
+      bx.arc(x + cs / 2, y + cs / 2, cs * 0.24, 0, Math.PI * 2);
+      bx.fillStyle = 'rgba(255,255,255,.7)';
+      bx.fill();
+      bx.font = `${Math.round(cs * 0.3)}px "Apple Color Emoji", "Noto Color Emoji", "Segoe UI Emoji", sans-serif`;
       bx.textAlign = 'center';
       bx.textBaseline = 'middle';
-      bx.fillText(deco, x + cs / 2, y + cs / 2 + cs * 0.03);
+      bx.fillText(deco, x + cs / 2, y + cs / 2 + cs * 0.02);
       bx.restore();
     }
     // Ausgänge für Eicheln

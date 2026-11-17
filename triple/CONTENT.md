@@ -25,6 +25,8 @@ Einen Eintrag ans Ende der Liste `themes` in `data/themes.js` anhängen:
 {
   id: 'bauernhof',            // eindeutig, nur a-z, 0-9 und -
   title: 'Bauernhof',         // Anzeigename (Deutsch, «ss» statt «ß»)
+  // short: 'Hof',            // optional: Kurzname für die schmale Titelzeile im Spiel (Pflicht, wenn
+                              //   «title» länger als 15 Zeichen ist, z.B. 'Winter' für «Winter & Weihnachten»)
   color: '#c98a2e',           // Akzentfarbe (Fortschrittsbalken, Funken, Konfetti)
   bg: '#fff3dc',              // sehr helle Hintergrundfarbe der Spielfläche
   emoji: ['🐄', '🐖', '🐑', '🐓', '🐴', '🐐', '🦆', '🐇', '🚜', '🌾', '🥚', '🧀', '🥛', '🌽', '🍎', '🐕'],
@@ -35,7 +37,12 @@ Regeln:
 
 - **Mindestens 16 verschiedene Emoji** (grosse Level brauchen bis zu 16 Sorten).
 - Gut unterscheidbare Bilder wählen – keine Fast-Doppelgänger (z.B. nicht 🐱 und 😺 zusammen),
-  ähnliche Farben möglichst vermeiden. Auf dem iPhone sind die Steine klein!
+  ähnliche Farben möglichst vermeiden. Auf dem iPhone sind die Steine klein (≈ 45 px)!
+  Bekannte Verwechsler stehen in `lookalikes` (unten in `data/themes.js`, z.B. 🌻/🌼, 🏈/🏉, 🍰/🎂,
+  🐙/🦑): pro Thema höchstens eines je Gruppe – der Test prüft das. Fällt dir ein weiteres Paar auf,
+  ergänze dort eine Gruppe.
+- Ein Emoji ersetzen: **an derselben Stelle** austauschen (Anzahl gleich lassen) – dann bleiben die
+  Level gleich aufgebaut und angefangene Spielstände gültig, nur das Bild wechselt.
 - Keine Marken, Logos oder bekannte Figuren.
 - Pro Level werden zufällig so viele Bilder gewählt, wie das Level Sorten braucht (4–16).
 

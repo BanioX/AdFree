@@ -1,0 +1,137 @@
+/* Spalten-Patiencen (Yukon, Skorpion, Bäckerdutzend) – Ergänzungen zu cards.css.
+   Einbinden nach ../lib/cards/cards.css. Spiele setzen nur --accent. */
+
+.pt-board { flex: 1 1 auto; }
+
+/* Platzhalter: leere Spalte, Ablage, Reserve */
+.pslot.pt-col { border-style: dashed; opacity: .85; }
+.pslot.pt-col .pslot-l { font-size: calc(var(--cw) * .36); font-weight: 900; opacity: .9; }
+.pslot.pt-col.locked { opacity: .35; }
+.pslot.pt-found { border-style: solid; border-width: 1.5px; background: rgba(255, 255, 255, .1); }
+.ink-dark .pslot.pt-found { background: rgba(70, 45, 20, .06); }
+.pslot.pt-found svg { width: 50%; height: 50%; fill: currentColor; opacity: .75; }
+.pslot.pt-found .pt-crown { font-size: calc(var(--cw) * .42); line-height: 1; opacity: .8; }
+.pslot.pt-stock { border-style: solid; border-width: 1.5px; }
+.pslot.pt-stock .pslot-l { font-size: calc(var(--cw) * .2); }
+
+/* Fortschritt oben links */
+.pt-meter {
+  position: absolute;
+  z-index: 2;
+  transform: translate(-50%, -50%);
+  width: 64px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  pointer-events: none;
+  color: var(--ink);
+}
+.pt-meter svg { width: 46px; height: 46px; transform: rotate(-90deg); }
+.pt-meter circle { fill: none; stroke-width: 4.5; }
+.pt-meter .bg { stroke: rgba(255, 255, 255, .18); }
+.ink-dark .pt-meter .bg { stroke: rgba(70, 45, 20, .12); }
+.pt-meter .fg { stroke: #fff; stroke-linecap: round; stroke-dasharray: 113.1; stroke-dashoffset: 113.1; transition: stroke-dashoffset .5s var(--ease-out); }
+.ink-dark .pt-meter .fg { stroke: var(--accent); }
+.pt-meter.full .fg { stroke: #ffd84d; }
+.pt-meter b { position: absolute; top: 23px; transform: translateY(-50%); font-size: 12.5px; font-weight: 900; font-variant-numeric: tabular-nums; }
+.pt-meter small { font-size: 10.5px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; opacity: .8; margin-top: 3px; }
+
+/* Coach-Hinweis unten am Tisch */
+.cg-coach.pt-coach { top: auto; bottom: 12px; }
+
+/* «Automatisch beenden» */
+.pt-finish {
+  position: absolute;
+  left: 50%;
+  bottom: 14px;
+  z-index: 9400;
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 0 20px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #fff;
+  font: 850 16px/1 var(--font);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, .28), inset 0 1px 0 rgba(255, 255, 255, .25);
+  animation: pt-pop .45s var(--ease-spring) both;
+  white-space: nowrap;
+}
+.pt-finish:active { transform: translateX(-50%) scale(.96); }
+.pt-finish.hide { display: none; }
+@keyframes pt-pop { from { opacity: 0; transform: translate(-50%, 12px) scale(.9); } to { opacity: 1; transform: translate(-50%, 0) scale(1); } }
+
+/* «So geht es nicht mehr auf» */
+.pt-lost {
+  position: absolute;
+  left: 50%;
+  bottom: 12px;
+  z-index: 9350;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: calc(100% - 24px);
+  padding: 6px 6px 6px 16px;
+  border-radius: 999px;
+  background: rgba(43, 36, 32, .9);
+  color: #fff;
+  font-weight: 750;
+  font-size: 14.5px;
+  white-space: nowrap;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, .25);
+  animation: pt-pop .4s var(--ease-spring) both;
+}
+.pt-lost.hide { display: none; }
+.pt-lost button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 999px;
+  background: #fff;
+  color: #3b2f25;
+  font: 850 14.5px/1 var(--font);
+}
+
+/* Tutorial-Hilfen */
+.pc-stage .pt-tslot {
+  position: absolute;
+  width: var(--cw);
+  height: var(--ch);
+  border-radius: 5px;
+  border: 2px dashed rgba(255, 255, 255, .4);
+  background: rgba(255, 255, 255, .06);
+  display: grid;
+  place-items: center;
+  color: rgba(255, 255, 255, .75);
+  font-weight: 900;
+  font-size: 18px;
+}
+.pc-stage .pt-tslot.solid { border-style: solid; border-width: 1.5px; }
+.pc-stage .pt-tslot svg { width: 50%; height: 50%; fill: currentColor; opacity: .8; }
+.pc-stage .pcard.hint .pf { box-shadow: 0 0 0 3px #ffd84d, 0 0 14px 3px rgba(255, 214, 77, .85); }
+.pc-stage .pt-tool {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  width: 64px;
+  height: 52px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, .95);
+  color: #3b2f25;
+  font-size: 11.5px;
+  font-weight: 800;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, .18);
+  transition: transform .15s;
+}
+.pc-stage .pt-tool.press { transform: scale(.9); }
+.pc-stage .pt-tool svg { width: 20px; height: 20px; }

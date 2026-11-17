@@ -2,19 +2,19 @@
 import { setupPage, h, showModal, confirmDialog, celebrate, toast, sleep } from '../shared/ui.js';
 import { store, reportSummary, todayKey, markDailyDone, isDailyDone, dailyStreak } from '../shared/storage.js';
 import { sfx } from '../shared/sfx.js';
-import { gameMenu } from '../shared/gamemenu.js';
+import { gameMenu, menuSection } from '../shared/gamemenu.js';
 import { icon } from './ui/icons.js';
 import { Play } from './ui/play.js';
 import { openTutorial, firstTutorial } from './ui/tutorial.js';
 import { Game } from './logic/game.js';
 import { parse } from './logic/board.js';
 import { difficulties, difficultyById, DAILY_DIFFICULTY } from './data/difficulties.js';
-import { themes, themeById } from './data/themes.js';
+import { themes, themeById, themeUnlocked, nextLockedTheme, newlyUnlocked } from './data/themes.js';
 import { pool } from './data/pool.js';
-import { nextPuzzle, nextNumber, dailyPuzzle, topUpFresh, generateFresh } from './puzzles.js';
+import { nextPuzzle, nextNumber, dailyPuzzle, topUpFresh, generateFresh, gentler } from './puzzles.js';
 import {
   KEYS, loadSettings, saveSettings, loadStats, recordStart, recordAbandon, recordWin, resetStats,
-  totalWon, statsKey, loadGameJSON, saveGameJSON, formatTime,
+  totalWon, statsKey, loadGameJSON, saveGameJSON, formatTime, baseStars, isGoldNumber, loadStars, addStars,
 } from './progress.js';
 
 const ID = 'sudoku';
@@ -41,6 +41,19 @@ function applyTheme() {
   r.setProperty('--b-line', t.line);
   r.setProperty('--b-thick', t.thick);
   r.setProperty('--b-wave', t.wave);
+  r.setProperty('--b-cell', t.cell || '#fff');
+  r.setProperty('--given', t.given || '#2c2a33');
+}
+
+/** Wählt ein Brett-Thema (nur freigeschaltete). */
+function setTheme(id) {
+  const t = themeById(id);
+  if (!themeUnlocked(t, loadStars())) return false;
+  settings.theme = t.id;
+  saveSettings(settings);
+  applyTheme();
+  if (play) play.render();
+  return true;
 }
 
 const WEEKDAYS = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'];
@@ -93,6 +106,11 @@ function countWin(game, slot) {
   if (!game || !game.done || game.counted) return null;
   const info = recordWin(statsKey(game), { time: game.elapsed, mistakes: game.mistakes, hints: game.hints });
   if (slot === 'daily' && game.meta.day) markDailyDone(ID, game.meta.day);
+  // Sterne: 1–3 je nach Fehlern/Tipps, Goldrätsel doppelt
+  const base = baseStars(game);
+  const mult = game.meta.gold ? 2 : 1;
+  const { before, after } = addStars(base * mult);
+  game.meta.stars = { base, mult, earned: base * mult, before, after };
   game.counted = true;
   saveGameJSON(slot, game.toJSON());
   updateSummary();
@@ -140,6 +158,46 @@ function miniBoard(game, { sample = null } = {}) {
   return el;
 }
 
+/** Allererstes Rätsel überhaupt: etwas mehr Vorgaben, damit die erste Runde kurz bleibt. */
+function isFirstEver(diff, n) {
+  return diff === 'leicht' && n === 1 && totalWon() === 0;
+}
+
+// ---------- Farben sammeln (Fortschritt) ----------
+
+/** Abschnitt im Startbildschirm: Sterne, Fortschrittsbalken bis zur nächsten Farbe, Farbpunkte. */
+function colorSection(onThemeChange) {
+  const stars = loadStars();
+  const next = nextLockedTheme(stars);
+  const prevAt = themes.filter((t) => t.unlock && t.unlock <= stars).reduce((a, t) => Math.max(a, t.unlock), 0);
+  const pct = next ? Math.round(((stars - prevAt) / (next.unlock - prevAt)) * 100) : 100;
+  const head = h('div.sd-prog-head', null,
+    h('span.sd-prog-stars', { html: `${icon('star', { size: 22 })}<b>${stars}</b>` }),
+    h('span.sd-prog-txt', null,
+      h('b', null, next ? `Noch ${next.unlock - stars} ★ bis «${next.title}»` : 'Alle Farben gesammelt!'),
+      h('small', null, 'Bis 3 ★ pro Rätsel – ohne Fehler und Tipps')));
+  const bar = h('div.sd-prog-bar', null, h('i', { style: { width: Math.max(4, pct) + '%' } }));
+  const dots = h('div.sd-swatches');
+  for (const t of themes) {
+    const open = themeUnlocked(t, stars);
+    const b = h('button', {
+      type: 'button',
+      class: (open ? '' : 'locked') + (t.id === settings.theme ? ' on' : ''),
+      'data-theme': t.id,
+      'aria-label': open ? t.title : `${t.title} – ab ${t.unlock} Sternen`,
+    }, h('span.dot', { html: open ? '' : icon('lock', { size: 14 }) }), h('small', null, open ? t.title : `${t.unlock} ★`));
+    b.style.setProperty('--c', t.accent);
+    b.addEventListener('click', () => {
+      if (!open) { toast(`«${t.title}» gibt’s ab ${t.unlock} ★`); return; }
+      if (!setTheme(t.id)) return;
+      for (const x of dots.children) x.classList.toggle('on', x === b);
+      onThemeChange && onThemeChange();
+    });
+    dots.append(b);
+  }
+  return menuSection('Farben sammeln', h('div.card.sd-prog', null, head, bar, dots));
+}
+
 // ---------- Menü ----------
 
 function renderMenu() {
@@ -166,12 +224,14 @@ function renderMenu() {
       const g = inProgress;
       return {
         label: 'Weiterspielen',
-        sub: `${difficultyById(g.meta.diff).title} · ${Math.round(g.progress() * 100)} % · ${formatTime(g.elapsed)}`,
+        sub: `${difficultyById(g.meta.diff).title}${g.meta.gold ? ' · Gold' : ''} · ${Math.round(g.progress() * 100)} % · ${formatTime(g.elapsed)}`,
         onClick: () => go('#play'),
       };
     }
     const spec = difficultyById(diff);
-    return { label: `Spielen – ${spec.title}`, sub: `${spec.blurb} · Nr. ${nextNumber(diff)}`, onClick: () => startNew(diff) };
+    const n = nextNumber(diff);
+    const extra = isFirstEver(diff, n) ? ' · extra sanft' : isGoldNumber(n) ? ' · Gold ×2 ★' : '';
+    return { label: 'Spielen', sub: `${spec.title} · Rätsel Nr. ${n}${extra}`, onClick: () => startNew(diff) };
   };
   const secondary = () => [
     inProgress ? { label: 'Neues Spiel', sub: difficultyById(diff).title, icon: 'plus', onClick: newGame } : null,
@@ -182,8 +242,8 @@ function renderMenu() {
     const s = stats[diff];
     return [
       { label: 'Gelöst', value: totalWon() },
+      { label: 'Sterne', value: `${loadStars()} ★` },
       { label: 'Bestzeit', value: s.best ? formatTime(s.best) : '–' },
-      { label: 'In Folge', value: s.streak || 0 },
       { label: 'Tagesserie', value: dailyStreak(ID) },
     ];
   };
@@ -219,7 +279,7 @@ function renderMenu() {
     },
     secondary: secondary(),
     stats: statTiles(),
-    sections: [h('p.foot', null, `${Object.values(pool).reduce((a, x) => a + x.length, 0)} Rätsel im Vorrat – und unendlich viele neue.`)],
+    sections: [colorSection(() => { el.style.setProperty('--accent', themeById(settings.theme).accent); })],
     onHelp: () => openTutorial(),
     backHref: '../',
   });
@@ -239,8 +299,12 @@ function renderMenu() {
 
 function startNew(diffId) {
   leavePlay();
+  const first = isFirstEver(diffId, nextNumber(diffId));
   const p = nextPuzzle(diffId);
-  const game = Game.create(p.puzzle, p.solution, { mode: 'classic', diff: diffId, number: p.number, src: p.src });
+  const meta = { mode: 'classic', diff: diffId, number: p.number, src: p.src };
+  if (first) { p.puzzle = gentler(p.puzzle, p.solution); meta.first = true; }
+  else if (isGoldNumber(p.number)) meta.gold = true;
+  const game = Game.create(p.puzzle, p.solution, meta);
   saveGameJSON('game', game.toJSON());
   recordStart(diffId);
   store.set(KEYS.lastDiff, diffId);
@@ -285,7 +349,9 @@ function openGame(slot) {
     settings,
     isDaily,
     title: isDaily ? 'Tagesrätsel' : spec.title,
-    label: isDaily ? longDate(new Date(game.meta.day + 'T12:00:00')) : `${spec.title} · Rätsel Nr. ${game.meta.number || 1}`,
+    label: isDaily ? longDate(new Date(game.meta.day + 'T12:00:00'))
+      : game.meta.gold ? `Goldrätsel Nr. ${game.meta.number} · doppelte Sterne`
+        : `${spec.title} · Rätsel Nr. ${game.meta.number || 1}${game.meta.first ? ' · extra sanft' : ''}`,
     onBack: () => go('#'),
     onSave: (g) => saveGameJSON(slot, g.toJSON()),
     onProgress,
@@ -322,7 +388,8 @@ async function winSheet(game, slot, counted = null) {
   updateSummary();
   celebrate(themeColors());
 
-  const starsN = Math.max(1, 3 - (game.mistakes > 0 ? 1 : 0) - (game.hints > 0 ? 1 : 0));
+  const ms = game.meta.stars || null;
+  const starsN = ms ? ms.base : baseStars(game);
   const stars = h('div.stars');
   for (let k = 0; k < 3; k++) {
     const s = h('span', { class: k < starsN ? 'on' : '' });
@@ -348,6 +415,7 @@ async function winSheet(game, slot, counted = null) {
       tile(String(game.mistakes), game.mistakes === 1 ? 'Fehler' : 'Fehler', 'close'),
       tile(String(game.hints), game.hints === 1 ? 'Tipp' : 'Tipps', 'hint')),
     info.newBest ? h('div.win-badge', null, '🏆 Neue Bestzeit!') : null,
+    ms ? starReward(ms) : null,
     h('p.win-sub', null, sub));
 
   const buttons = isDaily
@@ -356,6 +424,39 @@ async function winSheet(game, slot, counted = null) {
   const v = await showModal({ title: isDaily ? 'Tagesrätsel gelöst!' : CHEERS[Math.floor(Math.random() * CHEERS.length)], content, buttons, dismissible: true });
   if (v === 'next') startNew(game.meta.diff);
   else if (v === 'menu') go('#');
+}
+
+/** «+3 ★», Fortschritt bis zur nächsten Farbe oder «Neue Farbe freigeschaltet». */
+function starReward(ms) {
+  const box = h('div.win-reward');
+  box.append(h('div.win-plus', null, `+${ms.earned} ★`, ms.mult > 1 ? h('small', null, 'Goldrätsel ×2') : null));
+  const fresh = newlyUnlocked(ms.before, ms.after);
+  if (fresh.length) {
+    const t = fresh[fresh.length - 1];
+    const use = h('button.btn.primary.win-use', { type: 'button' }, 'Verwenden');
+    use.addEventListener('click', () => {
+      if (setTheme(t.id)) { use.textContent = 'Aktiv ✓'; use.disabled = true; sfx.play('pop'); }
+    });
+    const sw = h('span.win-swatch');
+    sw.style.background = t.accent;
+    box.append(h('div.win-unlock', null, sw,
+      h('span', null, h('small', null, 'Neue Farbe freigeschaltet'), h('b', null, t.title)), use));
+    setTimeout(() => sfx.play('sparkle'), 900);
+  } else {
+    const next = nextLockedTheme(ms.after);
+    if (next) {
+      const prevAt = themes.filter((t) => t.unlock && t.unlock <= ms.after).reduce((a, t) => Math.max(a, t.unlock), 0);
+      const span = next.unlock - prevAt;
+      const from = Math.max(0, ms.before - prevAt) / span * 100;
+      const to = (ms.after - prevAt) / span * 100;
+      const fill = h('i', { style: { width: from + '%' } });
+      setTimeout(() => { fill.style.width = Math.max(4, to) + '%'; }, 700);
+      box.append(h('div.win-next', null,
+        h('small', null, `Noch ${next.unlock - ms.after} ★ bis «${next.title}»`),
+        h('div.sd-prog-bar', null, fill)));
+    }
+  }
+  return box;
 }
 
 function themeColors() {
@@ -375,7 +476,7 @@ function renderStats() {
 
   const back = h('button.icon-btn', { type: 'button', 'aria-label': 'Zurück' });
   back.innerHTML = icon('back');
-  back.addEventListener('click', () => { sfx.play('click'); go('#'); });
+  back.addEventListener('click', () => go('#'));
   const top = h('header.topbar', null, back, h('div.title.center', null, 'Statistik'), h('span.icon-spacer'));
 
   const seg = h('div.seg.seg5', { role: 'tablist' });
@@ -426,7 +527,7 @@ function renderStats() {
   };
   for (const t of tabs) {
     const b = h('button', { type: 'button', role: 'tab', 'data-id': t.id }, t.title);
-    b.addEventListener('click', () => { tab = t.id; store.set('sudoku.statsTab', tab); sfx.play('click'); render(); });
+    b.addEventListener('click', () => { tab = t.id; store.set('sudoku.statsTab', tab); render(); });
     seg.append(b);
   }
   render();
@@ -454,27 +555,26 @@ async function openSettings() {
     input.addEventListener('change', () => {
       settings[key] = input.checked;
       saveSettings(settings);
-      sfx.play('click');
       if (play) { play.render(); play._updateTimer(); }
     });
     return h('label.set-row', null, h('span.set-txt', null, h('b', null, title), desc ? h('small', null, desc) : null), input);
   };
   const soundIn = h('input', { type: 'checkbox', class: 'switch', role: 'switch' });
   soundIn.checked = !sfx.muted;
-  soundIn.addEventListener('change', () => { sfx.setMuted(!soundIn.checked); sfx.play('click'); });
+  soundIn.addEventListener('change', () => { sfx.setMuted(!soundIn.checked); if (soundIn.checked) sfx.play('pop'); });
 
   const dots = h('div.theme-dots');
+  const stars = loadStars();
   for (const t of themes) {
-    const b = h('button', { type: 'button', class: t.id === settings.theme ? 'on' : '', 'aria-label': t.title, title: t.title });
+    const open = themeUnlocked(t, stars);
+    const b = h('button', { type: 'button', class: (t.id === settings.theme ? 'on' : '') + (open ? '' : ' locked'), 'aria-label': t.title, title: t.title });
     b.style.setProperty('--c', t.accent);
+    if (!open) b.innerHTML = icon('lock', { size: 14 });
     b.addEventListener('click', () => {
-      settings.theme = t.id;
-      saveSettings(settings);
-      applyTheme();
-      sfx.play('pop');
+      if (!open) { themeName.textContent = `${t.title} – ab ${t.unlock} ★`; return; }
+      setTheme(t.id);
       for (const x of dots.children) x.classList.toggle('on', x === b);
       themeName.textContent = t.title;
-      if (play) play.render();
     });
     dots.append(b);
   }

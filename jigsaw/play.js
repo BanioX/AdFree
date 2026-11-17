@@ -76,6 +76,10 @@ export function createPlay(app, opts) {
   let finish = null;            // { t0 }
   let viewAnim = null;
   let drag = null, pinch = null, pan = null, trayIntent = null;
+  // Aus der Leiste gehobenes Element: bleibt bis zum Loslassen im DOM (nur unsichtbar), weil iOS die
+  // Touch-Pointer-Events am ursprünglichen Element festhält – ein entferntes Element bekäme sie nicht mehr.
+  let lifted = null;
+  let pausedBy = 0; // offene Überlagerungen (Anleitung, Vorschau) halten die Uhr an
   const pts = new Map();
   let lastTap = { t: 0, x: 0, y: 0 };
   let coachEl = null;
@@ -249,6 +253,7 @@ export function createPlay(app, opts) {
     const keep = new Set(state.tray);
     for (const [i, el] of trayItems) if (!keep.has(i)) { el.remove(); trayItems.delete(i); }
     const els = state.tray.map(trayItem);
+    if (lifted && lifted.el.isConnected) els.push(lifted.el);
     trayEl.replaceChildren(...els);
     applyFilter();
   }
@@ -293,7 +298,12 @@ export function createPlay(app, opts) {
   }
   on(ghostBtn, 'click', () => setGhost(!ghostOn, true));
   on(previewBtn, 'click', () => { sfx.play('click'); showPreview(); });
-  on(helpBtn, 'click', () => { sfx.play('click'); if (opts.onHelp) opts.onHelp(); });
+  on(helpBtn, 'click', () => {
+    sfx.play('click');
+    if (!opts.onHelp) return;
+    const resume = pauseClock();
+    Promise.resolve(opts.onHelp()).catch(() => {}).finally(resume);
+  });
   on(fitBtn, 'click', () => { sfx.play('click'); animateView(1, Aw / 2, Ah / 2); });
 
   function trayIndexAt(x) {
@@ -316,6 +326,7 @@ export function createPlay(app, opts) {
 
   function trayMove(e) {
     const t = trayIntent;
+    if (drag || pinch) { trayIntent = null; return; }
     const dx = e.clientX - t.x0, dy = e.clientY - t.y0;
     if (dy < -9 && Math.abs(dy) > Math.abs(dx) * 0.8) {
       trayIntent = null;
@@ -331,7 +342,7 @@ export function createPlay(app, opts) {
     const w = toWorld({ x: p.x, y: p.y - lift });
     L.takeFromTray(state, i, w.x, w.y);
     const el = trayItems.get(i);
-    if (el) { el.remove(); trayItems.delete(i); }
+    if (el) { trayItems.delete(i); el.classList.add('lifted'); lifted = { i, el }; }
     applyFilter();
     // Randteile alle draussen? Dann automatisch zu den Innenteilen (und umgekehrt)
     const c = counts();
@@ -358,7 +369,8 @@ export function createPlay(app, opts) {
     try { table.setPointerCapture(e.pointerId); } catch { /* egal */ }
     const p = stagePos(e);
     pts.set(e.pointerId, p);
-    if (pts.size === 2 && !drag) {
+    if (drag) return; // ein zweiter Finger übernimmt kein laufendes Ziehen (auch nicht aus der Leiste)
+    if (pts.size === 2) {
       pan = null;
       const [a, b] = [...pts.values()];
       const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
@@ -446,9 +458,14 @@ export function createPlay(app, opts) {
     kick(false);
   }
 
+  function dropLifted() {
+    if (lifted) { lifted.el.remove(); lifted = null; }
+  }
+
   function endDrag(p, cancelled) {
     const d = drag;
     drag = null;
+    dropLifted();
     const members = L.groupMembers(state, d.g);
     if (!members.length) { dirty = true; kick(); return; }
     const quick = performance.now() - d.t0 < 400;
@@ -556,7 +573,13 @@ export function createPlay(app, opts) {
     cv.getContext('2d').drawImage(src, 0, 0);
     cv.className = 'pz-preview-img';
     const ov = h('div.pz-preview', null, cv, h('div.pz-preview-hint', null, 'Tippen zum Schliessen'));
-    const close = () => { ov.classList.remove('show'); setTimeout(() => ov.remove(), 250); };
+    const resume = pauseClock();
+    let closed = false;
+    const close = () => {
+      if (closed) return;
+      closed = true; resume();
+      ov.classList.remove('show'); setTimeout(() => ov.remove(), 250);
+    };
     ov.addEventListener('click', close);
     stage.append(ov);
     requestAnimationFrame(() => ov.classList.add('show'));
@@ -579,8 +602,20 @@ export function createPlay(app, opts) {
   // ---------- Zeit, Anzeige, Speichern ----------
   function accumulate() {
     const now = performance.now();
-    if (running && !document.hidden && state && !state.done) state.time += Math.min(now - lastTick, 5000);
+    if (running && !pausedBy && !document.hidden && state && !state.done) state.time += Math.min(now - lastTick, 5000);
     lastTick = now;
+  }
+  /** Hält die Spielzeit an, solange eine Überlagerung offen ist; gibt die Fortsetzen-Funktion zurück. */
+  function pauseClock() {
+    accumulate();
+    pausedBy++;
+    let done = false;
+    return () => {
+      if (done) return;
+      done = true;
+      accumulate(); // zählt die Pause nicht, setzt nur lastTick neu
+      pausedBy = Math.max(0, pausedBy - 1);
+    };
   }
 
   function updateHud() {

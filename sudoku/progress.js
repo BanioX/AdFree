@@ -12,6 +12,7 @@ export const KEYS = {
   coachDone: 'sudoku.coachDone',
   lastDiff: 'sudoku.lastDiff',
   salt: 'sudoku.salt',
+  stars: 'sudoku.stars',
 };
 
 // ---------- Einstellungen ----------
@@ -90,6 +91,37 @@ export function resetStats() { store.remove(KEYS.stats); }
 export function totalWon() {
   const s = loadStats();
   return Object.values(s).reduce((a, x) => a + x.won, 0);
+}
+
+// ---------- Sterne ----------
+// Jedes gelöste Rätsel bringt 1–3 Sterne (3 = ohne Fehler und ohne Tipp), Goldrätsel zählen doppelt.
+// Die Summe schaltet neue Brettfarben frei (data/themes.js, Feld «unlock»).
+
+/** Sterne (1–3) für eine gelöste Partie, ohne Gold-Bonus. */
+export function baseStars(game) {
+  return Math.max(1, 3 - (game.mistakes > 0 ? 1 : 0) - (game.hints > 0 ? 1 : 0));
+}
+
+/** Goldrätsel: jedes fünfte Rätsel einer Stufe zählt doppelt. */
+export const isGoldNumber = (n) => Number.isInteger(n) && n > 0 && n % 5 === 0;
+
+/** Gesammelte Sterne. Ältere Spielstände ohne Sterne bekommen eine Schätzung aus der Statistik. */
+export function loadStars() {
+  const v = store.get(KEYS.stars, null);
+  if (Number.isFinite(v)) return v;
+  const s = loadStats();
+  let est = 0;
+  for (const x of Object.values(s)) est += x.perfect * 3 + Math.max(0, x.won - x.perfect) * 2;
+  store.set(KEYS.stars, est);
+  return est;
+}
+
+/** @returns {{ before: number, after: number }} */
+export function addStars(n) {
+  const before = loadStars();
+  const after = before + Math.max(0, n | 0);
+  store.set(KEYS.stars, after);
+  return { before, after };
 }
 
 // ---------- Partien ----------

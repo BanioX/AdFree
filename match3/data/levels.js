@@ -33,7 +33,7 @@ export const levels = [
       '.......',
       '.......',
     ],
-    colors: 4, moves: 15, stars: [0, 11000, 17000],
+    colors: 4, moves: 15, stars: [0, 8000, 13000],
     goals: [{ type: 'color', color: 0, n: 35 }],
     tip: 'Wische ein Juwel auf ein Nachbarfeld. Drei gleiche in einer Reihe verschwinden!',
   },

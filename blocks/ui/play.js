@@ -10,12 +10,15 @@ import { gems as GEMS } from '../data/skins.js';
 import { BoardView } from './view.js';
 import { gemIconUrl } from './sprites.js';
 import { pictureById, pictureThumbUrl } from './picture.js';
-import { skinPicker } from './sheets.js';
+import { skinPicker, miniBoard } from './sheets.js';
 import { showHelp } from './tutorial.js';
 import {
   currentSkin, loadClassic, saveClassic, loadLevelSave, saveLevelSave, getAdv,
   updateBest, restoreBest, bestScore, recordClassicGame, countedOf, recordWin, recordTry, updateSummary, getStats,
 } from './progress.js';
+
+// Finger wie im Tutorial (shared/tutorial.js), für den Coach-Mark im ersten Spiel.
+const FINGER_SVG = `<svg viewBox="0 0 48 48" width="48" height="48"><path d="M19 6.5c2 0 3.5 1.5 3.5 3.5v13.2l1.3-.3c.3-1.6 1.7-2.7 3.4-2.7 1.4 0 2.6.8 3.1 2 .6-.6 1.5-1 2.5-1 1.6 0 2.9 1 3.3 2.5.5-.3 1.1-.4 1.7-.4 1.9 0 3.4 1.5 3.4 3.4V34c0 6-4.6 10.5-10.6 10.5h-3.6c-3.6 0-6.3-1.3-8.4-4.1l-7.3-9.6c-1.1-1.5-.8-3.6.7-4.7 1.4-1 3.3-.8 4.4.4l2.2 2.4V10c0-2 1.5-3.5 3.4-3.5z" fill="#fff" stroke="#3a2a2a" stroke-width="2.2" stroke-linejoin="round"/></svg>`;
 
 const fmt = (n) => Number(n || 0).toLocaleString('de-CH');
 const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
@@ -211,6 +214,7 @@ export function mountPlay(app, opts, nav) {
     pointerId = e.pointerId;
     try { stage.setPointerCapture(e.pointerId); } catch { /* ignore */ }
     hideIntro();
+    hideCoachFinger();
     downAt = { x: e.clientX, y: e.clientY };
     moved = 0;
     view.startDrag(slot, p.x, p.y, e.pointerType);
@@ -239,6 +243,7 @@ export function mountPlay(app, opts, nav) {
   stage.addEventListener('lostpointercapture', (e) => { if (e.pointerId === pointerId) finish(e, true); });
 
   function commit(slot, r, c) {
+    hideCoachFinger();
     const snap = { game: game.serialize(), best: classic ? bestScore(game.size) : 0 };
     const res = game.place(slot, r, c);
     view.endDrag();
@@ -329,7 +334,7 @@ export function mountPlay(app, opts, nav) {
     undo();
   });
 
-  helpBtn.addEventListener('click', () => { sfx.play('click'); showHelp(); });
+  helpBtn.addEventListener('click', () => { hideIntro(); showHelp(); });
 
   // ---------- Tipp, Pause ----------
   hintBtn.addEventListener('click', () => {
@@ -338,11 +343,11 @@ export function mountPlay(app, opts, nav) {
     if (!m) return;
     sfx.play('sparkle');
     hideIntro();
+    hideCoachFinger();
     view.showHint(m);
   });
 
   moreBtn.addEventListener('click', async () => {
-    sfx.play('click');
     const soundRow = h('div.sheet-row', null, h('span', null, 'Ton'), soundButton());
     const content = h('div', null,
       h('p.sheet-label', null, 'Aussehen'),
@@ -365,7 +370,6 @@ export function mountPlay(app, opts, nav) {
   });
 
   function leave() {
-    sfx.play('click');
     nav.menu(classic ? 'classic' : 'adventure');
   }
 
@@ -411,13 +415,54 @@ export function mountPlay(app, opts, nav) {
     startCoach();
   }
 
-  // Coach-Mark beim allerersten Spiel: der beste erste Zug pulsiert, bis man etwas setzt.
+  // Coach-Mark beim allerersten Spiel: der beste erste Zug pulsiert (Ring am Ziel, Glanz am Teil),
+  // und ein Finger zeigt die Ziehbewegung – bis man selbst etwas anfasst.
   let coachDone = !(game.moves === 0 && (classic ? getStats().classic[game.size].played === 0 && game.size === 8 : game.level === 1));
+  let coachEl = null;
   function startCoach() {
     if (coachDone || game.moves > 0 || locked) return;
     coachDone = true;
     const m = bestMove(game);
-    if (m) setTimeout(() => { if (game.moves === 0 && !view.drag) view.showHint({ ...m, persist: true }); }, 350);
+    if (m) {
+      setTimeout(() => {
+        if (game.moves !== 0 || view.drag) return;
+        view.showHint({ ...m, persist: true });
+        showCoachFinger(m);
+      }, 350);
+    }
+  }
+  function showCoachFinger(m) {
+    hideCoachFinger();
+    const v = game.tray[m.slot];
+    if (!v || !view.L) return;
+    const L = view.L;
+    const sr = stage.getBoundingClientRect();
+    const p = view.trayPiecePos(m.slot, v);
+    // Wie beim echten Ziehen: mit dem Finger schwebt das Teil darüber (Touch) bzw. mittig (Maus).
+    const touch = !window.matchMedia || window.matchMedia('(pointer: coarse)').matches;
+    const lift = touch ? Math.max(52, L.cs * 1.25) : -(v.h * L.cs) / 2;
+    const a = view.toClient(p.x + (v.w * L.ts) / 2, p.y + (v.h * L.ts) / 2);
+    const b = view.toClient(L.bx + (m.c + v.w / 2) * L.cs, L.by + (m.r + v.h) * L.cs + lift);
+    const rows = Array.from({ length: v.h }, (_, r) => Array.from({ length: v.w }, (_, c) => (v.cells.some(([dr, dc]) => dr === r && dc === c) ? String(v.color) : '_')).join(''));
+    const ghost = miniBoard(skin, rows, L.cs, { noBg: true });
+    ghost.classList.add('coach-ghost');
+    const pad = Math.round(L.cs * 0.2);
+    ghost.style.left = `${-(v.w * L.cs) / 2 - pad}px`;
+    ghost.style.top = `${-v.h * L.cs - lift - pad}px`;
+    coachEl = h('div.coach-finger', { 'aria-hidden': 'true' }, ghost, h('div.coach-hand', { html: FINGER_SVG }));
+    coachEl.style.setProperty('--fx', `${a.x - sr.left}px`);
+    coachEl.style.setProperty('--fy', `${a.y - sr.top}px`);
+    coachEl.style.setProperty('--tx', `${b.x - sr.left}px`);
+    coachEl.style.setProperty('--ty', `${b.y - sr.top}px`);
+    stage.append(coachEl);
+    window.addEventListener('resize', hideCoachFinger, { once: true });
+  }
+  function hideCoachFinger() {
+    if (!coachEl) return;
+    const el = coachEl;
+    coachEl = null;
+    el.classList.add('out');
+    setTimeout(() => el.remove(), 250);
   }
 
   // ---------- Sieg / Ende ----------
@@ -609,6 +654,7 @@ export function mountPlay(app, opts, nav) {
   return {
     destroy() {
       cancelAnimationFrame(scoreRaf);
+      window.removeEventListener('resize', hideCoachFinger);
       window.removeEventListener('pagehide', onHide);
       document.removeEventListener('visibilitychange', onHide);
       view.destroy();

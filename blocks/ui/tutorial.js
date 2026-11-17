@@ -120,7 +120,7 @@ function steps() {
   return [
     {
       title: 'Teile ziehen',
-      text: 'Ziehe ein Teil aufs Brett – es schwebt über deinem Finger, die Vorschau zeigt, wo es landet.',
+      text: 'Ziehe ein Teil aus der Ablage an einen freien Platz.',
       demo(stage, api) {
         const sc = scene(stage);
         const L = [[0, 0], [1, 0], [2, 0], [2, 1]];
@@ -144,8 +144,8 @@ function steps() {
       },
     },
     {
-      title: 'Linien abräumen',
-      text: 'Volle Zeilen und Spalten verschwinden. Mehrere auf einmal oder hintereinander geben Extrapunkte.',
+      title: 'Reihen abräumen',
+      text: 'Volle Zeilen und Spalten verschwinden – mehrere zugleich geben Bonus.',
       demo(stage, api) {
         const sc = scene(stage);
         const I = [[0, 0], [1, 0], [2, 0]];
@@ -175,7 +175,7 @@ function steps() {
     },
     {
       title: 'Platz lassen',
-      text: 'Nach drei Teilen kommen neue. Passt keines mehr, ist Schluss – die Glühbirne zeigt einen guten Zug.',
+      text: 'Lass Platz für grosse Teile – die Glühbirne zeigt gratis einen guten Zug.',
       demo(stage, api) {
         const sc = scene(stage);
         const big = sc.piece([[0, 0], [0, 1], [0, 2], [1, 0], [1, 1], [1, 2], [2, 0], [2, 1], [2, 2]], 5, 16, TRAY_Y - 1, 7.5);
@@ -200,7 +200,7 @@ function steps() {
     },
     {
       title: 'Abenteuer',
-      text: 'Räume Linien mit Edelsteinen ab, decke Bilder auf und hol mit wenigen Teilen drei Sterne.',
+      text: 'Sammle Edelsteine, decke Bilder auf und hol dir drei Sterne.',
       demo(stage, api) {
         const sc = scene(stage);
         const chip = at(h('div.bt-goal'), 70, -1);

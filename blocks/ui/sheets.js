@@ -1,10 +1,9 @@
 // Dialoge: So geht's, Statistik, Aussehen, Album.
 
 import { h, icon, showModal } from '../../shared/ui.js';
-import { sfx } from '../../shared/sfx.js';
 import { skins } from '../data/skins.js';
 import { pictures } from '../data/pictures.js';
-import { blockSprite, gemSprite, roundRect } from './sprites.js';
+import { blockSprite, gemSprite, coverSprite, roundRect } from './sprites.js';
 import { renderPicture } from './picture.js';
 import { getStats, getAdv, totalStars, getSettings, saveSettings, currentSkin, SIZES } from './progress.js';
 import { GEM_KEYS } from '../data/skins.js';
@@ -13,7 +12,7 @@ const fmt = (n) => Number(n || 0).toLocaleString('de-CH');
 
 /**
  * Kleines Brett als Canvas: rows = Zeichen pro Feld:
- *  '.' leer, '0'–'7' Stein, 'r','b',… Edelstein auf Stein, 'w' heller Blitz-Stein, '_' nichts
+ *  '.' leer, '0'–'7' Stein, 'r','b',… Edelstein auf Stein, 'w' heller Blitz-Stein, ',' verdeckt (Bild), '_' nichts
  */
 export function miniBoard(skin, rows, cs = 16, opts = {}) {
   const dpr = Math.min(3, window.devicePixelRatio || 1);
@@ -50,6 +49,10 @@ export function miniBoard(skin, rows, cs = 16, opts = {}) {
           ctx.drawImage(blockSprite(skin, opts.ghost ?? 3, cs, dpr), x, y, cs, cs);
           ctx.globalAlpha = 1;
         }
+        continue;
+      }
+      if (ch === ',') {
+        ctx.drawImage(coverSprite(skin, cs, dpr), x, y, cs, cs);
         continue;
       }
       if (ch === 'w') {
@@ -120,7 +123,6 @@ export function skinPicker(onChange) {
         sk.id === cur ? h('i.skin-check', { html: icon('check', { size: 14 }) }) : null);
       b.addEventListener('click', () => {
         if (sk.id === getSettings().skin) return;
-        sfx.play('pop');
         saveSettings({ skin: sk.id });
         render();
         if (onChange) onChange(sk);

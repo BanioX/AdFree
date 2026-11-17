@@ -137,3 +137,41 @@ export async function topUpFresh() {
     topping = false;
   }
 }
+
+// ---------- Erstes Rätsel ----------
+
+/**
+ * Macht ein Rätsel sanfter: deckt zusätzliche Zahlen aus der Lösung auf, bis nur noch `empty`
+ * Felder frei sind. Bevorzugt Felder in Reihen/Spalten/Blöcken, die schon fast voll sind (ohne sie
+ * selbst zu vervollständigen) – so gibt es früh die ersten «Reihe fertig!»-Momente. Deterministisch (gleiches Rätsel → gleiches Ergebnis).
+ */
+export function gentler(puzzle, solution, empty = 28) {
+  const vals = puzzle.split('').map((ch) => (ch >= '1' && ch <= '9' ? +ch : 0));
+  const rng = makeRng('sudoku-gentle-' + puzzle);
+  let free = vals.filter((v) => !v).length;
+  const units = [];
+  for (let r = 0; r < 9; r++) units.push(Array.from({ length: 9 }, (_, c) => r * 9 + c));
+  for (let c = 0; c < 9; c++) units.push(Array.from({ length: 9 }, (_, r) => r * 9 + c));
+  for (let b = 0; b < 9; b++) {
+    const r0 = Math.floor(b / 3) * 3, c0 = (b % 3) * 3;
+    units.push(Array.from({ length: 9 }, (_, k) => (r0 + Math.floor(k / 3)) * 9 + c0 + (k % 3)));
+  }
+  while (free > empty) {
+    // Feld mit den meisten schon gefüllten Nachbarn in seinen Einheiten (leichter Zufall gegen Muster)
+    let best = -1, bestScore = -1;
+    for (let i = 0; i < 81; i++) {
+      if (vals[i]) continue;
+      let score = rng.next() * 3;
+      for (const u of units) {
+        if (!u.includes(i)) continue;
+        const f = u.filter((j) => vals[j]).length;
+        // fast volle Einheiten auffüllen, aber nie selbst vervollständigen (das soll man selbst tun)
+        score += f === 8 ? -40 : f;
+      }
+      if (score > bestScore) { bestScore = score; best = i; }
+    }
+    vals[best] = +solution[best];
+    free--;
+  }
+  return vals.join('');
+}

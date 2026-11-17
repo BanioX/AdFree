@@ -69,6 +69,16 @@ nach dem letzten Kapitel beginnt «Runde 2» mit etwas höheren Zielen.
   `7: { shape: 'herz5', goal: { type: 'tile', value: 256 }, tip: 'Ein Herz voller Kacheln!' }`
 - **`stars`** – Sterne-Grenzen: 3 Sterne bei wenigen Zügen (nahe an der Mindestzahl), sonst 2 oder 1.
 
+Der `tip` erscheint zu Beginn der Etappe als kurze Meldung über dem Brett. In Etappe 1 steht er
+stattdessen im Coach-Mark (animierter Finger direkt auf dem Brett), der nach dem ersten Zug verschwindet.
+
+## «So geht's»
+
+Das Tutorial (4 Schritte mit animierten Mini-Brettern) steht in `howto.js` und nutzt
+`/shared/tutorial.js`. Ein Schritt ist `{ title, text, demo(stage, api) }`; die Mini-Bretter baut
+`miniBoard(skin, spalten, zeilen, { stones })` – sie zeigen automatisch den gewählten Kachel-Stil.
+Kurz halten: Titel 2–4 Wörter, ein Satz Text.
+
 ## Tests
 
 ```sh

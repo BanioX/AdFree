@@ -1,7 +1,6 @@
 // Levelkarte des Abenteuers: Welten mit je 20 Leveln, Sterne, Schlösser.
 
 import { h, icon, toast, showModal, soundButton, backButton } from '../../shared/ui.js';
-import { sfx } from '../../shared/sfx.js';
 import { worldOf, goalTypeOf } from '../core/levels.js';
 import { worlds, LEVELS_PER_WORLD } from '../data/worlds.js';
 import { getAdv, totalStars, loadLevelSave, saveLevelSave } from './progress.js';
@@ -15,9 +14,9 @@ export function mountMap(app, nav) {
   app.className = 'app blocks-map';
   app.innerHTML = '';
   const albumBtn = h('button.icon-btn', { type: 'button', 'aria-label': 'Album', html: icon('image') });
-  albumBtn.addEventListener('click', () => { sfx.play('click'); showAlbum(); });
+  albumBtn.addEventListener('click', () => showAlbum());
   const top = h('header.topbar', null,
-    backButton('#', () => { sfx.play('click'); nav.menu('adventure'); }),
+    backButton('#', () => nav.menu('adventure')),
     h('div.title.center', null, 'Abenteuer'),
     albumBtn,
     soundButton());
@@ -49,8 +48,11 @@ export function mountMap(app, nav) {
           h('span.lv-stars', { html: [1, 2, 3].map((k) => `<i class="${k <= st ? 'on' : ''}">${icon('star', { size: 11 })}</i>`).join('') }));
       }
       b.addEventListener('click', async () => {
-        if (isLocked) { sfx.play('tap'); toast(`Zuerst Level ${a.max} schaffen`); return; }
-        sfx.play('click');
+        if (isLocked) {
+          toast(`Zuerst Level ${a.max} schaffen`);
+          b.classList.remove('sp-shake'); void b.offsetWidth; b.classList.add('sp-shake');
+          return;
+        }
         if (playing && n !== playing) {
           // Es gibt nur einen Abenteuer-Spielstand: nicht stillschweigend überschreiben.
           const v = await showModal({

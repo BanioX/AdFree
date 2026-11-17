@@ -32,6 +32,7 @@
 @keyframes sb-coach { 0%, 100% { box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 25%, transparent); } 50% { box-shadow: 0 0 0 12px color-mix(in srgb, var(--accent) 0%, transparent); } }
 
 .sb-mini { pointer-events: none; }
+.sb-instant, .sb-instant * { transition: none !important; animation: none !important; }
 .sb-spark {
   position: absolute; margin: -3px 0 0 -3px; border-radius: 50%; pointer-events: none; z-index: 6;
   animation: sb-spark .8s cubic-bezier(.2,.8,.3,1) both; box-shadow: 0 0 6px rgba(255, 255, 255, .8);

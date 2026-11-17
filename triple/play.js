@@ -181,6 +181,14 @@ export function mountPlay(root, ctx) {
   let alive = true;
   const timers = new Set();
   const later = (fn, ms) => { const t = setTimeout(() => { timers.delete(t); if (alive) fn(); }, ms); timers.add(t); return t; };
+  // Dialoge dieses Bildschirms merken: verlässt man das Spiel (z. B. Wischgeste zurück), verschwinden sie mit.
+  const dialogs = new Set();
+  const ask = (opts) => {
+    const p = showModal(opts);
+    const bd = document.body.lastElementChild;
+    if (bd && bd.classList.contains('sp-modal-backdrop')) { dialogs.add(bd); p.then(() => dialogs.delete(bd)); }
+    return p;
+  };
 
   // ---------- DOM ----------
   root.className = 'app tr-play';
@@ -751,7 +759,7 @@ export function mountPlay(root, ctx) {
       res.isNewBest ? h('p.tr-win-best', null, 'Neue Bestzeit!') : null,
       facts,
       res.note ? h('p.tr-win-note', null, res.note) : null);
-    const v = await showModal({ title: res.title || 'Geschafft!', content, buttons: res.buttons, dismissible: false });
+    const v = await ask({ title: res.title || 'Geschafft!', content, buttons: res.buttons, dismissible: false });
     if (alive) ctx.onWinChoice(v);
   }
   let winShown = false;
@@ -775,7 +783,7 @@ export function mountPlay(root, ctx) {
     if (!buttons.length && game.canStash(true)) buttons.push({ label: 'Zweite Chance', value: 'extra', primary: true });
     buttons.push({ label: 'Nochmal', value: 'restart', primary: !buttons.length });
     buttons.push({ label: 'Zum Menü', value: 'menu', ghost: true });
-    const v = await showModal({
+    const v = await ask({
       title: 'Ablage voll!',
       html: `<p>Kein Problem${buttons.length > 2 ? ' – eine Hilfe rettet die Runde' : ''}.</p>`,
       buttons,
@@ -798,7 +806,7 @@ export function mountPlay(root, ctx) {
   async function onRestartClick() {
     sfx.play('click');
     if (game.moves === 0) return;
-    const ok = await showModal({
+    const ok = await ask({
       title: 'Neu beginnen?',
       text: 'Dieses Level startet nochmal von vorn.',
       buttons: [{ label: 'Neu beginnen', value: true, primary: true }, { label: 'Weiterspielen', value: false, ghost: true }],
@@ -875,13 +883,13 @@ export function mountPlay(root, ctx) {
     const label = coach.lastChild;
     const freeBelow = L.boardBottom - (L.bBot + 6);
     const freeAbove = L.bTop - 2;
-    let cy = null;
+    let cy;
     if (freeBelow >= 40) cy = L.bBot + 6 + freeBelow / 2;
     else if (freeAbove >= 40) cy = freeAbove / 2;
-    label.classList.toggle('free', cy != null);
-    label.classList.toggle('below', cy == null && p.y < L.H * 0.3);
-    label.style.left = cy != null ? (L.W / 2 - p.x) + 'px' : '';
-    label.style.top = cy != null ? (cy - p.y) + 'px' : '';
+    else cy = L.trayY + L.trayH / 2; // sonst auf die (vor dem ersten Zug leere) Ablage
+    label.classList.add('free');
+    label.style.left = (L.W / 2 - p.x) + 'px';
+    label.style.top = (cy - p.y) + 'px';
   }
   function removeCoach() {
     if (!coach) return;
@@ -927,6 +935,8 @@ export function mountPlay(root, ctx) {
     destroy() {
       persist();
       alive = false;
+      for (const d of dialogs) d.remove();
+      dialogs.clear();
       tw.clear();
       for (const t of timers) clearTimeout(t);
       clearInterval(tickTimer);

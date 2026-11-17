@@ -1,6 +1,6 @@
 // End-to-End-Test für das Blockpuzzle (Playwright, Chromium, iPhone 13).
 //   node blocks/tests/e2e.mjs
-// Startet bei Bedarf selbst einen statischen Server auf Port 8207 (und beendet ihn wieder).
+// Startet bei Bedarf selbst einen statischen Server auf Port 8140 (und beendet ihn wieder).
 // Screenshots landen in blocks/tests/out/ (git-ignoriert).
 
 import { createRequire } from 'node:module';
@@ -16,7 +16,7 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const repo = path.resolve(here, '..', '..');
 const OUT = path.join(here, 'out');
 mkdirSync(OUT, { recursive: true });
-const PORT = 8207;
+const PORT = Number(process.env.PORT) || 8140;
 const BASE = `http://127.0.0.1:${PORT}/blocks/`;
 
 let server = null;

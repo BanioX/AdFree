@@ -16,14 +16,21 @@ export const TRAY = 0, TABLE = 1, PLACED = 2;
 
 // ---------- Raster passend zum Bildformat ----------
 
-/** Wählt Spalten × Zeilen für ungefähr `count` Teile, so dass die Teile möglichst quadratisch sind. */
+const EXACT_MAX_DEV = Math.log(1.45);
+
+/** Wählt Spalten × Zeilen für `count` Teile (exakt, wenn das Format es mit hübschen Teilen erlaubt),
+ *  so dass die Teile möglichst quadratisch sind. */
 export function gridFor(count, aspect = 0.75) {
   let best = null;
   for (let cols = 2; cols <= 24; cols++) {
     for (let rows = 2; rows <= 24; rows++) {
       const n = cols * rows;
       const pieceAspect = (aspect * rows) / cols; // (W/cols) / (H/rows)
-      const score = Math.abs(Math.log(pieceAspect)) + (2.2 * Math.abs(n - count)) / count;
+      const dev = Math.abs(Math.log(pieceAspect));
+      // Die gewählte Stufe exakt treffen, solange die Teile noch angenehm (≤ 1.45 : 1) bleiben –
+      // sonst lieber fast quadratische Teile mit einer Anzahl knapp daneben.
+      const exact = n === count && dev <= EXACT_MAX_DEV ? -1 : 0;
+      const score = dev + exact + (2.2 * Math.abs(n - count)) / count;
       if (!best || score < best.score - 1e-9) best = { cols, rows, score };
     }
   }

@@ -141,7 +141,19 @@
 .blocks-map .scroll { padding-bottom: var(--safe-bottom); }
 .hero-art { position: relative; display: inline-block; padding: 34px 4px 0; }
 .hero-art .mini-board:first-child { filter: drop-shadow(0 8px 16px rgba(70, 45, 20, .18)); }
-.hero-art.preview { padding: 0; }
+.hero-art.preview { padding: 8px 0 0; }
+.hero-art.preview .mini-board { filter: drop-shadow(0 10px 18px rgba(70, 45, 20, .2)); }
+.hero-goals {
+  position: absolute; top: -6px; right: -18px; display: flex; align-items: center; gap: 6px;
+  padding: 5px 10px 5px 7px; border-radius: 999px; background: var(--surface);
+  box-shadow: 0 4px 12px rgba(70, 45, 20, .18), 0 0 0 2px var(--world, var(--accent));
+  animation: bp-badge 2.8s ease-in-out infinite;
+}
+.hg { display: inline-flex; align-items: center; gap: 2px; }
+.hg img { width: 22px; height: 22px; display: block; }
+.hg b { font-size: 15px; font-weight: 900; color: var(--text); font-variant-numeric: tabular-nums; }
+.hg-txt { font-size: 17px; line-height: 1; }
+@keyframes bp-badge { 0%, 100% { transform: rotate(4deg) scale(1); } 50% { transform: rotate(-2deg) scale(1.06); } }
 .hero-piece {
   position: absolute; top: 0; left: 52px;
   animation: bp-float 2.6s ease-in-out infinite;
@@ -365,3 +377,34 @@
 
 .blocks-menu .gm-sec { padding: 8px 6px; gap: 6px; }
 .blocks-menu .gm-sec-text b { font-size: 14.5px; }
+
+/* Coach-Mark im ersten Spiel: Finger zieht das Teil zum leuchtenden Ziel */
+.coach-finger {
+  position: absolute; left: 0; top: 0; width: 0; height: 0; z-index: 5; pointer-events: none;
+  animation: coach-drag 2.8s cubic-bezier(.45, .05, .3, 1) .2s infinite both;
+  transition: opacity .25s;
+}
+.coach-finger.out { opacity: 0 !important; }
+.coach-hand {
+  position: absolute; left: -18px; top: -6px; width: 48px; height: 48px;
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, .25)); transform-origin: 40% 15%;
+  animation: coach-press 2.8s ease .2s infinite both;
+}
+.coach-hand svg { display: block; width: 48px; height: 48px; }
+.coach-ghost { position: absolute; animation: coach-ghost 2.8s ease .2s infinite both; filter: drop-shadow(0 8px 10px rgba(0, 0, 0, .25)); }
+@keyframes coach-drag {
+  0% { transform: translate(var(--fx), var(--fy)); opacity: 0; }
+  10%, 22% { transform: translate(var(--fx), var(--fy)); opacity: 1; }
+  64%, 76% { transform: translate(var(--tx), var(--ty)); opacity: 1; }
+  90%, 100% { transform: translate(var(--tx), var(--ty)); opacity: 0; }
+}
+@keyframes coach-press {
+  0%, 14% { transform: scale(1); }
+  20%, 70% { transform: scale(.86) translateY(3px); }
+  76%, 100% { transform: scale(1); }
+}
+@keyframes coach-ghost {
+  0%, 18% { opacity: 0; transform: scale(.6); }
+  26%, 70% { opacity: .9; transform: scale(1); }
+  78%, 100% { opacity: 0; transform: scale(1); }
+}

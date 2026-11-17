@@ -28,7 +28,8 @@ const view = {
     el.style.setProperty('--l', b.l);
     return el;
   },
-  complete(stackEl, color, board, i) {
+  complete(stackEl, color, board, i, fx) {
+    if (!fx) return;
     const b = BALLS[color % BALLS.length];
     board.burst(i, [b.l, '#ffffff', '#ffd84d', b.c], 14);
   },

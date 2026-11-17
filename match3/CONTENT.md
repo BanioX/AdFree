@@ -38,6 +38,12 @@ der Generator beginnt erst bei Level 31.
 }
 ```
 
+Sterne: Ohne `stars` misst der Test-Spieler die Schwellen selbst (12 Partien; 2 Sterne soll ein
+Mensch schaffen, der gut 1,6-mal so viele Züge braucht, 3 Sterne liegt beim Median des Bots).
+Die 20 handgemachten Level haben gemessene, feste Werte (die ersten bewusst grosszügig). Der Test
+«Sterne» verlangt, dass der Test-Spieler in jedem Level in mindestens der Hälfte der Partien
+2 Sterne oder mehr holt – passt er nicht, die Werte in `stars` senken.
+
 Zeichen in `map`:
 
 | Zeichen | Bedeutung |
@@ -98,8 +104,13 @@ beginnt die Liste von vorne (mit «II», «III» … im Namen).
 { name: 'Wolkenschloss', emoji: '☁️', deco: ['☁️', '🏰', '🎈', '🌈'],
   sky: ['#eef3ff', '#d8e4ff'],      // Hintergrund-Verlauf im Spiel und auf der Karte
   cells: ['#f9fbff', '#e9effc'],    // die zwei Farben der Brettfelder (Schachbrett)
-  accent: '#5a7fd6' },              // Farbe von Weg, Levelknöpfen und Zug-Anzeige
+  accent: '#5a7fd6',                // Farbe von Weg, Levelknöpfen und Zug-Anzeige
+  hole: '🎈' },                     // optional: Emoji in Löchern mitten im Brett (sonst deco[0])
 ```
+
+Löcher (`-`), die ganz vom Brett umschlossen sind, zeigt das Spiel als Mulde mit gestricheltem
+Rand und diesem Emoji – damit niemand sie für ein fehlendes Juwel hält. Ein kräftig farbiges
+Emoji wählen (blasse wie 🐚 oder ❄️ sind auf dem Brett kaum zu sehen).
 
 ## Texte
 
@@ -111,7 +122,7 @@ Anführungszeichen «so».
 ## Prüfen
 
 ```sh
-node --test match3/tests/*.test.mjs        # Spiellogik, Inhalte, ≥150 Level, Lösbarkeit
+node --test match3/tests/*.test.mjs        # Spiellogik, Inhalte, ≥150 Level, Lösbarkeit, Sterne
 python3 -m http.server 8221 --bind 127.0.0.1 &  # im Repo-Wurzelverzeichnis
 node match3/tests/e2e.mjs                  # spielt Level 1 im iPhone-13-Browser durch, Screenshots in tests/out/
 ```

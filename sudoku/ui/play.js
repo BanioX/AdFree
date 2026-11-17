@@ -101,19 +101,19 @@ export class Play {
 
     const back = h('button.icon-btn', { type: 'button', 'aria-label': 'Zurück zum Menü' });
     back.innerHTML = icon('back');
-    back.addEventListener('click', () => { sfx.play('click'); this.o.onBack(); });
+    back.addEventListener('click', () => this.o.onBack());
 
-    this.titleEl = h('div.title', null, this.o.title);
+    this.titleEl = h('div.title', null, this.o.title,
+      g.meta.gold ? h('span.gold-pill', { title: 'Goldrätsel: doppelte Sterne' }, '×2 ★') : null);
     this.subEl = h('div.sub');
     this.timerText = h('span.t');
     this.timerIcon = h('span.ti');
     this.timerBtn = h('button.timer-pill', { type: 'button', 'aria-label': 'Pause' }, this.timerIcon, this.timerText);
-    onPress(this.timerBtn, () => { if (this.locked || g.done) return; sfx.play('click'); this.setPaused(!g.paused); });
+    onPress(this.timerBtn, () => { if (this.locked || g.done) return; this.setPaused(!g.paused); });
 
     const settingsBtn = h('button.icon-btn', { type: 'button', 'aria-label': 'Einstellungen' });
     settingsBtn.innerHTML = icon('settings');
     settingsBtn.addEventListener('click', async () => {
-      sfx.play('click');
       this.modalOpen = true;
       await this.o.onSettings();
       this.modalOpen = false;
@@ -124,7 +124,7 @@ export class Play {
 
     const helpBtn = h('button.icon-btn', { type: 'button', 'aria-label': 'So geht’s' });
     helpBtn.innerHTML = '<span class="gm-q">?</span>';
-    helpBtn.addEventListener('click', () => { sfx.play('click'); this.openModal(() => this.o.onHelp()); });
+    helpBtn.addEventListener('click', () => this.openModal(() => this.o.onHelp()));
 
     const top = h('header.topbar.play-top', null,
       back,
@@ -137,10 +137,11 @@ export class Play {
     const resume = h('button.btn.primary.resume', { type: 'button' });
     resume.innerHTML = icon('play', { size: 22 });
     resume.append('Weiter');
-    resume.addEventListener('click', () => { sfx.play('click'); this.setPaused(false); });
+    resume.addEventListener('click', () => this.setPaused(false));
     this.veil = h('div.pause-veil', null, h('div.pause-card', null, h('div.pause-title', null, 'Pause'), h('div.pause-sub', null, this.o.label || ''), resume));
 
-    this.boardWrap = h('div.board-wrap', null, this.board.el, this.veil);
+    this.fx = h('div.board-fx');          // Lob-Texte, Coach-Ring (über dem Brett, nicht abgeschnitten)
+    this.boardWrap = h('div.board-wrap', null, this.board.el, this.fx, this.veil);
     // Fortschritts-Leiste über dem Brett (nur wenn genug Platz ist)
     this.stripLabel = h('span.strip-l', null, this.o.label || '');
     this.stripPct = h('span.strip-r');
@@ -181,7 +182,7 @@ export class Play {
     this.hintText = h('p.hint-text');
     this.hintAction = h('button.btn.primary.hint-act', { type: 'button' });
     this.hintClose = h('button.btn.hint-ok', { type: 'button' }, 'OK');
-    this.hintClose.addEventListener('click', () => { sfx.play('click'); this.closeHint(); });
+    this.hintClose.addEventListener('click', () => this.closeHint());
     this.hintAction.addEventListener('click', () => this._hintAct());
     const hintIc = h('span.hint-ic');
     hintIc.innerHTML = icon('hint', { size: 22 });
@@ -194,7 +195,7 @@ export class Play {
     this.donePanel = h('div.done-panel');
 
     this.controls = h('div.controls', null, this.tools, this.pad, this.hintCard, this.donePanel);
-    this.el = h('div.screen.play', null, top, this.area, this.controls);
+    this.el = h('div.screen.play' + (g.meta.gold ? '.gold' : ''), null, top, this.area, this.controls);
 
     this._ro = new ResizeObserver(() => this._layout());
     this._ro.observe(this.area);
@@ -210,6 +211,7 @@ export class Play {
     this.boardWrap.style.width = size + 'px';
     this.boardWrap.style.height = size + 'px';
     this.el.style.setProperty('--cs', (size / 9).toFixed(2) + 'px');
+    this._placeCoachRing();
   }
 
   _firstEmpty() {
@@ -281,10 +283,23 @@ export class Play {
     this.sel = null;
     this.focusDigit = 0;
     this.notesMode = false;
-    this.coachRing = h('span.coach-ring');
-    this.board.cellEl(st.place.c).append(this.coachRing);
+    this.coachRing = h('span.coach-ring', null, h('i'));
+    this.fx.append(this.coachRing);
+    this._placeCoachRing();
     // Kurzer Hinweis in der Leiste über dem Brett (oder als Meldung, wenn sie keinen Platz hat)
     setTimeout(() => { if (this.coach && this.coach.stage === 1 && !this.destroyed) this._coachMsg('Tippe auf das leuchtende Feld'); }, 400);
+  }
+
+  /** Ring genau über das Zielfeld legen (auch nach Grössenänderungen). */
+  _placeCoachRing() {
+    if (!this.coachRing || !this.coach) return;
+    const c = this.board.cellEl(this.coach.cell);
+    const w = this.boardWrap.getBoundingClientRect();
+    const r = c.getBoundingClientRect();
+    if (!w.width) return;
+    Object.assign(this.coachRing.style, {
+      left: (r.left - w.left) + 'px', top: (r.top - w.top) + 'px', width: r.width + 'px', height: r.height + 'px',
+    });
   }
 
   _coachMsg(text) {
@@ -326,7 +341,6 @@ export class Play {
     if (this.sel === i && kind === 'down') return;
     this.sel = i;
     this.focusDigit = this.game.values[i] || 0;
-    if (kind === 'down') sfx.play('click');
     this.render();
     if (this.coach) this._coachStep('cell');
   }
@@ -340,7 +354,6 @@ export class Play {
       // Kein bearbeitbares Feld: Ziffer überall hervorheben
       this.focusDigit = this.focusDigit === d && i == null ? 0 : d;
       if (i != null && g.isGiven(i)) this.sel = null;
-      sfx.play('click');
       this.render();
       return;
     }
@@ -357,11 +370,14 @@ export class Play {
     this.place(i, d);
   }
 
-  place(i, d) {
+  place(i, d, { viaHint = false } = {}) {
     const g = this.game;
     const s = this.settings;
     const r = g.setValue(i, d, { cleanup: s.autoClean, mistakeMode: s.showMistakes ? 'solution' : 'conflict' });
     if (!r || !r.changed) return;
+    // Serie richtiger Eingaben (Tipps zählen nicht mit, Fehler setzen sie zurück)
+    if (r.mistake) g.meta.combo = 0;
+    else if (!viaHint) g.meta.combo = (g.meta.combo | 0) + 1;
     if (this.coach) this._coachStep('input');
     // Sieg sofort verbuchen (Statistik, Häkchen) – das Sieg-Blatt folgt nach der Feier-Welle
     if (r.solved) this._winInfo = this.o.onSolved ? this.o.onSolved(g) : null;
@@ -385,6 +401,7 @@ export class Play {
       for (const u of r.units) this.board.wave(UNITS[u], i);
       if (r.units.length > 1) setTimeout(() => sfx.play('sparkle'), 160);
     }
+    if (!r.solved) this._cheer(i, d, r, viaHint);
     if (r.digitDone) {
       const cells = [];
       for (let k = 0; k < 81; k++) if (g.values[k] === d) cells.push(k);
@@ -394,6 +411,32 @@ export class Play {
     this.o.onProgress(g);
     if (r.solved) this._win();
     else if (r.mistake && this._strikeOut()) setTimeout(() => this._gameOver(), 450);
+  }
+
+  /** Lob-Texte: fertige Reihe/Spalte/Block, Doppelt/Dreifach, Serien richtiger Eingaben. */
+  _cheer(i, d, r, viaHint) {
+    const msgs = [];
+    const n = r.units.length;
+    if (n >= 3) msgs.push(['Dreifach!', 'Reihe, Spalte & Block', 'big']);
+    else if (n === 2) msgs.push(['Doppelt!', 'Zwei auf einmal', 'big']);
+    else if (n === 1) msgs.push([UNIT_NAMES[Math.floor(r.units[0] / 9)] + ' fertig!', '', '']);
+    else if (r.digitDone) msgs.push([`Alle ${d} gesetzt!`, '', '']);
+    const c = this.game.meta.combo | 0;
+    if (!r.mistake && !viaHint && c >= 5 && c % 5 === 0) {
+      msgs.push([COMBO_WORDS[Math.min(COMBO_WORDS.length - 1, c / 5 - 1)], `${c} richtig in Folge`, 'combo']);
+    }
+    msgs.forEach(([t, sub, kind], k) => setTimeout(() => this._praise(i, t, sub, kind), k * 520));
+  }
+
+  _praise(i, text, sub = '', kind = '') {
+    if (this.destroyed) return;
+    const el = h('div.praise' + (kind ? '.' + kind : ''), null, h('b', null, text), sub ? h('small', null, sub) : null);
+    // Auf der Höhe des Feldes, aber nie über den Rand hinaus
+    const row = Math.floor(i / 9);
+    el.style.top = Math.min(78, Math.max(16, (row + 0.5) / 9 * 100)) + '%';
+    for (const old of this.fx.querySelectorAll('.praise')) old.classList.add('out');
+    this.fx.append(el);
+    setTimeout(() => el.remove(), 1700);
   }
 
   erase() {
@@ -431,7 +474,6 @@ export class Play {
   toggleNotes() {
     if (this.game.done) return;
     this.notesMode = !this.notesMode;
-    sfx.play('click');
     this.render();
     this.save();
   }
@@ -531,10 +573,10 @@ export class Play {
       this.erase();
     } else if (hint.type === 'reveal') {
       this.sel = hint.cell;
-      this.place(hint.cell, hint.digit);
+      this.place(hint.cell, hint.digit, { viaHint: true });
     } else if (hint.step.place) {
       this.sel = hint.step.place.c;
-      this.place(hint.step.place.c, hint.step.place.d);
+      this.place(hint.step.place.c, hint.step.place.d, { viaHint: true });
     } else {
       const r = g.applyEliminations(hint.step.elims, hint.step.cells);
       sfx.play('whoosh');
@@ -717,15 +759,18 @@ export class Play {
     const ic = h('span.done-ic');
     ic.innerHTML = icon('check', { size: 22, stroke: 3 });
     const next = h('button.btn.primary', { type: 'button' }, this.o.nextLabel ? this.o.nextLabel() : 'Nächstes Rätsel');
-    next.addEventListener('click', () => { sfx.play('click'); this.o.onNext(); });
+    next.addEventListener('click', () => this.o.onNext());
     const menu = h('button.btn', { type: 'button' }, 'Menü');
-    menu.addEventListener('click', () => { sfx.play('click'); this.o.onMenu(); });
+    menu.addEventListener('click', () => this.o.onMenu());
     this.donePanel.replaceChildren(
       h('div.done-line', null, ic, h('span', null, 'Gelöst in ', h('b', null, formatTime(g.elapsed)))),
       h('div.done-btns', null, menu, next));
     this.el.classList.add('is-done');
   }
 }
+
+const UNIT_NAMES = ['Reihe', 'Spalte', 'Block'];
+const COMBO_WORDS = ['Super!', 'Toll!', 'Fantastisch!', 'Unglaublich!', 'Meisterhaft!'];
 
 /** Kennung eines Tipps (gleicher Tipp => gleicher Schlüssel). */
 function hintKey(hint) {

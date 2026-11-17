@@ -21,6 +21,7 @@ Was in Spielpause neu dazukommt. Neueste Einträge oben.
 - **Buchstabenjagd**: Wort mit sieben Fehlversuchen erraten, deutsch und englisch.
 - **Anagramm**: Buchstaben in die richtige Reihe legen, deutsch und englisch.
 - **Wortleiter**: vom Startwort zum Ziel, ein Buchstabe pro Stufe, deutsch und englisch.
+- **Geheimschrift**: eigene kurze Sätze entschlüsseln, deutsch und englisch.
 
 ### Behoben (Grok)
 - **Vier in einer Reihe**: Tippen auf eine Reihe legt wieder einen Stein (iPhone). Der Tipp hebt die Reihe nur hervor.

@@ -60,6 +60,7 @@ export const games = [
   { id: 'jagd', title: 'Buchstabenjagd', title_en: 'Letter Hunt', tile: 'Buchstaben\u00ADjagd', tile_en: 'Letter Hunt', subtitle: 'Den Begriff Buchstabe für Buchstabe', subtitle_en: 'The word, one letter at a time', category: 'woerter', color: '#e05a8a', added: '2026-11-17' },
   { id: 'anagramm', title: 'Anagramm', title_en: 'Anagram', subtitle: 'Buchstaben in die richtige Reihe', subtitle_en: 'Put the letters in the right order', category: 'woerter', color: '#d4564e', added: '2026-11-17' },
   { id: 'wortleiter', title: 'Wortleiter', title_en: 'Word Ladder', tile: 'Wortleiter', tile_en: 'Word Ladder', subtitle: 'Ein Buchstabe pro Stufe', subtitle_en: 'One letter each rung', category: 'woerter', color: '#2a9d8f', added: '2026-11-17' },
+  { id: 'geheim', title: 'Geheimschrift', title_en: 'Secret Script', tile: 'Geheim\u00ADschrift', tile_en: 'Secret Script', subtitle: 'Jeden Buchstaben zurücksetzen', subtitle_en: 'Put every letter back', category: 'woerter', color: '#5b6b8c', added: '2026-11-17' },
 ];
 
 /** Titel/Untertitel/Kachelname in der aktuellen Sprache */

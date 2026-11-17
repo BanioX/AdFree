@@ -478,6 +478,12 @@ export class Pic {
     this.meta = { width: 1000, height: 1000, ...meta };
     this.shapes = [];
     this.lines = [];
+    this.group = '';
+  }
+  /** Gruppenname für die folgenden Formen (nur für Prüf-Ausgaben). */
+  tag(name) {
+    this.group = name;
+    return this;
   }
   get W() {
     return this.meta.width;
@@ -485,19 +491,134 @@ export class Pic {
   get H() {
     return this.meta.height;
   }
-  /** Fläche hinzufügen. path: Path | string | Array<Path>; color: Palettenname. */
-  add(path, color, rule) {
+  /**
+   * Fläche hinzufügen. path: Path | string | Array<Path>; color: Palettenname.
+   * opts: 'evenodd' oder { rule, prune } – prune: darf beim Bauen entfernt werden,
+   * wenn vom Bereich kaum etwas sichtbar bleibt (Laub, Füllformen).
+   */
+  add(path, color, opts) {
     if (!(color in this.meta.palette)) throw new Error(`${this.meta.id}: unbekannte Farbe «${color}»`);
+    const o = typeof opts === 'string' ? { rule: opts } : opts || {};
     const d = Array.isArray(path) ? Path.of(...path).toString() : String(path);
-    const s = { d, c: color };
-    if (rule) s.r = rule;
+    const s = { d, c: color, g: this.group || '' };
+    if (o.rule) s.r = o.rule;
+    if (o.prune) s.prune = o.prune === true ? {} : o.prune;
+    if (o.alt) s.alt = o.alt;
     this.shapes.push(s);
     return this;
+  }
+  /**
+   * Füllform: wird beim Bauen bei zu kleiner Sichtfläche entfernt; mit alt (Liste von
+   * Farbnamen) wählt der Bauer die Farbe so, dass Nachbarn möglichst verschieden sind.
+   */
+  filler(path, color, alt = null, prune = {}) {
+    return this.add(path, color, { prune, alt });
+  }
+  /** Färbt Formen mit alt-Liste um, damit benachbarte Bereiche verschiedene Farben haben. */
+  recolor(stats) {
+    const nb = this.shapes.map(() => []);
+    for (const [a, b, c] of stats.adj) {
+      nb[a].push([b, c]);
+      nb[b].push([a, c]);
+    }
+    let changed = 0;
+    for (let pass = 0; pass < 4; pass++) {
+      this.shapes.forEach((s, k) => {
+        if (!s.alt) return;
+        const cost = (col) => nb[k].reduce((sum, [j, c]) => sum + (this.shapes[j].c === col ? c : 0), 0);
+        let best = s.c;
+        let bestCost = cost(s.c);
+        for (const col of s.alt) {
+          const cc = cost(col);
+          if (cc < bestCost) {
+            best = col;
+            bestCost = cc;
+          }
+        }
+        if (best !== s.c) {
+          s.c = best;
+          changed++;
+        }
+      });
+    }
+    return changed;
+  }
+  /** Entfernt Füllformen anhand von Statistiken {area[], dist[]}; liefert Anzahl. */
+  prune(stats, { minArea = 420, minDist = 5.5 } = {}) {
+    const keep = [];
+    let removed = 0;
+    this.shapes.forEach((s, k) => {
+      const lim = s.prune || null;
+      const a = stats.area[k];
+      const dd = stats.dist[k];
+      if (lim && (a < (lim.minArea ?? minArea) || dd < (lim.minDist ?? minDist))) removed++;
+      else keep.push(s);
+    });
+    this.shapes = keep;
+    return removed;
   }
   /** Mehrere Flächen gleicher Farbe (je ein eigener Bereich). */
   each(paths, color) {
     for (const p of paths) this.add(p, color);
     return this;
+  }
+  /** Teilt zerfallene Formen an verdeckten Schnittlinien in eigene Bereiche. */
+  applySplits(splits) {
+    const byK = new Map(splits.map((sp) => [sp.k, sp]));
+    const out = [];
+    let added = 0;
+    this.shapes.forEach((s, k) => {
+      const sp = byK.get(k);
+      if (!sp) {
+        out.push(s);
+        return;
+      }
+      const bounds = [-1e5, ...sp.cuts, 1e5];
+      for (let i = 0; i < bounds.length - 1; i++) {
+        const path = sp.axis === 0 ? clipRect(s.d, bounds[i], -1e5, bounds[i + 1], 1e5) : clipRect(s.d, -1e5, bounds[i], 1e5, bounds[i + 1]);
+        if (!path.cmds.length) continue;
+        const ns = { ...s, d: path.toString() };
+        out.push(ns);
+        added++;
+      }
+      added--;
+    });
+    this.shapes = out;
+    return added;
+  }
+  /** Hängt abgetrennte Stücke (Konturpolygone) an die jeweilige darüberliegende Nachbarform an. */
+  applyPatches(patches) {
+    const area = (pts) => {
+      let a = 0;
+      for (let i = 0; i < pts.length; i++) {
+        const p = pts[i];
+        const q = pts[(i + 1) % pts.length];
+        a += p[0] * q[1] - q[0] * p[1];
+      }
+      return a / 2;
+    };
+    const firstSubpathPts = (d) => {
+      const pts = [];
+      const re = /([MLCQZ])([^MLCQZ]*)/g;
+      let m;
+      let started = false;
+      while ((m = re.exec(d))) {
+        if (m[1] === 'M' && started) break;
+        if (m[1] === 'Z') continue;
+        started = true;
+        const nums = m[2].trim().split(/[\s,]+/).filter(Boolean).map(Number);
+        if (nums.length >= 2) pts.push([nums[nums.length - 2], nums[nums.length - 1]]);
+      }
+      return pts;
+    };
+    for (const pt of patches) {
+      const s = this.shapes[pt.target];
+      const sign = Math.sign(area(firstSubpathPts(s.d)));
+      let pts = pt.pts;
+      if (Math.sign(area(pts)) !== sign) pts = pts.slice().reverse();
+      s.d += poly(pts).toString();
+    }
+    return patches.length;
   }
   line(path, w, color = '#2b2420') {
     this.lines.push({ d: String(path), w, color });
@@ -557,4 +678,120 @@ export function sprig(len, wid, teeth = 5, { round = 3 } = {}) {
   }
   const pts = [[0, 0], ...right, [0, -len], ...right.slice().reverse().map(([x, y]) => [-x, y])];
   return roundPoly(pts, round);
+}
+
+/* ---------- Abflachen und Zuschneiden ---------- */
+
+/** Pfad in Polygone (eins pro Teilpfad) umwandeln; step = ungefähre Punktabstände. */
+export function flatten(path, step = 3) {
+  const subs = [];
+  let cur = null;
+  let last = [0, 0];
+  for (const c of path.cmds) {
+    if (c[0] === 'M') {
+      cur = [[c[1], c[2]]];
+      subs.push(cur);
+      last = [c[1], c[2]];
+    } else if (c[0] === 'L') {
+      cur.push([c[1], c[2]]);
+      last = [c[1], c[2]];
+    } else if (c[0] === 'Q' || c[0] === 'C') {
+      const P = [last];
+      for (let i = 1; i < c.length; i += 2) P.push([c[i], c[i + 1]]);
+      let len = 0;
+      for (let i = 1; i < P.length; i++) len += Math.hypot(P[i][0] - P[i - 1][0], P[i][1] - P[i - 1][1]);
+      const n = Math.max(2, Math.ceil(len / step));
+      for (let k = 1; k <= n; k++) {
+        const t = k / n;
+        const u = 1 - t;
+        let x, y;
+        if (P.length === 3) {
+          x = u * u * P[0][0] + 2 * u * t * P[1][0] + t * t * P[2][0];
+          y = u * u * P[0][1] + 2 * u * t * P[1][1] + t * t * P[2][1];
+        } else {
+          x = u * u * u * P[0][0] + 3 * u * u * t * P[1][0] + 3 * u * t * t * P[2][0] + t * t * t * P[3][0];
+          y = u * u * u * P[0][1] + 3 * u * u * t * P[1][1] + 3 * u * t * t * P[2][1] + t * t * t * P[3][1];
+        }
+        cur.push([x, y]);
+      }
+      last = P[P.length - 1];
+    }
+  }
+  return subs.filter((s) => s.length >= 3);
+}
+
+/** Sutherland–Hodgman an einer Halbebene: axis 0 = x, 1 = y; keep: (v) => bool. */
+function clipHalf(pts, axis, value, less) {
+  const out = [];
+  const inside = (p) => (less ? p[axis] <= value : p[axis] >= value);
+  for (let i = 0; i < pts.length; i++) {
+    const a = pts[i];
+    const b = pts[(i + 1) % pts.length];
+    const ia = inside(a);
+    const ib = inside(b);
+    if (ia) out.push(a);
+    if (ia !== ib) {
+      const t = (value - a[axis]) / (b[axis] - a[axis]);
+      out.push([a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t]);
+    }
+  }
+  return out;
+}
+
+function rdp(pts, eps) {
+  if (pts.length < 3) return pts.slice();
+  const a = pts[0];
+  const b = pts[pts.length - 1];
+  const L = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1e-9;
+  let md = -1;
+  let mi = 0;
+  for (let i = 1; i < pts.length - 1; i++) {
+    const p = pts[i];
+    const d = Math.abs((b[0] - a[0]) * (a[1] - p[1]) - (a[0] - p[0]) * (b[1] - a[1])) / L;
+    if (d > md) {
+      md = d;
+      mi = i;
+    }
+  }
+  if (md <= eps) return [a, b];
+  const left = rdp(pts.slice(0, mi + 1), eps);
+  return [...left.slice(0, -1), ...rdp(pts.slice(mi), eps)];
+}
+
+function simplifyRing(pts, eps = 0.2) {
+  if (pts.length < 8) return pts;
+  const h = Math.floor(pts.length / 2);
+  const a = rdp(pts.slice(0, h + 1), eps);
+  const b = rdp([...pts.slice(h), pts[0]], eps);
+  return [...a.slice(0, -1), ...b.slice(0, -1)];
+}
+
+/** Pfad auf ein achsenparalleles Rechteck zuschneiden (Ergebnis: Polygon-Pfad). */
+export function clipRect(pathOrD, x0, y0, x1, y1, step = 3) {
+  const path = typeof pathOrD === 'string' ? parsePath(pathOrD) : pathOrD;
+  const cmds = [];
+  for (let ring of flatten(path, step)) {
+    ring = clipHalf(ring, 0, x0, false);
+    if (ring.length) ring = clipHalf(ring, 0, x1, true);
+    if (ring.length) ring = clipHalf(ring, 1, y0, false);
+    if (ring.length) ring = clipHalf(ring, 1, y1, true);
+    ring = simplifyRing(ring);
+    if (ring.length < 3) continue;
+    cmds.push(['M', ...ring[0]]);
+    for (let i = 1; i < ring.length; i++) cmds.push(['L', ...ring[i]]);
+    cmds.push(['Z']);
+  }
+  return new Path(cmds);
+}
+
+/** Einfacher Parser für die hier erzeugten Pfade (absolute M, L, C, Q, Z). */
+export function parsePath(d) {
+  const cmds = [];
+  const re = /([MLCQZ])([^MLCQZ]*)/g;
+  let m;
+  while ((m = re.exec(d))) {
+    const nums = m[2].trim().split(/[\s,]+/).filter(Boolean).map(Number);
+    cmds.push([m[1], ...nums]);
+  }
+  return new Path(cmds);
 }

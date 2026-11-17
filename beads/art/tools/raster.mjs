@@ -135,19 +135,22 @@ export class Grid {
     return this;
   }
 
-  /** Umriss innen: Zellen aus `of`, die an etwas ausserhalb von `of` (oder den Rand) grenzen, werden zu c. */
-  innerOutline(c, { of, diag = false, edge = true } = {}) {
-    const inside = (x, y) => {
+  /**
+   * Umriss innen: Zellen aus `of`, die an «aussen» grenzen, werden zu c. Aussen ist alles ausserhalb
+   * von `of` – oder, mit `against`, nur diese Zeichen. `edge`: Gitterrand zählt als aussen.
+   */
+  innerOutline(c, { of, against = null, diag = false, edge = true } = {}) {
+    const outside = (x, y) => {
       const v = this.get(x, y);
       if (v === undefined) return edge;
-      return of.includes(v);
+      return against != null ? against.includes(v) : !of.includes(v);
     };
     const hits = [];
     for (let y = 0; y < this.h; y++) {
       for (let x = 0; x < this.w; x++) {
         if (!of.includes(this.a[y][x])) continue;
-        let out = !inside(x - 1, y) || !inside(x + 1, y) || !inside(x, y - 1) || !inside(x, y + 1);
-        if (!out && diag) out = !inside(x - 1, y - 1) || !inside(x + 1, y - 1) || !inside(x - 1, y + 1) || !inside(x + 1, y + 1);
+        let out = outside(x - 1, y) || outside(x + 1, y) || outside(x, y - 1) || outside(x, y + 1);
+        if (!out && diag) out = outside(x - 1, y - 1) || outside(x + 1, y - 1) || outside(x - 1, y + 1) || outside(x + 1, y + 1);
         if (out) hits.push([x, y]);
       }
     }
@@ -255,4 +258,23 @@ export function obj(g, draw, outline = 'k', opt = {}) {
   if (outline) l.outline(outline, { diag: !!opt.diag });
   g.over(l, 0, 0, opt.paint);
   return l;
+}
+
+/** Füllt alle leeren Zellen ('.') mit c (oder c(x, y) für Muster). */
+export function background(g, c) {
+  return g.paint((_, __, x, y) => g.a[y][x] === '.', c);
+}
+
+/** Lauflängen-Zeile: rle('B2 k o5 w') -> 'BBkooooow' (Zeichen + optionale Anzahl, durch Leerzeichen getrennt). */
+export function rle(spec) {
+  return spec.trim().split(/\s+/).map((t) => t[0].repeat(t.length > 1 ? +t.slice(1) : 1)).join('');
+}
+
+/** Mehrere RLE-Zeilen; prüft optional die Breite. */
+export function rles(specs, width) {
+  return specs.map((s, i) => {
+    const r = rle(s);
+    if (width && r.length !== width) throw new Error(`RLE-Zeile ${i} hat Länge ${r.length} statt ${width}: ${s}`);
+    return r;
+  });
 }

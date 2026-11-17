@@ -130,7 +130,9 @@ function buildOnce(geo, p, rng) {
         const right = (back + 3) & 3;
         let opts;
         const r = rng.next();
-        if (r < p.turn / 2) opts = [left, straight, right];
+        // Direkt hinter dem Kopf geht es immer gerade weiter (Spitze zeigt in Laufrichtung)
+        if (i === 1) opts = [straight];
+        else if (r < p.turn / 2) opts = [left, straight, right];
         else if (r < p.turn) opts = [right, straight, left];
         else opts = rng.next() < 0.5 ? [straight, left, right] : [straight, right, left];
         let moved = false;

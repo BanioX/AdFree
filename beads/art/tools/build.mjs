@@ -50,19 +50,19 @@ const args = process.argv.slice(2);
 const printIds = new Set();
 for (let i = 0; i < args.length; i++) if (args[i] === '--print') printIds.add(args[++i]);
 
-for (const tier of [...TIERS, 'scratch']) {
+for (const tier of [...TIERS, 'scratch', 'scratch2', 'scratch3']) {
   let mod;
   try {
     mod = await import(`./src/${tier}.mjs?t=${Date.now()}`);
   } catch (err) {
     if (err.code === 'ERR_MODULE_NOT_FOUND' && String(err.message).includes(`${tier}.mjs`)) {
-      if (tier !== 'scratch') console.warn(`(übersprungen: src/${tier}.mjs fehlt)`);
+      if (!tier.startsWith('scratch')) console.warn(`(übersprungen: src/${tier}.mjs fehlt)`);
       continue;
     }
     throw err;
   }
   const list = mod.default.map(resolveEntry);
-  await writeFile(tier === 'scratch' ? path.join(here, 'out', 'scratch.js') : path.join(artDir, `${tier}.js`), serialize(list, tier));
+  await writeFile(tier.startsWith('scratch') ? path.join(here, 'out', `${tier}.js`) : path.join(artDir, `${tier}.js`), serialize(list, tier));
   console.log(`${tier}.js: ${list.length} Muster`);
   for (const p of list) {
     if (printIds.has(p.id) || printIds.has('all')) {

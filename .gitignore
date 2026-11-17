@@ -1,0 +1,8 @@
+# Test- und Vorschau-Ausgaben (Screenshots, Kontaktabzüge) nicht einchecken
+**/tests/out/
+**/tools/out/
+**/out/
+**/screenshots/
+**/shots/
+*.log
+node_modules/

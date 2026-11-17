@@ -6,6 +6,7 @@ import { writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { save } from './lib.mjs';
+import { autoSplit } from './raster.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const outDir = join(here, '..');
@@ -36,9 +37,10 @@ for (const name of ORDER) {
   }
   metas.push({ name, ...mod.meta });
   if (only.length && !only.includes(name) && !only.includes(mod.meta.id)) continue;
-  const pz = mod.build().build();
+  const t0 = Date.now();
+  const pz = process.env.NOSPLIT ? mod.build().build() : autoSplit(mod.build().build());
   save(pz, join(outDir, `${name}.js`));
-  console.log(`${name}.js  ${pz.shapes.length} regions, ${pz.palette.length} colors`);
+  console.log(`${name}.js  ${pz.shapes.length} regions, ${pz.palette.length} colors  (${Date.now() - t0} ms)`);
 }
 
 const idx = [

@@ -182,7 +182,7 @@ async function analyze({ index, indexUrl, render, L }) {
   for (let k = 0; k < n; k++) maxD[k] /= 3;
 
   // --- Nachbarschaft gleicher Farbe ---
-  const pairKey = new Set();
+  const pairCount = new Map();
   const sameEdge = new Uint8Array(N);
   for (let y = 0; y < h; y++) {
     for (let x = 0; x < w; x++) {
@@ -194,7 +194,8 @@ async function analyze({ index, indexUrl, render, L }) {
         const b = id[q];
         if (b < 0 || b === a) continue;
         if (pz.shapes[a].c === pz.shapes[b].c) {
-          pairKey.add(a < b ? `${a}-${b}` : `${b}-${a}`);
+          const key = a < b ? `${a}-${b}` : `${b}-${a}`;
+          pairCount.set(key, (pairCount.get(key) || 0) + 1);
           sameEdge[p] = 1;
           sameEdge[q] = 1;
         }
@@ -202,6 +203,37 @@ async function analyze({ index, indexUrl, render, L }) {
     }
   }
 
+  const pairKey = new Set([...pairCount].filter(([, c]) => c >= 4).map(([k]) => k));
+
+  // --- Zusammenhang: zerfällt der sichtbare Teil einer Form in mehrere Stücke? ---
+  const comp = new Int32Array(N).fill(-1);
+  const pieces = Array.from({ length: n }, () => []);
+  const stack = new Int32Array(N);
+  let nc = 0;
+  for (let s0 = 0; s0 < N; s0++) {
+    const k = id[s0];
+    if (k < 0 || comp[s0] >= 0) continue;
+    let top = 0;
+    stack[top++] = s0;
+    comp[s0] = nc;
+    let size = 0;
+    while (top) {
+      const p = stack[--top];
+      size++;
+      const x = p % w;
+      if (x > 0 && comp[p - 1] < 0 && id[p - 1] === k) { comp[p - 1] = nc; stack[top++] = p - 1; }
+      if (x < w - 1 && comp[p + 1] < 0 && id[p + 1] === k) { comp[p + 1] = nc; stack[top++] = p + 1; }
+      if (p >= w && comp[p - w] < 0 && id[p - w] === k) { comp[p - w] = nc; stack[top++] = p - w; }
+      if (p < N - w && comp[p + w] < 0 && id[p + w] === k) { comp[p + w] = nc; stack[top++] = p + w; }
+    }
+    pieces[k].push({ size, x: s0 % w, y: Math.floor(s0 / w) });
+    nc++;
+  }
+  const split = [];
+  for (let k = 0; k < n; k++) {
+    const big = pieces[k].filter((pc) => pc.size >= 40).sort((a, b) => b.size - a.size);
+    if (big.length > 1) split.push(`${k}(${big.slice(0, 4).map((pc, i) => (i ? `${pc.size}@${Math.round(pc.x / S)},${Math.round(pc.y / S)}` : pc.size)).join('+')})`);
+  }
   const zero = [];
   const tiny = [];
   const slivers = [];
@@ -216,6 +248,7 @@ async function analyze({ index, indexUrl, render, L }) {
   if (tiny.length > L.maxTiny) errors.push(`${tiny.length} Mini-Bereiche < ${L.tinyArea} px: ${tiny.map((k) => `${k}(${area[k]})`).join(', ')}`);
   else if (tiny.length) warnings.push(`${tiny.length} kleine Bereiche: ${tiny.map((k) => `${k}(${area[k]})`).join(', ')}`);
   if (slivers.length) warnings.push(`${slivers.length} schmale Bereiche (Innenabstand < ${L.sliverDist}px): ${slivers.map((k) => `${k}(${maxD[k].toFixed(1)})`).join(', ')}`);
+  if (split.length) warnings.push(`${split.length} zerfallene Bereiche (mehrere Stücke ≥ 40 px): ${split.join(', ')}`);
   if (pairKey.size) warnings.push(`${pairKey.size} Nachbarpaare gleicher Farbe: ${[...pairKey].slice(0, 12).join(', ')}${pairKey.size > 12 ? ' …' : ''}`);
 
   const sorted = [...area].filter((a) => a > 0).sort((a, b) => a - b);
@@ -227,6 +260,7 @@ async function analyze({ index, indexUrl, render, L }) {
     tiny: tiny.length,
     slivers: slivers.length,
     sameColorPairs: pairKey.size,
+    split: split.length,
     uncovered,
   };
 
@@ -386,10 +420,15 @@ for (let i = 0; i < list.length; i++) {
   if (!ok) failed = true;
   console.log(
     `${ok ? '✓' : '✗'} ${p.id.padEnd(18)} ${String(s.regions).padStart(4)} Bereiche ${String(s.colors).padStart(3)} Farben` +
-      `  min ${s.minArea}px  median ${s.medianArea}px  klein ${s.tiny}  schmal ${s.slivers}  gleichfarbig ${s.sameColorPairs}`,
+      `  min ${s.minArea}px  median ${s.medianArea}px  klein ${s.tiny}  schmal ${s.slivers}  gleichfarbig ${s.sameColorPairs}  zerfallen ${s.split}`,
   );
-  for (const e of res.errors) console.log(`    ✗ ${e}`);
-  for (const wn of res.warnings) console.log(`    · ${wn}`);
+  let groups = null;
+  try {
+    groups = JSON.parse(readFileSync(join(here, 'out', `${p.id}.groups.json`), 'utf8'));
+  } catch {}
+  const named = (t) => (groups ? t.replace(/(?<![@\d.])\b(\d+)(?=\(|-|,|$| …)/g, (m, k) => (groups[+k] ? `${k}[${groups[+k]}]` : m)) : t);
+  for (const e of res.errors) console.log(`    ✗ ${named(e)}`);
+  for (const wn of res.warnings) console.log(`    · ${named(wn)}`);
   if (png && res.png) {
     for (const [k, v] of Object.entries(res.png)) {
       writeFileSync(join(outDir, `${p.id}-${k}.png`), Buffer.from(v.split(',')[1], 'base64'));

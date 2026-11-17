@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="de-CH">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Farbenzauber – Generator-Prüfung</title>
+  <style>body { margin: 0; background: #fbf6ef; font-family: sans-serif; }</style>
+</head>
+<body>
+  <p id="status">Prüfseite bereit.</p>
+  <script type="module">
+    import * as C from './check-page.js';
+    window.__check = C;
+    document.getElementById('status').textContent = 'geladen';
+  </script>
+</body>
+</html>

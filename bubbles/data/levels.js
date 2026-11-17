@@ -1,0 +1,322 @@
+// Handgezeichnete Level (Level 1–20). Weitere Level erzeugt core/levels.js automatisch.
+//
+// Format einer Zeile: Zellen durch Leerzeichen getrennt.
+//   Gerade Zeilen (1., 3., 5. …) haben 11 Zellen, die Zeilen dazwischen 10 Zellen
+//   und beginnen mit einem Leerzeichen – so sieht man die Wabenform direkt im Text.
+//
+//   .  leer
+//   r o y g b v p t   Farbe (Rot, Orange, Gelb, Grün, Blau, Violett, Rosa, Türkis)
+//   R O Y G B V P T   gleiche Farbe mit eingeschlossenem Tierchen (Ziel «befreien»)
+//   #  Stein (passt zu keiner Farbe, fällt nur herunter)
+//
+// Felder:
+//   name   Anzeigename
+//   goal   'clear' (alle Blasen abräumen, Standard) oder 'pets' (alle Tierchen befreien)
+//   pets   Emoji für die Tierchen (optional, sonst die der Welt)
+//   shots  Anzahl Schüsse (optional, sonst automatisch berechnet)
+//   rows   das Bild, Zeile 0 hängt an der Decke
+//
+// Wichtig: Jede Blase muss (über Nachbarn) mit der obersten Zeile verbunden sein.
+// Steine nie in die oberste Zeile setzen. Die Tests (bubbles/tests) prüfen das.
+
+export const LEVELS = [
+  {
+    name: 'Herz',
+    rows: [
+      '. p p r r . p r r p .',
+      ' p p r r p p r r p p',
+      '. p r r p p r r p p .',
+      ' . r r p p r r p p .',
+      '. . r p p r r p p . .',
+      ' . . p p r r p p . .',
+      '. . . p r r p p . . .',
+      ' . . . r r p p . . .',
+      '. . . . r p p . . . .',
+      ' . . . . p p . . . .',
+      '. . . . . p . . . . .',
+    ],
+  },
+  {
+    name: 'Blume',
+    rows: [
+      '. . . v p . p v . . .',
+      ' . . v v p p v v . .',
+      '. v v v y y y v v v .',
+      ' . v v y y y y p p .',
+      '. p p p y y y p p p .',
+      ' . . p p v v p p . .',
+      '. . . p v g v p . . .',
+      ' . . . . g . . . . .',
+      '. . . g g g . . . . .',
+      ' . . . . g g g . . .',
+      '. . . . . g . . . . .',
+    ],
+  },
+  {
+    name: 'Regenbogen',
+    rows: [
+      'r r o o o y y g g b b',
+      ' r r o o y y g g b b',
+      'r r o o o y y g g b b',
+      ' r r o o y y g g b b',
+      'r r o o . . . g g b b',
+      ' r r o . . . . g b b',
+      'r r o . . . . . g b b',
+      ' r r . . . . . . b b',
+      'r r . . . . . . . b b',
+    ],
+  },
+  {
+    name: 'Küken retten',
+    goal: 'pets',
+    pets: ['🐣'],
+    rows: [
+      'b b y y y b b y y y b',
+      ' b Y y g g b y Y g b',
+      'g g y y g g y y g g y',
+      ' g b b y y b b g g y',
+      'y y b b y g g b b y y',
+      ' . y g g y y g g y .',
+      '. . y g b b b g y . .',
+    ],
+  },
+  {
+    name: 'Katze',
+    rows: [
+      '. p o . . . . . o p .',
+      ' o p o . . . . o p o',
+      '. y y y y y y y y y .',
+      ' o o o o o o o o o o',
+      '. o o g o o o g o o .',
+      ' y y y y y y y y y y',
+      '. o o o o p o o o o .',
+      ' . y o o p p o o y .',
+      '. . y y y y y y y . .',
+      ' . . . o o o o . . .',
+    ],
+  },
+  {
+    name: 'Schmetterling',
+    rows: [
+      '. . v v . . . v v . .',
+      ' v v v v b b v v v v',
+      '. v y y v b v y y v .',
+      ' v y y y b b y y y v',
+      '. v y y v b v y y v .',
+      ' . v v v b b v v v .',
+      '. . v v p b p v v . .',
+      ' . . p p b b p p . .',
+      '. . p p p b p p p . .',
+      ' . . . p . . p . . .',
+    ],
+  },
+  {
+    name: 'Buchstabe A',
+    rows: [
+      'o o y y o b y y o o y',
+      ' o y y o b b y o o y',
+      'y y o o b y b o y y o',
+      ' y o o b y o b y y o',
+      'o o y b o o y b o o y',
+      ' o y b b b b b b o y',
+      'y y b o y y o o b y o',
+      ' y b o y y o o y b o',
+      'o b b y o o y y b b y',
+    ],
+  },
+  {
+    name: 'Fisch',
+    rows: [
+      'b b b b b b b b b b b',
+      ' b b b b b b b b b b',
+      'b b b b b b b b b b b',
+      ' o o b r o r r o b b',
+      'b o o r o o r y o b b',
+      ' o o o r o r r o b b',
+      'g o b b o o r o b g b',
+      ' o b b b b b b b g g',
+      'g g b b b b b b b g b',
+    ],
+  },
+  {
+    name: 'Bienenwabe',
+    goal: 'pets',
+    pets: ['🐝'],
+    rows: [
+      'y y o y y o y y o y y',
+      ' y Y y o y Y y o Y y',
+      'o y y o o y y o y y o',
+      ' y o y y o y o y y o',
+      'r y o y y r y y o y r',
+      ' r r y o y y o y r r',
+      '. g r r y o y r r g .',
+      ' . g g r r r r g g .',
+    ],
+  },
+  {
+    name: 'Frosch',
+    rows: [
+      '. y b y . . . y b y .',
+      ' y b b y . . y b b y',
+      'g y y y y g g y y y y',
+      ' y y g g g g g y y g',
+      'g g r g g y y g r g g',
+      ' g g r r r r r r g y',
+      '. y g g p p p y y y .',
+      ' . g g g y y y g g .',
+      '. . . y y g g g . . .',
+    ],
+  },
+  {
+    name: 'Pilz',
+    rows: [
+      '. . . r r p p p . . .',
+      ' . p y y r p y y r .',
+      'p p r r r y p p r r r',
+      ' p y r r y y p p y r',
+      'p p r y y p y y r r r',
+      ' . . . o y o o . . .',
+      '. . . . o o y . . . .',
+      ' . . . o o y o . . .',
+      '. . g g y o o g g . .',
+      ' . g g . . . . g g .',
+    ],
+  },
+  {
+    name: 'Marienkäfer',
+    goal: 'pets',
+    pets: ['🐞'],
+    rows: [
+      'g g R g g y g g R g g',
+      ' g g y y g g y y g g',
+      'b g g y b b g y g g b',
+      ' b b g g y y g g b b',
+      'g b R g y r y g R b g',
+      ' g g b b g g b b g g',
+      '. y y g g b g g y y .',
+      ' . . y y g g y y . .',
+    ],
+  },
+  {
+    name: 'Sternennacht',
+    rows: [
+      'b b v v v y b b v v v',
+      ' v v v b y y v v v b',
+      'v v b b y y y v b b v',
+      ' b y y y o o y y y v',
+      'v v v y o o o y v v b',
+      ' v b b y o o y b b v',
+      'b b v y y y y y v v v',
+      ' v v v y b v y v v b',
+      'v v b b v v v v b b v',
+    ],
+  },
+  {
+    name: 'Sonne',
+    rows: [
+      'p b b b b o p b b b b',
+      ' b b o b p b b o b b',
+      'b b b o y y y o b p b',
+      ' b p b y y y y p b b',
+      'p o o r y y y r o o b',
+      ' b b y y r r y y b b',
+      'b b b y y y y y b p b',
+      ' . p o b y y b o b .',
+      '. . b b b o p b b . .',
+      ' . . . b o o b . . .',
+    ],
+  },
+  {
+    name: 'Wollknäuel',
+    goal: 'pets',
+    pets: ['🐱'],
+    rows: [
+      'p p v v b b b v v p p',
+      ' p P p v B b b v P p',
+      'v p p b b v v p p v v',
+      ' v v b b v V v p p b',
+      'b v b p p v v b b b p',
+      ' b b p p b b p p v p',
+      '. v v p b v v b v v .',
+      ' . v v b b p p v v .',
+      '. . . p p p b b . . .',
+    ],
+  },
+  {
+    name: 'Eule',
+    rows: [
+      '. v v . . v . . v v .',
+      ' b v y y b v y y b v',
+      'v v y b y v y b y v v',
+      ' b y y y y y y y y v',
+      'v v y y y o y y y v v',
+      ' . v b v o o b v b .',
+      '. . v p v p v p v . .',
+      ' . v b p v p v v b .',
+      '. . v p v p v p v . .',
+      ' . . . p v p v . . .',
+    ],
+  },
+  {
+    name: 'Erdbeere',
+    rows: [
+      '. g g . g g g . g g .',
+      ' o g o g o g o g o g',
+      'r y r p y p r y r r y',
+      ' y p r y r r y r p y',
+      '. y r r y r p y p r .',
+      ' . r p y p r y r r .',
+      '. . p r y r r y r . .',
+      ' . . r y r p y p . .',
+      '. . . p y p r y . . .',
+      ' . . . . r r . . . .',
+    ],
+  },
+  {
+    name: 'Karottenbeet',
+    goal: 'pets',
+    pets: ['🐰'],
+    rows: [
+      'g g o o g g g o o g g',
+      ' g O o g G g o O g g',
+      'o o g g o o g g o o g',
+      ' o g o o g g o o g o',
+      'y o o g o O o g o o y',
+      ' y y o o g g o o y y',
+      '. y g o o y o o g y .',
+      ' . . g y y y y g . .',
+    ],
+  },
+  {
+    name: 'Ja!',
+    rows: [
+      'g r r r r g y v v g y',
+      ' r r r r y y y v y y',
+      'y g g r y y g v v y g',
+      ' g y r r g y v y v g',
+      'y y y r y y v v v v y',
+      ' r g r r y v g y y v',
+      'g r r r g g v y y v y',
+      ' r r r r y v y g y v',
+      'y g g y y v g y y y v',
+    ],
+  },
+  {
+    name: 'Regenbogenherz',
+    rows: [
+      '. o o o y . g g b b .',
+      ' o o y y g g b b v v',
+      'o o y y g g b b v v r',
+      ' y y g g b b v v r r',
+      'y y g g b b v v r r o',
+      ' . g b b v v r r r .',
+      '. . b b v v r r o . .',
+      ' . . v v r r r o . .',
+      '. . . v r r o o . . .',
+      ' . . . r r o o . . .',
+      '. . . . o o y . . . .',
+      ' . . . . o y . . . .',
+      '. . . . . y . . . . .',
+    ],
+  },
+];

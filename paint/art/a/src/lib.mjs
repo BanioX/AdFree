@@ -340,6 +340,53 @@ export function band(top, bottom, { k = 1 } = {}) {
   return poly([...t, ...b]);
 }
 
+/** Dense polygon points of the region between a top and a bottom polyline (both left→right). */
+export function bandPts(top, bottom, { k = 1, steps = 6 } = {}) {
+  const t = sampleSmooth(top, { k, steps });
+  const b = sampleSmooth(bottom, { k, steps }).reverse();
+  return [...t, ...b];
+}
+
+/**
+ * Sutherland–Hodgman clip of polygon `pts` against the half-plane on the RIGHT of the directed
+ * line a→b (screen coords, y down: for a line pointing up, right = larger x). keepLeft flips it.
+ */
+export function clipHalf(pts, a, b, keepLeft = false) {
+  const side = (p) => {
+    const c = (b[0] - a[0]) * (p[1] - a[1]) - (b[1] - a[1]) * (p[0] - a[0]);
+    return keepLeft ? -c : c;
+  };
+  const out = [];
+  for (let i = 0; i < pts.length; i++) {
+    const p = pts[i], q = pts[(i + 1) % pts.length];
+    const sp = side(p), sq = side(q);
+    if (sp >= 0) out.push(p);
+    if ((sp >= 0) !== (sq >= 0)) {
+      const t = sp / (sp - sq);
+      out.push([p[0] + (q[0] - p[0]) * t, p[1] + (q[1] - p[1]) * t]);
+    }
+  }
+  return out;
+}
+
+/** Polygon area (absolute). */
+export const polyArea = (pts) => Math.abs(signedArea(pts));
+
+/**
+ * Split a polygon into pieces by roughly vertical cut lines (each [bottomPoint, topPoint]),
+ * sorted left→right by their x at the polygon. Returns pieces with area > minArea.
+ */
+export function splitByLines(pts, lines, minArea = 50) {
+  const pieces = [];
+  for (let i = 0; i <= lines.length; i++) {
+    let p = pts;
+    if (i > 0) p = clipHalf(p, lines[i - 1][0], lines[i - 1][1]);
+    if (i < lines.length && p.length) p = clipHalf(p, lines[i][0], lines[i][1], true);
+    if (p.length >= 3 && polyArea(p) > minArea) pieces.push(p);
+  }
+  return pieces;
+}
+
 /** Region from a smooth top edge down to a straight y (e.g. hills, waves to the bottom). */
 export function fillBelow(top, yBottom, { k = 1 } = {}) {
   const t = sampleSmooth(top, { k, steps: 8 });

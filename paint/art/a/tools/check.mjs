@@ -158,12 +158,13 @@ window.analyze = async (pz, opt) => {
   }
   // same-colour neighbours
   const same = new Map();
+  const sameMask = opt.debug ? new Uint8Array(N) : null;
   const col = (v) => pz.shapes[v - 1].c;
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
     const p = y * W + x, v = ids[p];
     if (v <= 0) continue;
-    if (x < W - 1) { const u = ids[p + 1]; if (u > 0 && u !== v && col(u) === col(v)) { const k = Math.min(u, v) * 65536 + Math.max(u, v); same.set(k, (same.get(k) || 0) + 1); } }
-    if (y < H - 1) { const u = ids[p + W]; if (u > 0 && u !== v && col(u) === col(v)) { const k = Math.min(u, v) * 65536 + Math.max(u, v); same.set(k, (same.get(k) || 0) + 1); } }
+    if (x < W - 1) { const u = ids[p + 1]; if (u > 0 && u !== v && col(u) === col(v)) { const k = Math.min(u, v) * 65536 + Math.max(u, v); same.set(k, (same.get(k) || 0) + 1); if (sameMask) sameMask[p] = 1; } }
+    if (y < H - 1) { const u = ids[p + W]; if (u > 0 && u !== v && col(u) === col(v)) { const k = Math.min(u, v) * 65536 + Math.max(u, v); same.set(k, (same.get(k) || 0) + 1); if (sameMask) sameMask[p] = 1; } }
   }
   // connected components per id (4-connectivity, union-find); count parts >= 40 px
   const parent = new Int32Array(N);
@@ -213,6 +214,27 @@ window.analyze = async (pz, opt) => {
     if (opt.debug) { g.strokeStyle = 'rgba(230,0,200,.9)'; g.lineWidth = 3;
       for (const s of sameList) if (s.n >= opt.sameAdj) { const A = regions[s.a], B = regions[s.b]; g.beginPath(); g.moveTo(A.x, A.y); g.lineTo(B.x, B.y); g.stroke(); } }
   }
+  let dbg = null;
+  if (opt.debug) {
+    // largest component root per id
+    const bigRoot = new Map();
+    for (const [root, n] of compSize) { const v = ids[root]; const cur = bigRoot.get(v); if (!cur || compSize.get(cur) < n) bigRoot.set(v, root); }
+    const dc = mk(W, H); const g = dc.getContext('2d'); const im = g.createImageData(W, H); const o = im.data;
+    const hex = pz.palette.map((c) => [parseInt(c.slice(1, 3), 16), parseInt(c.slice(3, 5), 16), parseInt(c.slice(5, 7), 16)]);
+    for (let p = 0, q = 0; p < N; p++, q += 4) {
+      const v = ids[p];
+      let c = v > 0 ? hex[col(v)] : [0, 0, 0];
+      c = [c[0] * 0.35 + 166, c[1] * 0.35 + 166, c[2] * 0.35 + 166];
+      if (v > 0 && find(p) !== bigRoot.get(v)) c = [0, 200, 255];
+      if (v > 0 && area[v] < opt.tiny) c = [255, 0, 0];
+      if (sameMask && sameMask[p]) c = [255, 0, 220];
+      o[q] = c[0]; o[q + 1] = c[1]; o[q + 2] = c[2]; o[q + 3] = 255;
+    }
+    // region edges
+    for (let p = 0, q = 0; p < N; p++, q += 4) if (d[p] === 0.5 && !(sameMask && sameMask[p])) { o[q] *= 0.5; o[q + 1] *= 0.5; o[q + 2] *= 0.5; }
+    g.putImageData(im, 0, 0);
+    dbg = dc.toDataURL('image/png');
+  }
   // side-by-side pair at fixed height 800
   const ph = 800, pw = Math.round(W * ph / H);
   const pair = mk(pw * 2 + 12, ph + 60);
@@ -222,7 +244,7 @@ window.analyze = async (pz, opt) => {
     const n = pz.palette.length, sw = Math.min(56, (pair.width - 20) / n);
     pz.palette.forEach((c, i) => { g.fillStyle = c; g.fillRect(10 + i * sw, 8, sw - 6, 44); g.fillStyle = '#333'; g.font = '600 16px Arial'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(String(i + 1), 10 + i * sw + (sw - 6) / 2, 30); });
   }
-  return { uncovered, invalid, regions, same: sameList,
+  return { uncovered, invalid, regions, same: sameList, dbg,
     color: color.toDataURL('image/png'), book: book.toDataURL('image/png'), pair: pair.toDataURL('image/png') };
 };
 `;
@@ -262,6 +284,7 @@ for (const meta of entries) {
     writeFileSync(join(outDir, `${pz.id}.png`), toBuf(res.color));
     writeFileSync(join(outDir, `${pz.id}-num.png`), toBuf(res.book));
     writeFileSync(join(outDir, `${pz.id}-pair.png`), toBuf(res.pair));
+    if (res.dbg) writeFileSync(join(outDir, `${pz.id}-debug.png`), toBuf(res.dbg));
   }
   const file = join(artDir, `${pz.id.replace(/^a-/, '')}.js`);
   let kb = null;
@@ -270,6 +293,7 @@ for (const meta of entries) {
   const summary = {
     id: pz.id, title: pz.title, category: pz.category, regions: pz.shapes.length, colors: pz.palette.length,
     size: `${pz.width}x${pz.height}`, kb, minArea: areas[0], medianArea: areas[areas.length >> 1], errors, warnings,
+    areas: res ? res.regions.map((r) => r.area) : [],
   };
   results.push(summary);
   if (errors.length) failed++;

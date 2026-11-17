@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <linearGradient id="b" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#e6efff"/><stop offset="1" stop-color="#b3cbf3"/></linearGradient>
+  </defs>
+  <rect width="100" height="100" fill="url(#b)"/>
+  <ellipse cx="50" cy="88" rx="30" ry="5" fill="#2f4f8f" opacity=".16"/>
+  <g transform="rotate(-6 50 48)">
+    <rect x="17" y="15" width="66" height="66" rx="13" fill="#fffdf8" stroke="#3a2a2a" stroke-width="2"/>
+    <rect x="39" y="37" width="22" height="22" fill="#4a7bd0"/>
+    <rect x="61" y="15.9" width="21.1" height="21.1" fill="#dce7fa"/>
+    <rect x="17.9" y="59" width="21.1" height="21.1" fill="#dce7fa"/>
+    <g stroke="#3a2a2a" stroke-width="1.8" stroke-linecap="round">
+      <path d="M39 16v64M61 16v64M18 37h64M18 59h64"/>
+    </g>
+    <rect x="17" y="15" width="66" height="66" rx="13" fill="none" stroke="#3a2a2a" stroke-width="2.2"/>
+    <g font-family="ui-rounded,'SF Pro Rounded',-apple-system,'Segoe UI',sans-serif" font-weight="800" font-size="15" text-anchor="middle">
+      <text x="28" y="31.5" fill="#3a2a2a">3</text>
+      <text x="50" y="53.5" fill="#ffffff">5</text>
+      <text x="71.5" y="31.5" fill="#3567c2">8</text>
+      <text x="28" y="75.5" fill="#3567c2">1</text>
+      <text x="71.5" y="53.5" fill="#3a2a2a">9</text>
+      <text x="50" y="75.5" fill="#3a2a2a">7</text>
+    </g>
+  </g>
+  <g transform="rotate(38 78 74)">
+    <rect x="72" y="52" width="11" height="30" rx="2" fill="#ffd23f" stroke="#3a2a2a" stroke-width="1.8"/>
+    <rect x="72" y="47" width="11" height="7" rx="2" fill="#ff8fa3" stroke="#3a2a2a" stroke-width="1.8"/>
+    <path d="M72 82l5.5 9 5.5-9z" fill="#ffe9c2" stroke="#3a2a2a" stroke-width="1.8" stroke-linejoin="round"/>
+    <path d="M76 88.5l1.5 2.5 1.5-2.5z" fill="#3a2a2a"/>
+  </g>
+</svg>

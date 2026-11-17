@@ -34,14 +34,14 @@ export default function build() {
   p.add(rect(-10, -10, 1020, 1020), 'cream');
   const n = 16;
   for (let i = 1; i < n; i++) {
-    if (i === n / 2) continue; // ganz verdeckt
     const a0 = -90 - 360 / n / 2 + (360 * i) / n;
-    p.add(wedge(C[0], C[1], 950, a0, a0 + 360 / n), i % 2 ? 'blush' : 'cream');
+    p.filler(wedge(C[0], C[1], 950, a0, a0 + 360 / n), i % 2 ? 'blush' : 'cream');
   }
 
   // Tisch
-  p.add(rect(-10, 900, 1020, 120), 'mintDark');
-  p.add(bumpy(arcPts(500, 958, 205, 36, 0, 360, 20).slice(0, 20), 0.28), 'white');
+  p.add(rect(-10, 884, 510, 140), 'pink');
+  p.add(rect(500, 884, 510, 140), 'pink');
+  p.add(bumpy(arcPts(500, 968, 205, 40, 0, 360, 20).slice(0, 20), 0.28), 'white');
 
   // Konfetti-Punkte, je einer pro Strahl
   const dotCols = ['yellow', 'mintDark', 'white', 'yellow', 'mintDark', 'blue'];
@@ -50,16 +50,26 @@ export default function build() {
     const r = i % 2 ? 430 : 455;
     const x = C[0] + Math.cos(a) * r;
     const y = C[1] + Math.sin(a) * r;
-    if (y > 860 || y < 20) continue;
+    if (y > 860 || y < 20 || i === 0) continue;
     p.add(circle(x, y, 20), dotCols[i % dotCols.length]);
   }
   for (const [x, y, c] of [[70, 70, 'mintDark'], [930, 70, 'yellow'], [70, 840, 'yellow'], [930, 840, 'mintDark']]) p.add(circle(x, y, 22), c);
 
-  // Plakette mit Wellenrand
+  // Plakette mit Wellenrand – links und rechts je ein eigener Bereich
+  // (die Naht liegt unter Kirschenstiel und Cupcake)
   const R = 345;
-  const bp = arcPts(500, 530, R, R, 0, 360, 28).slice(0, 28);
-  p.add(bumpy(bp, 0.3), 'mintDark');
-  p.add(circle(500, 530, 313), 'mint');
+  const BC = [500, 530];
+  const SPLIT = 274.5;
+  const halfRim = (a0, a1) => {
+    const steps = 14;
+    const pts = arcPts(BC[0], BC[1], R, R, a0, a1, steps);
+    return bumpy([...pts, BC], [...Array(steps).fill(0.3), 0, 0]);
+  };
+  p.add(halfRim(90, SPLIT), 'mintDark');
+  p.add(halfRim(SPLIT - 360, 90), 'mintDark');
+  const halfDisk = (a0, a1) => smooth([BC.concat(1), ...arcPts(BC[0], BC[1], 313, 313, a0, a1, 16).map(([x, y], i, arr) => (i === 0 || i === arr.length - 1 ? [x, y, 1] : [x, y]))]);
+  p.add(halfDisk(90, SPLIT), 'mint');
+  p.add(halfDisk(SPLIT - 360, 90), 'mint');
 
   // kleine Sterne + Herzen auf der Plakette
   p.add(star(270, 330, 30, 13, 5, -90, 3), 'yellow');
@@ -108,7 +118,7 @@ export default function build() {
   };
   const roll = (cx, cy, rx, ry, waves, amp, hl) => {
     p.add(smooth(rollPts(cx, cy, rx, ry, waves, amp)), 'pinkDark');
-    p.add(smooth(rollPts(cx - 6, cy - 18, rx - 14, ry - 12, waves, amp * 0.6)), 'pink');
+    p.add(smooth(rollPts(cx - 3, cy - 20, rx - 2, ry - 4, waves, amp * 0.6)), 'pink');
     p.add(capsule(hl[0], hl[1], hl[2]), 'pinkLight');
   };
   roll(500, 585, 222, 70, 4, 10, [[340, 560], [420, 538], 26]);
@@ -120,9 +130,9 @@ export default function build() {
 
   // Streusel
   const sp = [
-    [318, 588, 20, 'yellow'], [380, 630, -30, 'blue'], [470, 612, 60, 'white'], [560, 628, -15, 'yellow'],
-    [640, 600, 35, 'blue'], [690, 560, -60, 'white'], [520, 560, 10, 'blue'], [600, 545, -40, 'yellow'],
-    [360, 505, -50, 'yellow'], [445, 512, 25, 'blue'], [560, 472, -20, 'white'], [630, 470, 50, 'yellow'],
+    [338, 572, 20, 'yellow'], [400, 604, -30, 'blue'], [470, 612, 60, 'white'], [565, 610, -15, 'yellow'],
+    [628, 582, 35, 'blue'], [690, 560, -60, 'white'], [520, 560, 10, 'blue'], [600, 545, -40, 'yellow'],
+    [388, 490, -50, 'yellow'], [445, 512, 25, 'blue'], [560, 472, -20, 'white'], [630, 470, 50, 'yellow'],
     [530, 418, 70, 'blue'], [580, 395, -25, 'yellow'], [455, 425, -10, 'white'],
   ];
   for (const [x, y, a, c] of sp) {
@@ -132,8 +142,8 @@ export default function build() {
   }
 
   // Kirsche mit Stiel und Blatt
-  p.add(stroke([[512, 222], [520, 180], [540, 140], [566, 112]], 14), 'tealDark');
-  p.add(leaf(78, 22, { bend: 4 }).rotate(62).translate(552, 128), 'green');
+  p.add(stroke([[510, 222], [516, 186], [528, 154], [544, 132]], 14), 'tealDark');
+  p.add(leaf(84, 24, { bend: -5 }).rotate(-38).translate(540, 140), 'green');
   p.add(circle(503, 262, 58), 'cherryDark');
   p.add(circle(495, 254, 50), 'cherry');
   p.add(ellipse(476, 236, 17, 11, -35), 'white');

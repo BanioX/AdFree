@@ -111,9 +111,10 @@ export function parsePattern(p) {
 // Zustand
 // ---------------------------------------------------------------------------
 
-export function makeState(L, cols, S = DEFAULT_SLOTS, R = 2) {
+export function makeState(L, cols, S = DEFAULT_SLOTS, R = 2, pri = null) {
   const st = {
     cols: cols.map((c) => Array.from(c)),
+    pri: pri ? pri.map((c) => Array.from(c)) : null, // Priorität je Stein (Index in der Soll-Reihenfolge)
     ptr: new Int32Array(cols.length),
     counts: new Int32Array(L.K),
     rowRem: Int32Array.from(L.rowTotal),
@@ -133,6 +134,7 @@ export function makeState(L, cols, S = DEFAULT_SLOTS, R = 2) {
 export function cloneState(st) {
   return {
     cols: st.cols,
+    pri: st.pri,
     ptr: st.ptr.slice(),
     counts: st.counts.slice(),
     rowRem: st.rowRem.slice(),
@@ -298,21 +300,26 @@ export function solve(L, st0, opts = {}) {
   let nodes = 0;
   let exceeded = false;
 
+  const prio = (st, c) => (st.pri ? st.pri[c][st.ptr[c]] : st.ptr[c] * 64 + c);
+
+  // Sichere Züge (alles passt direkt ins Bild) in Prioritäts-Reihenfolge ausführen.
   function closure(st) {
-    let again = true;
-    while (again) {
-      again = false;
+    for (;;) {
+      let best = -1;
+      let bestP = Infinity;
+      let bestT = null;
       for (let c = 0; c < C; c++) {
         const col = st.cols[c];
         const p = st.ptr[c];
         if (p >= col.length || !canPlace(L, st, col[p])) continue;
+        const pr = prio(st, c);
+        if (pr >= bestP) continue;
         const t = cloneState(st);
-        if (applyTap(L, t, c, null, true) === 'ok') {
-          Object.assign(st, t);
-          path.push(c);
-          again = true;
-        }
+        if (applyTap(L, t, c, null, true) === 'ok') { best = c; bestP = pr; bestT = t; }
       }
+      if (best < 0) return;
+      Object.assign(st, bestT);
+      path.push(best);
     }
   }
 
@@ -330,9 +337,9 @@ export function solve(L, st0, opts = {}) {
       if (st.ptr[c] >= st.cols[c].length) continue;
       const t = cloneState(st);
       if (applyTap(L, t, c, null) !== 'ok') continue;
-      cands.push({ c, t, score: usedSlots(t) * 100 + parkedTotal(t) * 3 - (t.placed - st.placed) });
+      cands.push({ c, t, score: usedSlots(t) * 100 + parkedTotal(t) * 3 - (t.placed - st.placed), pr: prio(st, c) });
     }
-    cands.sort((a, b) => a.score - b.score || a.c - b.c);
+    cands.sort((a, b) => a.score - b.score || a.pr - b.pr);
     for (const cd of cands) {
       path.length = mark2;
       path.push(cd.c);
@@ -369,7 +376,7 @@ export function chunkify(seq, rng, maxChunk = 5, minChunk = 2) {
         take = rng.int(Math.min(minChunk, maxChunk), maxChunk);
         if (len - take < minChunk) take = len - minChunk;
       }
-      chunks.push({ k: seq[i], n: take });
+      chunks.push({ k: seq[i], n: take, at: j - len });
       len -= take;
     }
     i = j;
@@ -386,9 +393,14 @@ export function perturb(chunks, rng, D) {
     .map((o) => o.ch);
 }
 
-/** Verteilt Gruppen auf C Spalten (vorne = zuerst gebraucht), möglichst ausgeglichen. */
-export function deal(chunks, rng, C) {
-  const cols = Array.from({ length: C }, () => []);
+/**
+ * Verteilt Gruppen auf C Spalten (vorne = zuerst gebraucht), möglichst ausgeglichen.
+ * bury (0..1): Wahrscheinlichkeit, dass eine Gruppe in ihrer Spalte hinter die
+ * nächste rutscht – so liegen gebrauchte Farben manchmal verdeckt.
+ * Rückgabe: { cols, pri } – pri[c][i] = Position des Steins in der Soll-Reihenfolge.
+ */
+export function deal(chunks, rng, C, bury = 0) {
+  const lists = Array.from({ length: C }, () => []);
   const last = new Int32Array(C).fill(-1);
   const size = new Int32Array(C);
   for (const ch of chunks) {
@@ -399,23 +411,48 @@ export function deal(chunks, rng, C) {
     if (!cand.length) for (let c = 0; c < C; c++) if (last[c] !== ch.k) cand.push(c);
     if (!cand.length) for (let c = 0; c < C; c++) cand.push(c);
     const c = cand[Math.floor(rng.next() * cand.length)];
-    for (let n = 0; n < ch.n; n++) cols[c].push(ch.k);
+    lists[c].push(ch);
     size[c] += ch.n;
     last[c] = ch.k;
   }
-  return cols;
+  if (bury > 0) {
+    for (const list of lists) {
+      for (let i = 0; i + 1 < list.length; i++) {
+        if (!rng.chance(bury)) continue;
+        const j = i + (i + 2 < list.length && rng.chance(0.3) ? 2 : 1);
+        const t = list[i]; list[i] = list[j]; list[j] = t;
+        i = j; // nicht dieselbe Gruppe gleich weiterschieben
+      }
+    }
+  }
+  const cols = lists.map(() => []);
+  const pri = lists.map(() => []);
+  lists.forEach((list, c) => {
+    for (const ch of list) for (let n = 0; n < ch.n; n++) { cols[c].push(ch.k); pri[c].push((ch.at ?? 0) + n); }
+  });
+  return { cols, pri };
 }
 
-/** Schwierigkeits-Parameter für Level n (1-basiert). */
-export function levelConfig(L, n = 1, { custom = false } = {}) {
+/**
+ * Schwierigkeits-Parameter für Level n (1-basiert).
+ *   C  Spalten im Vorrat (mehr Farben/Steine -> mehr Spalten)
+ *   R  Zeilen der aktiven Zone (2; bei sehr schmalen Bildern 3)
+ *   S  Ablageplätze
+ *   disorder  globale Unordnung (Gruppen wandern um bis zu D Plätze)
+ *   bury      Anteil verdeckter Gruppen in den Spalten (Hauptregler)
+ *   slack     so viele Ablageplätze weniger muss der Löser auskommen (Puffer für Anfänger)
+ */
+export function levelConfig(L, n = 1, { custom = false, round = 0 } = {}) {
   const C = clamp(Math.round(3.4 + L.K * 0.45 + L.total / 420), 5, 8);
-  const R = L.W >= 24 ? 1 : 2;
+  // ab der zweiten Runde durch die Bibliothek: schmalere Zone bei mittleren Bildern
+  const R = L.W <= 7 ? 3 : round >= 1 && L.W >= 10 && L.W <= 22 ? 1 : 2;
   const S = DEFAULT_SLOTS;
-  if (custom) return { C, R, S, disorder: 2.5, slack: 1, maxChunk: 6 };
+  if (custom) return { C, R, S, disorder: 1.5, bury: 0.2, slack: 1, maxChunk: 6 };
   const d = Math.max(0, n - 1);
   return {
     C, R, S,
-    disorder: Math.min(7, 0.6 * d),
+    disorder: Math.min(2.5, 0.3 * d),
+    bury: n <= 1 ? 0 : Math.min(0.45, 0.06 + 0.035 * d),
     slack: n <= 3 ? 2 : n <= 10 ? 1 : 0,
     maxChunk: n <= 5 ? 6 : 5,
   };
@@ -426,19 +463,21 @@ export function levelConfig(L, n = 1, { custom = false } = {}) {
  * Löser mit (S - slack) Ablageplätzen eine Lösung findet.
  */
 export function generateTray(L, cfg) {
-  const { seed = 'beads', C = 6, S = DEFAULT_SLOTS, R = 2, slack = 0, disorder = 0, maxChunk = 5 } = cfg;
+  const { seed = 'beads', C = 6, S = DEFAULT_SLOTS, R = 2, slack = 0, disorder = 0, bury = 0, maxChunk = 5 } = cfg;
   const maxNodes = cfg.maxNodes ?? 5000;
   const seq = fillSequence(L);
   const verifyS = Math.max(1, S - slack);
   const attempts = 6;
   let last = null;
   for (let a = 0; a <= attempts; a++) {
-    const D = a === attempts ? 0 : disorder * Math.pow(0.68, a);
+    const f = a === attempts ? 0 : Math.pow(0.68, a);
+    const D = disorder * f;
+    const B = bury * f;
     const rng = makeRng(hashString(`${seed}|${a}`));
     const chunks = chunkify(seq, rng, maxChunk);
-    const cols = deal(perturb(chunks, rng, D), rng, C);
-    last = { cols, disorder: D, attempt: a, solvable: false };
-    const res = solve(L, makeState(L, cols, verifyS, R), { maxNodes });
+    const { cols, pri } = deal(perturb(chunks, rng, D), rng, C, B);
+    last = { cols, pri, disorder: D, bury: B, attempt: a, solvable: false };
+    const res = solve(L, makeState(L, cols, verifyS, R, pri), { maxNodes });
     if (res.solvable) return { ...last, solvable: true, nodes: res.nodes };
   }
   return last;
@@ -481,6 +520,12 @@ export function magnetPull(L, st, count = MAGNET_COUNT) {
     col.splice(st.ptr[bc] + bd, 1);
     st.cols = st.cols.slice();
     st.cols[bc] = col;
+    if (st.pri) {
+      const pc = st.pri[bc].slice();
+      pc.splice(st.ptr[bc] + bd, 1);
+      st.pri = st.pri.slice();
+      st.pri[bc] = pc;
+    }
     const placed = placeOne(L, st, k);
     moves.push({ t: 'place', k, from: 'tray', col: bc, depth: bd, cell: placed });
     autoFlow(L, st, moves);
@@ -510,12 +555,13 @@ export function reshuffle(L, st, seed, disorder = 1.2) {
   for (let a = 0; a < 4; a++) {
     const D = a === 3 ? 0 : disorder * Math.pow(0.5, a);
     const rng = makeRng(hashString(`${seed}|mix|${a}`));
-    const cols = deal(perturb(chunkify(seq, rng, 5), rng, D), rng, C);
-    last = cols;
+    const res = deal(perturb(chunkify(seq, rng, 5), rng, D), rng, C);
+    last = res;
     const t = cloneState(st);
-    t.cols = cols;
+    t.cols = res.cols;
+    t.pri = res.pri;
     t.ptr = new Int32Array(C);
-    if (solve(L, t, { maxNodes: 2500 }).solvable) return cols;
+    if (solve(L, t, { maxNodes: 2500 }).solvable) return res;
   }
   return last;
 }
@@ -538,7 +584,7 @@ export class Game {
 
   static create(L, cfg) {
     const gen = generateTray(L, cfg);
-    const st = makeState(L, gen.cols, cfg.S, cfg.R);
+    const st = makeState(L, gen.cols, cfg.S, cfg.R, gen.pri);
     return new Game(L, st, { seed: String(cfg.seed), disorder: gen.disorder });
   }
 
@@ -549,7 +595,10 @@ export class Game {
       if (d.counts.length !== L.K) return null;
       const cols = d.cols.map((col) => col.map((k) => k | 0));
       for (const col of cols) for (const k of col) if (k < 0 || k >= L.K) return null;
-      const st = makeState(L, cols, d.S, d.R);
+      let pri = null;
+      if (Array.isArray(d.pri) && d.pri.length === cols.length &&
+          d.pri.every((p, c) => Array.isArray(p) && p.length === cols[c].length)) pri = d.pri;
+      const st = makeState(L, cols, d.S, d.R, pri);
       const have = new Int32Array(L.K);
       for (let k = 0; k < L.K; k++) {
         const n = d.counts[k] | 0;
@@ -583,6 +632,7 @@ export class Game {
     return {
       v: 1,
       cols: st.cols.map((col, c) => col.slice(st.ptr[c])),
+      pri: st.pri ? st.pri.map((p, c) => p.slice(st.ptr[c])) : null,
       counts: Array.from(st.counts),
       slots,
       S: st.S,
@@ -616,8 +666,9 @@ export class Game {
   shuffle() {
     if (this.complete) return null;
     const n = this.meta.helpers.shuffle;
-    const cols = reshuffle(this.L, this.st, `${this.meta.seed}:${n}`);
+    const { cols, pri } = reshuffle(this.L, this.st, `${this.meta.seed}:${n}`);
     this.st.cols = cols;
+    this.st.pri = pri;
     this.st.ptr = new Int32Array(cols.length);
     this.meta.helpers.shuffle++;
     return cols;

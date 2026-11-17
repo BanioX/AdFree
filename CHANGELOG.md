@@ -28,6 +28,7 @@ Was in Spielpause neu dazukommt. Neueste Einträge oben.
 - **Welle 3**: die Logikrätsel und Arcade-Spiele liegen bei Grok. Gemini ist raus.
 - **Minensucher**: Feld mit sicherem ersten Tipp, Fahne und Tipp, der nur markiert. Deutsch und Englisch.
 - **Brücken**: Inseln mit Zahl verbinden, einfach oder doppelt, ohne Kreuzung. Deutsch und Englisch.
+- **Binärrätsel**: gleich viele 0 und 1, keine drei gleichen, jede Zeile einmalig. Deutsch und Englisch.
 
 ### Behoben (Grok)
 - **Vier in einer Reihe**: Tippen auf eine Reihe legt wieder einen Stein (iPhone). Der Tipp hebt die Reihe nur hervor.

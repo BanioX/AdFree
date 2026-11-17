@@ -37,6 +37,15 @@ const fit = await page.evaluate(() => {
   };
 });
 assert.equal(fit.pitsIn && fit.scroll && fit.above && fit.right <= fit.iw + 1 && fit.left >= -1, true, JSON.stringify(fit));
+await page.waitForFunction(() => !window.__sp.busy());
+await page.waitForTimeout(550);
+const clickOnly = await page.evaluate(() => {
+  const before = window.__sp.state().p.join(',');
+  const el = [...document.querySelectorAll('.ka-pit.mine')].find((p) => window.__sp.state().p[Number(p.dataset.pit)] > 0);
+  el.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+  return window.__sp.state().p.join(',') !== before;
+});
+assert.equal(clickOnly, true, 'Klick ohne pointerup sät');
 assert.deepEqual(errors, []);
 await browser.close();
 console.log('kalaha e2e ok');

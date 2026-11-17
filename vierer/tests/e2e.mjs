@@ -64,9 +64,35 @@ await page.waitForSelector('.c4');
 const kept = await page.evaluate(() => window.__sp.state().n);
 assert.equal(kept, after.n, 'Partie bleibt nach dem Neuladen');
 
+const nBeforeHint = await page.evaluate(() => window.__sp.state().n);
 await page.locator('.bd-tool').nth(1).tap();
 await page.waitForTimeout(400);
+const hinted = await page.evaluate(() => ({
+  n: window.__sp.state().n,
+  ghost: !!document.querySelector('.c4-disc.ghost'),
+}));
+assert.equal(hinted.n, nBeforeHint, 'Tipp setzt keinen Stein');
+assert.equal(hinted.ghost, true, 'Tipp hebt eine Reihe hervor');
 await page.screenshot({ path: OUT + '04-hint.png' });
+
+// iOS: pointerdown, dann pointercancel, danach nur click.
+const ios = await browser.newPage({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+await ios.addInitScript(() => {
+  localStorage.setItem('spielpause.tutorial.vierer', 'true');
+  localStorage.removeItem('spielpause.vierer.match');
+});
+ios.on('pageerror', (e) => errors.push('pageerror: ' + e.message));
+await ios.goto(BASE + '#play');
+await ios.waitForSelector('.c4-col');
+const placed = await ios.evaluate(() => {
+  const col = document.querySelectorAll('.c4-col')[2];
+  const r = col.getBoundingClientRect();
+  // iOS schickt nach einem abgebrochenen Finger oft nur noch click.
+  col.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, clientX: r.x + r.width / 2, clientY: r.y + 24 }));
+  return window.__sp.state().n;
+});
+assert.ok(placed >= 1, 'Klick ohne pointerup legt einen Stein');
+await ios.close();
 
 const narrow = await browser.newPage({ viewport: { width: 375, height: 700 }, deviceScaleFactor: 1, isMobile: true, hasTouch: true });
 await narrow.addInitScript(() => localStorage.setItem('spielpause.tutorial.vierer', 'true'));

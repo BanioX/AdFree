@@ -40,6 +40,16 @@ const fit = await page.evaluate(() => {
   };
 });
 assert.equal(fit.inside && fit.above && fit.tools, true, JSON.stringify(fit));
+await page.waitForFunction(() => !window.__sp.busy());
+await page.waitForTimeout(550);
+const clickOnly = await page.evaluate(() => {
+  const m = window.__sp.moves()[0];
+  const fire = (i) => document.querySelector(`[data-i="${i}"]`).dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+  fire(m.from);
+  fire(m.to);
+  return window.__sp.state().hist.length >= 1;
+});
+assert.equal(clickOnly, true, 'Klick ohne pointerup zieht');
 assert.deepEqual(errors, []);
 await browser.close();
 console.log('dame e2e ok');

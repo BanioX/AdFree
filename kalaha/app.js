@@ -1,6 +1,6 @@
 // Kalaha gegen den Computer.
 
-import { boot, stage, fillTools } from '../lib/board/kit.js';
+import { boot, stage, fillTools, onPress } from '../lib/board/kit.js';
 import { sfx } from '../shared/sfx.js';
 import { h, toast, confirmDialog, sleep } from '../shared/ui.js';
 import { pickMove } from '../lib/board/ai.js';
@@ -226,11 +226,7 @@ boot({
       if (state.over) return finish();
       status();
     }
-    board.addEventListener('pointerup', (e) => {
-      const el = e.target.closest?.('[data-pit]');
-      if (!el || !el.classList.contains('mine')) return;
-      play(Number(el.dataset.pit));
-    });
+    const offPress = onPress(board, '.ka-pit.mine', (el) => play(Number(el.dataset.pit)));
     const onHide = () => persist();
     window.addEventListener('pagehide', onHide);
     paint();
@@ -238,6 +234,6 @@ boot({
     tools();
     persist();
     window.__sp = { id: ID, state: () => state, busy: () => busy, moves: () => moves(state) };
-    return { destroy() { dead = true; window.removeEventListener('pagehide', onHide); } };
+    return { destroy() { dead = true; offPress(); window.removeEventListener('pagehide', onHide); } };
   },
 });

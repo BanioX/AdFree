@@ -1,6 +1,6 @@
 // Fünf in einer Reihe gegen den Computer.
 
-import { boot, stage, fillTools } from '../lib/board/kit.js';
+import { boot, stage, fillTools, onPress } from '../lib/board/kit.js';
 import { store } from '../shared/storage.js';
 import { sfx } from '../shared/sfx.js';
 import { h, toast, confirmDialog, sleep } from '../shared/ui.js';
@@ -206,15 +206,11 @@ boot({
       if (state.over) return finish();
       status();
     }
-    board.addEventListener('pointerup', (e) => {
-      const el = e.target.closest?.('.go-cell');
-      if (!el) return;
-      play(Number(el.dataset.i));
-    });
+    const offPress = onPress(board, '.go-cell', (el) => play(Number(el.dataset.i)));
     const onHide = () => persist();
     window.addEventListener('pagehide', onHide);
     paint(); status(); tools(); persist();
     window.__sp = { id: ID, state: () => state, busy: () => busy };
-    return { destroy() { dead = true; window.removeEventListener('pagehide', onHide); } };
+    return { destroy() { dead = true; offPress(); window.removeEventListener('pagehide', onHide); } };
   },
 });

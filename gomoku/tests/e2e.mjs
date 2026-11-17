@@ -32,6 +32,14 @@ const fit = await page.evaluate(() => {
 });
 assert.ok(fit.board <= fit.tools + 2, JSON.stringify(fit));
 assert.ok(fit.w <= fit.iw + 1);
+await page.waitForTimeout(550);
+const clickOnly = await page.evaluate(() => {
+  const n = window.__sp.state().n;
+  const el = [...document.querySelectorAll('.go-cell')].find((b) => !b.querySelector('.go-stone'));
+  el.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+  return window.__sp.state().n > n;
+});
+assert.equal(clickOnly, true, 'Klick ohne pointerup setzt einen Stein');
 assert.deepEqual(errors, []);
 await browser.close();
 console.log('gomoku e2e ok');

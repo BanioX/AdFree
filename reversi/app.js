@@ -1,6 +1,6 @@
 // Reversi gegen den Computer.
 
-import { boot, stage, fillTools } from '../lib/board/kit.js';
+import { boot, stage, fillTools, onPress } from '../lib/board/kit.js';
 import { store } from '../shared/storage.js';
 import { sfx } from '../shared/sfx.js';
 import { h, toast, confirmDialog, sleep } from '../shared/ui.js';
@@ -222,11 +222,7 @@ boot({
       if (state.over) return finish();
       status();
     }
-    board.addEventListener('pointerup', (e) => {
-      const el = e.target.closest?.('.rv-cell');
-      if (!el) return;
-      play(Number(el.dataset.i));
-    });
+    const offPress = onPress(board, '.rv-cell', (el) => play(Number(el.dataset.i)));
     const onHide = () => persist();
     window.addEventListener('pagehide', onHide);
     paint();
@@ -237,6 +233,7 @@ boot({
     return {
       destroy() {
         dead = true;
+        offPress();
         window.removeEventListener('pagehide', onHide);
         if (window.__sp?.id === ID) delete window.__sp;
       },

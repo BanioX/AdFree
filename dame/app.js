@@ -1,6 +1,6 @@
 // Dame gegen den Computer.
 
-import { boot, stage, fillTools } from '../lib/board/kit.js';
+import { boot, stage, fillTools, onPress } from '../lib/board/kit.js';
 import { store } from '../shared/storage.js';
 import { sfx } from '../shared/sfx.js';
 import { h, toast, confirmDialog, sleep } from '../shared/ui.js';
@@ -267,11 +267,7 @@ boot({
       }
       if (piece || sel != null) sfx.play('error');
     }
-    board.addEventListener('pointerup', (e) => {
-      const el = e.target.closest?.('[data-i]');
-      if (!el) return;
-      onTap(Number(el.dataset.i));
-    });
+    const offPress = onPress(board, '[data-i]', (el) => onTap(Number(el.dataset.i)));
     const onHide = () => persist();
     window.addEventListener('pagehide', onHide);
     paint();
@@ -287,6 +283,7 @@ boot({
     return {
       destroy() {
         dead = true;
+        offPress();
         window.removeEventListener('pagehide', onHide);
         if (window.__sp && window.__sp.id === ID) delete window.__sp;
       },

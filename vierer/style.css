@@ -17,6 +17,8 @@
   border: 0;
   background: transparent;
   padding: 0;
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
   display: flex;
   flex-direction: column;
   gap: 7px;

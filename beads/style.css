@@ -19,6 +19,8 @@ html, body {
 .beads .topbar .title small {
   font-weight: 700; color: var(--text-2); font-size: 15px; margin-left: 2px;
 }
+.beads .topbar .title.two { display: flex; flex-direction: column; justify-content: center; line-height: 1.12; font-size: 17px; }
+.beads .topbar .title.two small { font-size: 13px; margin: 1px 0 0; overflow: hidden; text-overflow: ellipsis; }
 
 /* ---------- Startbildschirm (shared/gamemenu.js) ---------- */
 .bp-menu-art {
@@ -164,6 +166,7 @@ html, body {
 }
 .bp-win canvas { border-radius: 18px; background: #fff; box-shadow: inset 0 0 0 1px rgba(120, 100, 80, .08); }
 .bp-win p { margin: 0; color: var(--text-2); font-weight: 650; }
+.bp-win p.more { font-size: 14px; color: var(--text-3); margin-top: -4px; }
 
 /* ---------- Sammlung ---------- */
 
@@ -240,6 +243,7 @@ html, body {
   background: var(--accent-soft); color: var(--accent); font-weight: 850;
 }
 .bp-swatches { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; min-height: 22px; }
+.bp-swatches:empty { display: none; }
 .bp-swatches i { width: 22px; height: 22px; border-radius: 50%; box-shadow: inset 0 -3px 5px rgba(0, 0, 0, .18), inset 0 2px 3px rgba(255, 255, 255, .6), 0 1px 2px rgba(0, 0, 0, .15); }
 .bp-hint { margin: 0; color: var(--text-3); font-size: 14px; font-weight: 600; text-align: center; }
 
@@ -311,12 +315,13 @@ html, body {
   animation: bp-coach 1.3s ease-in-out infinite;
 }
 .bp-coach span {
-  position: absolute; left: 0; bottom: calc(100% + 8px); white-space: nowrap;
+  position: absolute; left: 0; top: 50%; transform: translateY(-50%); white-space: nowrap;
   background: var(--accent); color: #fff; font-weight: 800; font-size: 13.5px; padding: 6px 11px; border-radius: 12px;
   box-shadow: 0 4px 10px rgba(63, 142, 240, .35);
 }
 .bp-coach span::after {
-  content: ''; position: absolute; left: var(--ax, 50%); top: 100%; margin-left: -6px;
-  border: 6px solid transparent; border-top-color: var(--accent);
+  content: ''; position: absolute; right: 100%; top: 50%; margin-top: -6px;
+  border: 6px solid transparent; border-right-color: var(--accent);
 }
+.bp-coach span.to-left::after { right: auto; left: 100%; border-right-color: transparent; border-left-color: var(--accent); }
 @keyframes bp-coach { 0%, 100% { box-shadow: 0 0 0 3px var(--accent), 0 0 0 6px rgba(63, 142, 240, .25); } 50% { box-shadow: 0 0 0 3px var(--accent), 0 0 0 13px rgba(63, 142, 240, 0); } }

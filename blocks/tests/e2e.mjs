@@ -254,13 +254,6 @@ async function qaChecks(browser, errors) {
   await page.reload();
   await wait(page, 500);
   await page.getByRole('button', { name: 'Überspringen' }).click({ timeout: 1500 }).catch(() => {});
-  // Ton-Aufrufe mitschreiben (gleiche Modul-Instanz wie das Spiel)
-  await ev(page, async () => {
-    const { sfx } = await import('/shared/sfx.js');
-    window.__sounds = [];
-    const orig = sfx.play.bind(sfx);
-    sfx.play = (name, ...rest) => { window.__sounds.push(name); return orig(name, ...rest); };
-  });
 
   console.log('QA: Rückgängig im Abenteuer, «?»');
   await ev(page, () => { location.hash = 'level/5'; });
@@ -290,7 +283,13 @@ async function qaChecks(browser, errors) {
 
   console.log('QA: Tippen ohne Ziehen');
   const slot = await ev(page, () => { const g = window.__blocks.game; const i = g.tray.findIndex(Boolean); const L = window.__blocks.layout(); const s = L.slots[i]; return { x: s.x + s.w / 2, y: s.y + s.h / 2 }; });
-  await ev(page, () => { window.__sounds.length = 0; });
+  // Ton-Aufrufe mitschreiben (gleiche Modul-Instanz wie das Spiel)
+  await ev(page, async () => {
+    const { sfx } = await import('/shared/sfx.js');
+    window.__sounds = [];
+    const orig = sfx.play.bind(sfx);
+    sfx.play = (name, ...rest) => { window.__sounds.push(name); return orig(name, ...rest); };
+  });
   await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: Math.round(slot.x), y: Math.round(slot.y), id: 1 }] });
   await wait(page, 60);
   await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
@@ -320,8 +319,9 @@ async function qaChecks(browser, errors) {
   console.log('QA: Welt geschafft');
   await ev(page, () => { location.hash = 'level/20'; });
   await wait(page, 600);
-  await ev(page, () => { const k = 'spielpause.blocks.level'; const d = JSON.parse(localStorage.getItem(k)); d.won = true; localStorage.setItem(k, JSON.stringify(d)); });
-  await page.reload();
+  await ev(page, () => { location.hash = ''; });
+  await wait(page, 300);
+  await ev(page, () => { const k = 'spielpause.blocks.level'; const d = JSON.parse(localStorage.getItem(k)); d.won = true; localStorage.setItem(k, JSON.stringify(d)); location.hash = 'level/20'; });
   await page.getByRole('button', { name: /Weiter zu Level 21/ }).click({ timeout: 4000 });
   await wait(page, 900);
   check((await dialogTitle(page)) === 'Welt geschafft!', 'Blatt «Welt geschafft!» nach dem letzten Level der Welt');

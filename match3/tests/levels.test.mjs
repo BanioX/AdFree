@@ -69,7 +69,7 @@ test('Welten und Texte sind vollständig (Schweizer Rechtschreibung)', () => {
   assert.equal(worldInfo(worlds.length).title, worlds[0].name + ' II', 'Welten wiederholen sich mit Zusatz');
   assert.equal(texts.gemNames.length, MAX_COLORS);
   for (const k of ['ice', 'stone', 'item']) assert.ok(texts.firstTips[k].title && texts.firstTips[k].text);
-  assert.ok(texts.winTitles.length && texts.loseTitles.length && texts.zenMilestones.length);
+  assert.ok(texts.winTitles.length && texts.loseTitles.length && texts.loseTitlesMid.length && texts.loseTitlesFar.length && texts.zenMilestones.length);
   const all = JSON.stringify([texts, worlds, levels.map((l) => l.tip || '')]);
   assert.ok(!all.includes('ß'), 'kein «ß» (Schweizer Rechtschreibung)');
 });
@@ -102,4 +102,33 @@ test('Lösbarkeit: der Test-Spieler schafft die Level mit Zuglimit (+5 Gratis-Z�
     if (!won) failed.push(n);
   }
   assert.deepEqual(failed, [], `nicht geschafft: ${failed.join(', ')}`);
+});
+
+test('Sterne: der Test-Spieler holt pro Level meistens mindestens 2 Sterne', () => {
+  // Wie ein Mensch: echtes Zuglimit, bei Bedarf einmal «+5 Züge», danach das Finale.
+  const sample = [];
+  for (let n = 1; n <= HANDMADE; n++) sample.push(n);
+  for (let n = HANDMADE + 1; n <= MIN_LEVELS; n += 10) sample.push(n);
+  const RUNS = 20;
+  const bad = [];
+  let wins = 0, two = 0, three = 0;
+  for (const n of sample) {
+    const L = getLevel(n);
+    const hist = [0, 0, 0, 0];
+    for (let k = 0; k < RUNS; k++) {
+      const g = new Game({ ...L, seed: hashString(`stars-${n}-${k}`) });
+      g.record = false;
+      let won = autoplay(g, { seed: 500 + k });
+      if (!won && g.addMoves(5)) won = autoplay(g, { seed: 900 + k });
+      if (won) g.finale();
+      hist[g.stars()]++;
+    }
+    wins += RUNS - hist[0]; two += hist[2]; three += hist[3];
+    if (hist[2] + hist[3] < RUNS * 0.5) bad.push(`${n} (${hist.join('/')})`);
+    if (n <= 3) assert.ok(hist[2] + hist[3] >= RUNS * 0.75, `Level ${n}: Einstieg grosszügig (${hist.join('/')})`);
+  }
+  assert.deepEqual(bad, [], `zu wenig 2★: ${bad.join(', ')}`);
+  // Über alle: 2★ ist die Regel, 3★ gut erreichbar, aber nicht geschenkt.
+  assert.ok((two + three) / wins >= 0.8, `2★-Anteil ${(two + three) / wins}`);
+  assert.ok(three / wins >= 0.25 && three / wins <= 0.75, `3★-Anteil ${three / wins}`);
 });

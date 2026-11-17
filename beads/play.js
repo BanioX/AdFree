@@ -12,7 +12,8 @@ export class PlayScreen {
   /**
    * opts: {
    *   game, title, subtitle, backHref, saveKey,
-   *   save(data), onComplete(game, stars), onNext(), onAlbum(), nextLabel
+   *   save(data), onComplete(game, stars), onNext(), onReplay(), onAlbum(), nextLabel
+   *   (onComplete darf opts.nextLabel noch ändern – das Gewinn-Blatt liest es erst danach)
    * }
    */
   constructor(root, opts) {
@@ -22,7 +23,10 @@ export class PlayScreen {
     this.destroyed = false;
     this.saveTimer = 0;
 
-    const titleEl = h('div.title.center', null, opts.title, opts.subtitle ? h('small', null, ' · ' + opts.subtitle) : null);
+    // lange Titel (z. B. «Level 36 · Unterwasserwelt») zweizeilig statt abgeschnitten
+    const twoLines = opts.subtitle && (opts.title.length + opts.subtitle.length) > 19;
+    const titleEl = h('div.title.center' + (twoLines ? '.two' : ''), null, opts.title,
+      opts.subtitle ? h('small', null, twoLines ? opts.subtitle : ' · ' + opts.subtitle) : null);
     this.bar = h('i');
     this.canvas = h('canvas', { 'aria-label': 'Spielfeld' });
     this.stage = h('div.bp-stage', null, this.canvas);
@@ -110,15 +114,14 @@ export class PlayScreen {
       width: (gm.colW + 4) + 'px',
       height: (gm.trayH - 4) + 'px',
     });
-    // Beschriftung innerhalb der Bühne halten, Pfeil zeigt auf die Spalte
+    // Beschriftung neben der Spalte über dem Vorrat (nicht über der Ablage), Pfeil zeigt zur Spalte
     const label = this.coach.firstChild;
     const w = label.offsetWidth, boxW = gm.colW + 4;
     const left0 = this.canvas.offsetLeft + x - 2;
     const stageW = this.stage.clientWidth;
-    const want = boxW / 2 - w / 2;
-    const lx = Math.max(8 - left0, Math.min(stageW - 8 - left0 - w, want));
-    label.style.left = lx + 'px';
-    label.style.setProperty('--ax', (boxW / 2 - lx) + 'px');
+    const right = left0 + boxW + 12 + w <= stageW - 6 || left0 - 12 - w < 6;
+    label.classList.toggle('to-left', !right);
+    label.style.left = (right ? boxW + 12 : -w - 12) + 'px';
   }
 
   hideCoach() {
@@ -273,18 +276,20 @@ export class PlayScreen {
     let hsh = 0;
     for (const ch of L.id) hsh = (hsh * 31 + ch.charCodeAt(0)) >>> 0;
     const text = lines[hsh % lines.length].replace('{title}', L.title);
-    const content = h('div.bp-win', null, starsEl, cv, h('p', null, text));
-    const v = await showModal({
-      title: 'Geschafft!',
-      content,
-      dismissible: false,
-      buttons: [
-        { label: this.opts.nextLabel || 'Weiter', value: 'next', primary: true, icon: 'play' },
-        { label: 'Sammlung', value: 'album', icon: 'grid' },
-      ],
-    });
+    const more = stars < 3 && this.opts.onReplay;
+    const content = h('div.bp-win', null, starsEl, cv, h('p', null, text),
+      more ? h('p.more', null, hints.moreStars) : null);
+    const buttons = [{ label: this.opts.nextLabel || 'Weiter', value: 'next', primary: true, icon: 'play' }];
+    if (more) {
+      buttons.push({ label: 'Nochmal', value: 'replay', icon: 'refresh' });
+      buttons.push({ label: 'Sammlung', value: 'album', ghost: true });
+    } else {
+      buttons.push({ label: 'Sammlung', value: 'album', icon: 'grid' });
+    }
+    const v = await showModal({ title: 'Geschafft!', content, dismissible: false, buttons });
     if (this.destroyed) return;
     if (v === 'album') this.opts.onAlbum && this.opts.onAlbum();
+    else if (v === 'replay') this.opts.onReplay();
     else this.opts.onNext && this.opts.onNext();
   }
 

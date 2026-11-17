@@ -129,7 +129,7 @@ export class Board {
       L.found.forEach((p, k) => { anchors[p] = { x: colX(left ? 3 + k : k), y: topY }; });
       anchors[L.stock] = { x: colX(left ? 0 : 6), y: topY };
       anchors[L.waste] = { x: colX(left ? 1 : 4), y: topY };
-      g.fanX = Math.round(Math.min(cw * 0.42, (cw + 2 * gap) / 2));
+      g.fanX = Math.round(Math.min(cw * 0.46, (cw + gap) / 2));
     } else if (st.game === 'freecell') {
       L.cells.forEach((p, k) => { anchors[p] = { x: colX(left ? 4 + k : k), y: topY }; });
       L.found.forEach((p, k) => { anchors[p] = { x: colX(left ? k : 4 + k), y: topY }; });
@@ -218,7 +218,7 @@ export class Board {
         // sich die Schatten zu einem dunklen Hof, und verdeckte Karten muss niemand zeichnen.
         a.forEach((id, k) => { T[id] = { x: an.x, y: an.y, z: zb + k, up: !!st.up[id], b: k < a.length - 2 }; });
       }
-      if (kind === 'waste') a.forEach((id, k) => { T[id].b = k < a.length - 4; });
+      if (kind === 'waste') a.forEach((id, k) => { T[id].b = k < a.length - 4; T[id].pk = st.draw === 3 && k < a.length - 1; });
       if (kind === 'stock' && st.game === 'spider') a.forEach((id, k) => { T[id].b = (k % 10) < 8; });
     });
     return T;
@@ -235,12 +235,18 @@ export class Board {
       c.el.style.opacity = '';
       c.el.classList.remove('lifted', 'gone');
       this.setBuried(c, !!t.b);
+      this.setPeek(c, !!t.pk);
       this.apply(c);
     });
   }
 
   setBuried(c, b) {
     if (c.b !== b) { c.b = b; c.el.classList.toggle('buried', b); }
+  }
+
+  /** Aufgefächerte Talon-Karten (Ziehe 3): Farbzeichen unter den Wert, damit beides sichtbar ist. */
+  setPeek(c, pk) {
+    if (c.pk !== pk) { c.pk = pk; c.el.classList.toggle('peek', pk); }
   }
 
   apply(c) {
@@ -268,6 +274,7 @@ export class Board {
       seen.add(id);
       const c = this.cards[id];
       const t = T[id];
+      this.setPeek(c, !!t.pk);
       const dist = Math.hypot(t.x - c.x, t.y - c.y);
       const flip = c.up !== t.up;
       if (dist < 0.5 && !flip) {
@@ -350,9 +357,11 @@ export class Board {
   /** Kurzes Schütteln (ungültiger Zug). */
   shake(ids) {
     const now = performance.now();
+    const T = this.targets();
     for (const id of ids) {
       const c = this.cards[id];
-      const bx = c.x;
+      // Basis ist immer die Soll-Position – sonst bleibt die Karte bei schnellem Doppeltipp versetzt
+      const bx = T[id] ? T[id].x : c.x;
       this.anims.set(id, {
         fn: (t, card) => {
           const p = (t - now) / 320;

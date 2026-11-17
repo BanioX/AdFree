@@ -213,14 +213,15 @@ function renderMenu() {
     daily: dailyInfo(),
     secondary: [
       { label: 'Album', sub: `${Object.keys(solved).length} Bilder`, icon: 'image', onClick: () => go('#album', true) },
-      { label: 'Statistik', icon: 'star', onClick: () => go('#stats', true) },
-      { label: 'Optionen', icon: 'settings', onClick: () => openSettings() },
+      { label: 'Statistik', sub: `${st.solved} gelöst`, icon: 'star', onClick: () => go('#stats', true) },
     ],
     stats: statsList(),
     sections: [
       menuSection('Bildersammlungen', packList),
       menuSection('Endlos', endless),
       h('p.foot', null, 'Jedes Bild lässt sich ohne Raten lösen.'),
+      h('button.gm-howto.settings-link', { type: 'button', onclick: () => { sfx.play('click'); openSettings(); } },
+        h('span', { html: icon('settings', { size: 18 }) }), 'Einstellungen'),
     ],
     onHelp: () => showHelp(),
     backHref: '../',

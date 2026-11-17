@@ -33,6 +33,7 @@ export const hints = {
   full: 'Ablage voll',
   maxSlots: 'Mehr Ablageplätze passen nicht hin',
   coach: 'Tippe auf diese Spalte',
+  moreStars: 'Ohne Helfer gibt es 3 Sterne – magst du es nochmal versuchen?',
 };
 
 /** Untertitel im Startbildschirm. */

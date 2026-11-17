@@ -11,10 +11,13 @@ import { drawPicture } from './gems.js';
 import { getPhotos, setPhotos, clearRun } from './progress.js';
 
 const SIZE_LABEL = { 16: 'Klein', 24: 'Mittel', 32: 'Gross' };
+const PH_TEXT = 'Wähle ein Foto – daraus wird dein eigenes Perlenbild.';
+const MIN_BEADS = 12;
 
 export class PhotoScreen {
-  constructor(root, { topbar }) {
+  constructor(root, { topbar, focusList = false }) {
     this.destroyed = false;
+    this.focusList = focusList;
     this.img = null;
     this.samples = new Map();
     this.pattern = null;
@@ -25,7 +28,8 @@ export class PhotoScreen {
     // Vorschau
     const ph = h('div.placeholder');
     ph.innerHTML = `<div class="ic">${icon('camera')}</div>`;
-    ph.append(h('div', null, 'Wähle ein Foto – daraus wird dein eigenes Perlenbild.'));
+    this.phText = h('div', null, PH_TEXT);
+    ph.append(this.phText);
     this.placeholder = ph;
     this.previewCanvas = h('canvas.hidden', { 'aria-label': 'Vorschau' });
     this.busy = h('div.busy.hidden', null, 'Einen Moment …');
@@ -105,6 +109,10 @@ export class PhotoScreen {
       this.seed = 'p' + Date.now().toString(36);
       this.fileBtnLabel.textContent = 'Anderes Foto wählen';
       this.update();
+      // «Spielen» ins Bild holen (sitzt auf kleinen iPhones unter der Vorschau)
+      if (!this.playBtn.disabled) {
+        requestAnimationFrame(() => this.playBtn.scrollIntoView({ block: 'nearest', behavior: 'smooth' }));
+      }
     } catch {
       toast('Dieses Bild kann ich leider nicht öffnen');
     } finally {
@@ -121,13 +129,34 @@ export class PhotoScreen {
     if (!this.img || this.destroyed) return;
     let sample = this.samples.get(this.grid);
     if (!sample) { sample = sampleImage(this.img, this.grid); this.samples.set(this.grid, sample); }
-    this.pattern = quantize(sample, this.colors, this.seed);
-    const L = parsePattern({ id: 'vorschau', title: 'Vorschau', ...this.pattern });
+    const pattern = quantize(sample, this.colors, this.seed);
+    let beads = 0;
+    for (const r of pattern.rows) for (const ch of r) if (ch !== '.') beads++;
+    // leere, durchsichtige oder einfarbige Bilder ergeben kein sinnvolles Level
+    if (beads < MIN_BEADS || !isValidPattern(pattern)) {
+      this.pattern = null;
+      this.placeholder.classList.remove('hidden');
+      this.previewCanvas.classList.add('hidden');
+      this.phText.textContent = 'Auf diesem Bild ist kaum etwas zu sehen – es ist leer oder durchsichtig.';
+      this.swatches.replaceChildren();
+      this.playBtn.disabled = true;
+      this.info.textContent = 'Wähle bitte ein anderes Foto.';
+      return;
+    }
+    const L = parsePattern({ id: 'vorschau', title: 'Vorschau', ...pattern });
+    this.phText.textContent = PH_TEXT;
     this.placeholder.classList.add('hidden');
     this.previewCanvas.classList.remove('hidden');
     const w = this.preview.clientWidth || 300;
     drawPicture(this.previewCanvas, L, { size: w, pad: 0.035 });
     this.swatches.replaceChildren(...L.colors.map((c) => h('i', { style: { background: c } })));
+    if (L.K < 2) {
+      this.pattern = null;
+      this.playBtn.disabled = true;
+      this.info.textContent = 'Dieses Bild hat nur eine Farbe – wähle bitte ein Foto mit mehr Farben.';
+      return;
+    }
+    this.pattern = pattern;
     this.playBtn.disabled = false;
     this.info.textContent = `${L.total} Perlen · ${L.K} Farben`;
   }
@@ -183,6 +212,11 @@ export class PhotoScreen {
         const w = box.clientWidth || 140;
         drawPicture(cv, L, { size: w, pad: 0.05 });
       });
+    }
+    // nach «Fertig» gleich zur Liste mit dem eben gelegten Foto
+    if (this.focusList && this.list.childElementCount) {
+      this.focusList = false;
+      requestAnimationFrame(() => this.listHead.scrollIntoView({ block: 'start', behavior: 'smooth' }));
     }
   }
 }

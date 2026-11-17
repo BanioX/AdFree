@@ -42,7 +42,8 @@ const starSvg = (on, size = 30) => `<svg class="st ${on ? 'on' : ''}" viewBox="0
 
 // ---------- Gespeicherte Daten ----------
 
-const defaultSettings = { mode: 'mittel', showTimer: true, sortFound: true, listCollapsed: false };
+// Neue Spielerinnen starten mit «Leicht» (kurze, sichere erste Runde).
+const defaultSettings = { mode: 'leicht', showTimer: true, sortFound: true, listCollapsed: false };
 function getSettings() {
   const s = { ...defaultSettings, ...(store.get(K.settings, {}) || {}) };
   if (!modeById(s.mode)) s.mode = defaultSettings.mode;
@@ -123,6 +124,18 @@ function summaryText() {
   return parts.join(' · ') || 'Bereit zum Suchen';
 }
 
+/** Tagesrätsel als gelöst markieren – für den Tag, zu dem das Rätsel gehört (nicht den Tag des Lösens). */
+function markDailySolved(day) {
+  if (!day || day === todayKey()) { markDailyDone(ID); return; }
+  // Rätsel von gestern nach Mitternacht beendet: diesen Tag eintragen, Serie korrekt weiterführen.
+  store.set(`daily.${ID}.${day}`, true);
+  const s = store.get(`dailyStreak.${ID}`, { last: null, count: 0 }) || { last: null, count: 0 };
+  if (s.last === day || (s.last && s.last > day)) return;
+  const [y, m, d] = day.split('-').map(Number);
+  const before = todayKey(new Date(y, m - 1, d - 1));
+  store.set(`dailyStreak.${ID}`, { last: day, count: s.last === before ? (s.count || 0) + 1 : 1 });
+}
+
 // ---------- App-Gerüst ----------
 
 setupPage();
@@ -177,7 +190,8 @@ function showHowTo() {
 // ---------- Menü ----------
 
 function logo() {
-  const top = 'BLUMESONNE', bottom = 'HERZKAFFEE';
+  // Je 9 Buchstaben pro Zeile; die Diagonale (0,0)→(2,2) ergibt «ROT» – jede Kapsel markiert ein echtes Wort.
+  const top = 'ROSENDUFT', bottom = 'ENTDECKEN';
   const mid = 'WORTSUCHE';
   const g = h('div.logo', { 'aria-hidden': 'true' });
   const grid = h('div.logo-grid');
@@ -431,13 +445,23 @@ function showGame(kind, modeId) {
 
   // --- DOM ---
   const back = backButton('#', () => { sfx.play('tap'); go(''); });
-  const timerEl = h('div.timer' + (settings.showTimer ? '' : '.hidden'), { html: IC.clock + '<span>0:00</span>' });
+  // Die Zeit steht klein unter dem Thema – so bleibt die ganze Breite für den Themennamen.
+  const timerEl = h('span.timer' + (settings.showTimer ? '' : '.hidden'), { html: IC.clock + '<span>0:00</span>' });
   const timerTxt = timerEl.querySelector('span');
-  const sub = kind === 'daily' ? `Tagesrätsel · ${mode.title}` : mode.title;
+  const sub = kind === 'daily' ? (settings.showTimer ? 'Tagesrätsel' : `Tagesrätsel · ${mode.title}`) : mode.title;
+  const titleB = h('b', null, theme.title);
   const title = h('div.g-title', null,
     h('span.g-emoji', { style: { '--g': themeColor(theme) } }, theme.emoji),
-    h('span.g-text', null, h('b', null, theme.title), h('small', null, sub)));
-  const top = h('header.topbar', null, back, title, timerEl, helpButton());
+    h('span.g-text', null, titleB, h('small', null, h('span.g-sub', null, sub), timerEl)));
+  const top = h('header.topbar', null, back, title, helpButton());
+  /** Sehr lange Themennamen: erst etwas kleiner, notfalls zweizeilig – nie abgeschnitten. */
+  const fitTitle = () => {
+    titleB.classList.remove('fit1', 'fit2');
+    if (titleB.scrollWidth <= titleB.clientWidth + 1) return;
+    titleB.classList.add('fit1');
+    if (titleB.scrollWidth <= titleB.clientWidth + 1) return;
+    titleB.classList.replace('fit1', 'fit2');
+  };
   const pill = h('div.sel-pill');
   const boardWrap = h('div.board-wrap');
   const countEl = h('span.count');
@@ -445,8 +469,11 @@ function showGame(kind, modeId) {
   const toggle = h('button.wh-toggle', { type: 'button', 'aria-label': 'Wortliste ein-/ausklappen' }, h('b', null, 'Wörter'), countEl, chevron);
   const hintBtn = h('button.btn.hint-btn', { type: 'button', html: IC.bulb + '<span>Tipp</span>' });
   const list = h('div.words-list');
+  // «+N»-Hinweis, falls die Liste auf sehr kleinen Bildschirmen doch scrollen muss
+  const cue = h('button.more-cue', { type: 'button', 'aria-label': 'Weitere Wörter zeigen' });
+  cue.addEventListener('click', () => { sfx.play('click'); list.scrollBy({ top: Math.max(40, list.clientHeight - 24), behavior: 'smooth' }); });
   const words = h('section.card.words' + (settings.listCollapsed ? '.collapsed' : ''), null,
-    h('div.words-head', null, toggle, hintBtn), list);
+    h('div.words-head', null, toggle, hintBtn), list, cue);
   const main = h('main.play-main', null, boardWrap, words);
   const root = screen('play-screen', top, main);
   root.style.setProperty('--accent-theme', themeColor(theme));
@@ -456,6 +483,7 @@ function showGame(kind, modeId) {
     onSelect: (a, b) => onSelect(a, b),
     onStep: (cells) => {
       if (!cells.length || cells.length < 2) { pill.classList.remove('show'); return; }
+      // Vorschau sitzt über dem Brett; bei Wörtern in den obersten Zeilen rutscht sie nicht ins Raster.
       pill.textContent = cells.map(({ r, c }) => [...pz.grid[r]][c]).join('');
       pill.classList.add('show');
       sfx.play('place');
@@ -479,7 +507,24 @@ function showGame(kind, modeId) {
     });
     list.replaceChildren(...order.map((i) => chips[i]));
     countEl.textContent = `${st.found.length}/${total}`;
+    updateCue();
   };
+  let cueRaf = 0;
+  function updateCue() {
+    const open = !words.classList.contains('collapsed') && !words.classList.contains('done') && list.isConnected;
+    const below = open ? list.scrollHeight - list.scrollTop - list.clientHeight : 0;
+    let k = 0;
+    if (below > 3) {
+      const limit = list.scrollTop + list.clientHeight;
+      for (const c of list.children) if (c.offsetTop + c.offsetHeight > limit + 1) k++;
+    }
+    list.classList.toggle('more', k > 0);
+    cue.classList.toggle('show', k > 0);
+    if (k > 0) cue.innerHTML = `<b>+${k}</b>${IC.chevronDown}`;
+  }
+  list.addEventListener('scroll', () => {
+    if (!cueRaf) cueRaf = requestAnimationFrame(() => { cueRaf = 0; updateCue(); });
+  }, { passive: true });
   renderList();
 
   toggle.addEventListener('click', () => {
@@ -491,14 +536,38 @@ function showGame(kind, modeId) {
   });
 
   // --- Layout ---
+  // Ziel: ganze Wortliste sichtbar, Brett so gross wie möglich. Reihenfolge:
+  // 1) volle Breite mit normalen Wort-Chips, 2) kompaktere Chips, 3) Brett verkleinern
+  // (bis ~24 px pro Feld), 4) erst dann scrollt die Liste (mit Verlauf und «+N»-Hinweis).
+  const MIN_CELL = 24;
   const layout = () => {
-    const W = main.clientWidth;
-    const H = main.clientHeight;
-    const collapsed = words.classList.contains('collapsed');
-    const minList = collapsed ? 58 : Math.min(170, Math.max(118, H * 0.2));
-    const S = Math.floor(Math.max(200, Math.min(W - 20, H - minList - 22, 640)));
-    board.resize(S);
+    const cs = getComputedStyle(main);
+    const W = main.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+    const H = main.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
+    if (W <= 0 || H <= 0) return;
+    const gap = parseFloat(cs.rowGap) || 12;
+    const maxS = Math.floor(Math.max(160, Math.min(W, 640, H - gap - 56)));
+    const minS = Math.min(maxS, Math.ceil(pz.size * MIN_CELL + 18));
+    words.style.flex = 'none';
+    const fits = (S) => { words.style.width = S + 'px'; return S + gap + words.offsetHeight <= H; };
+    let S = maxS;
+    words.classList.remove('dense');
+    if (!fits(S)) {
+      words.classList.add('dense');
+      if (!fits(S)) {
+        if (!fits(minS)) S = minS;
+        else {
+          let lo = minS, hi = S;
+          while (hi - lo > 2) { const mid = (lo + hi) >> 1; if (fits(mid)) lo = mid; else hi = mid; }
+          S = lo;
+        }
+      }
+    }
+    words.style.flex = '';
     words.style.width = S + 'px';
+    board.resize(S);
+    fitTitle();
+    updateCue();
   };
   const ro = new ResizeObserver(() => layout());
   ro.observe(main);
@@ -521,7 +590,15 @@ function showGame(kind, modeId) {
   };
   tick();
   const timer = setInterval(tick, 250);
-  const onVis = () => { if (document.hidden) { tick(); save(); } else last = performance.now(); };
+  const onVis = () => {
+    if (document.hidden) { tick(); save(); return; }
+    last = performance.now();
+    // Über Mitternacht offen gelassen: das angefangene Tagesrätsel von gestern durch das heutige ersetzen.
+    if (kind === 'daily' && !st.done && st.day && st.day !== todayKey() && modalDepth === 0) {
+      toast('Neuer Tag – neues Tagesrätsel!');
+      route();
+    }
+  };
   document.addEventListener('visibilitychange', onVis);
   const onHide = () => { tick(); save(); };
   window.addEventListener('pagehide', onHide);
@@ -566,7 +643,7 @@ function showGame(kind, modeId) {
     }
     foundSet.add(m.index);
     st.found.push(m.index);
-    if (st.hint && st.hint.word === m.index) { st.hint = null; board.clearHint(); }
+    if (st.hint && st.hint.word === m.index) { st.hint = null; board.clearHint(); chips[m.index].classList.remove('hinted'); }
     save();
     board.addFound(m.index, st.found.length - 1, true);
     sfx.play('fill');
@@ -588,12 +665,25 @@ function showGame(kind, modeId) {
   }
 
   // --- Tipp ---
+  // Stufe 1: erster Buchstabe · Stufe 2: die ersten zwei · Stufe 3: ganzes Wort umrandet.
+  // Die Markierung bleibt stehen, bis das Wort gefunden ist (auch nach dem Neuladen).
+  const showHintUi = (wi, level, fresh) => {
+    board.showHint(wi, level, fresh);
+    chips.forEach((c, i) => c.classList.toggle('hinted', i === wi));
+    if (fresh) bounceChip(wi);
+  };
   hintBtn.addEventListener('click', () => {
     if (st.done) return;
     let wi, level;
     if (st.hint && !foundSet.has(st.hint.word)) {
       wi = st.hint.word;
-      level = Math.min(2, (st.hint.level || 1) + 1);
+      if ((st.hint.level || 1) >= 3) {
+        // Ganzes Wort ist schon markiert: nochmals zeigen, kostet nichts.
+        showHintUi(wi, 3, true);
+        sfx.play('tap');
+        return;
+      }
+      level = (st.hint.level || 1) + 1;
     } else {
       wi = pickHintWord(pz, foundSet);
       level = 1;
@@ -602,13 +692,11 @@ function showGame(kind, modeId) {
     st.hint = { word: wi, level };
     st.hints++;
     save();
-    board.showHint(wi, level);
-    bounceChip(wi);
-    chips[wi].classList.add('hinted');
-    setTimeout(() => chips[wi].classList.remove('hinted'), 3600);
+    showHintUi(wi, level, true);
     sfx.play('sparkle');
     hintBtn.classList.remove('used'); void hintBtn.offsetWidth; hintBtn.classList.add('used');
   });
+  if (st.hint && !st.done && !foundSet.has(st.hint.word) && pz.words[st.hint.word]) showHintUi(st.hint.word, st.hint.level || 1, false);
 
   // --- Gewonnen ---
   async function win() {
@@ -635,7 +723,7 @@ function showGame(kind, modeId) {
       t[mode.id] = { w: cur.w + 1, s: Math.max(cur.s || 0, st.stars) };
       return p;
     });
-    if (kind === 'daily') markDailyDone(ID);
+    if (kind === 'daily') markDailySolved(st.day);
     st.isBest = isBest && !!prevBest;
     save();
     report();
@@ -731,6 +819,8 @@ function showGame(kind, modeId) {
     route: kind,
     cellCenter: (r, c) => board.cellCenterClient(r, c),
     select: (a, b) => onSelect(a, b),
+    fitTitle: () => fitTitle(),
+    layout: () => layout(),
     solveWord(i) { const p = pz.words[i]; const e = { r: p.r + (p.w.length - 1) * dirOf(p).dr, c: p.c + (p.w.length - 1) * dirOf(p).dc }; return onSelect({ r: p.r, c: p.c }, e); },
     solveAll() { pz.words.forEach((_, i) => { if (!foundSet.has(i)) this.solveWord(i); }); },
   };

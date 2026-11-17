@@ -26,7 +26,9 @@ async function newPage(browser, viewport) {
     if (r.status() >= 400) {
       const u = r.url();
       // Die Startseite (Hub) zeigt auch Spiele anderer Teams, deren Icons evtl. noch fehlen – nicht unser Bereich.
-      if (u.includes('/wordsearch/') || u.includes('/shared/') || u.endsWith('/wordsearch.svg') || !u.includes('/icons/games/')) errors.push(`HTTP ${r.status()}: ${u}`);
+      // ready.json erzeugt erst der Build (tools/build-site.mjs); lokal fehlt sie absichtlich.
+      const foreign = u.includes('/icons/games/') || u.endsWith('/ready.json');
+      if (u.includes('/wordsearch/') || u.includes('/shared/') || u.endsWith('/wordsearch.svg') || !foreign) errors.push(`HTTP ${r.status()}: ${u}`);
       else console.log('  (Hinweis, fremd) HTTP', r.status(), u);
     }
   });
@@ -232,6 +234,79 @@ try {
   await small.page.screenshot({ path: OUT + '10-schwer-small.png' });
   log('Schwer klein ok');
   await small.ctx.close();
+
+  // 14) QA-Regressionen (iPhone 13 in Safari: 390×664)
+  const q = await newPage(browser, { width: 390, height: 664 });
+  await q.page.goto(BASE);
+  await q.page.evaluate(() => localStorage.setItem('spielpause.tutorial.wordsearch', 'true'));
+  await q.page.reload();
+  await q.page.waitForSelector('.gm-primary');
+  assert.match(await q.page.locator('.gm-primary').innerText(), /Leicht/, 'Neue Spielerinnen starten mit Leicht');
+  const logoTxt = await q.page.evaluate(() => [...document.querySelectorAll('.logo-grid span')].map((s) => s.textContent).join(''));
+  assert.equal(logoTxt, 'ROSENDUFTWORTSUCHEENTDECKEN', 'Logo zeigt ganze Wörter');
+  // Schwer 14×14 mit 18 Wörtern: ganze Liste sichtbar, kein Titel abgeschnitten
+  const pz14 = await q.page.evaluate(async () => {
+    const { themes } = await import('./data/themes.js');
+    const { modes } = await import('./data/modes.js');
+    const { generatePuzzle } = await import('./logic.js');
+    const m = modes.find((x) => x.id === 'schwer');
+    return generatePuzzle(themes.find((t) => t.id === 'liebe'), { ...m, sizes: [14], words: [18] }, 'qa14');
+  });
+  await q.page.evaluate((pz) => localStorage.setItem('spielpause.wordsearch.game.schwer',
+    JSON.stringify({ puzzle: pz, found: [], elapsed: 0, hints: 0, done: false, stars: 0, created: 1 })), pz14);
+  await q.page.goto(BASE + '#play/schwer');
+  await q.page.reload();
+  await q.page.waitForFunction(() => window.__wordsearch && window.__wordsearch.puzzle.size === 14);
+  await q.page.waitForTimeout(300);
+  await noPageScroll(q.page, 'Schwer 14×14');
+  const lst = await q.page.evaluate(() => {
+    const l = document.querySelector('.words-list');
+    const lim = l.getBoundingClientRect().bottom;
+    return { n: l.children.length, hidden: [...l.children].filter((c) => c.getBoundingClientRect().bottom > lim + 1).length };
+  });
+  assert.equal(lst.n, 18);
+  assert.equal(lst.hidden, 0, 'alle 18 Wörter sichtbar');
+  const cutTitles = await q.page.evaluate(async () => {
+    const { themes } = await import('./data/themes.js');
+    const b = document.querySelector('.g-text b');
+    const out = themes.filter((t) => { b.textContent = t.title; window.__wordsearch.fitTitle(); return b.scrollWidth > b.clientWidth + 1 || b.scrollHeight > b.clientHeight + 1; }).map((t) => t.title);
+    b.textContent = 'Liebe & Romantik'; window.__wordsearch.fitTitle();
+    return out;
+  });
+  assert.deepEqual(cutTitles, [], 'kein Themenname abgeschnitten');
+  // Tipp: Stufe 3 umrandet das ganze Wort, 4. Druck kostet nichts, bleibt nach Reload
+  for (let i = 0; i < 4; i++) await tap(q.page.locator('.hint-btn'));
+  const hs = await q.page.evaluate(() => ({ ...window.__wordsearch.state.hint, n: window.__wordsearch.state.hints }));
+  assert.equal(hs.level, 3);
+  assert.equal(hs.n, 3, 'ab Stufe 3 keine weiteren Tipps gezählt');
+  const hintLen = [...pz14.words[hs.word].w].length;
+  assert.equal(await q.page.locator('.hint-ring').count(), hintLen, 'ganzes Wort markiert');
+  await q.page.screenshot({ path: OUT + '11-schwer14-hint.png' });
+  await q.page.reload();
+  await q.page.waitForFunction(() => window.__wordsearch);
+  await q.page.waitForTimeout(200);
+  assert.equal(await q.page.locator('.hint-ring').count(), hintLen, 'Tipp bleibt nach Reload');
+  // Tagesrätsel über Mitternacht gelöst: zählt für seinen eigenen Tag
+  await q.page.goto(BASE + '#daily');
+  await q.page.reload();
+  await q.page.waitForFunction(() => window.__wordsearch && window.__wordsearch.route === 'daily');
+  const days = await q.page.evaluate(() => {
+    const p = (n) => String(n).padStart(2, '0');
+    const k = (d) => `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+    const y = new Date(); y.setDate(y.getDate() - 1);
+    window.__wordsearch.state.day = k(y);
+    window.__wordsearch.solveAll();
+    return { today: k(new Date()), yesterday: k(y) };
+  });
+  await q.page.waitForTimeout(300);
+  const flags = await q.page.evaluate((d) => ({
+    t: localStorage.getItem('spielpause.daily.wordsearch.' + d.today),
+    y: localStorage.getItem('spielpause.daily.wordsearch.' + d.yesterday),
+  }), days);
+  assert.equal(flags.t, null, 'heute nicht als gelöst markiert');
+  assert.equal(flags.y, 'true', 'gestern als gelöst markiert');
+  await q.ctx.close();
+  log('QA-Regressionen ok');
 
   assert.deepEqual(errors, [], 'keine Konsolenfehler');
   console.log('\nE2E: alles bestanden ✓');

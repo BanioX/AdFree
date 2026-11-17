@@ -31,6 +31,9 @@ const gameKey = (mode, len) => (mode === 'daily' ? 'daily' : 'e' + len);
 const loadGame = (key) => store.get('wordle.game.' + key, null);
 const saveGame = (key, g) => store.set('wordle.game.' + key, g);
 
+/** Ergebnis schon gezeigt? (ältere Spielstände kennen nur «counted») */
+const wasShown = (g) => (g.shown === undefined ? !!g.counted : !!g.shown);
+
 const getLen = () => { const n = store.get('wordle.len', 5); return L.LENGTHS.includes(n) ? n : 5; };
 
 function applyTheme() {
@@ -194,6 +197,7 @@ function dailyInfo() {
   return {
     label: 'Tageswort',
     done,
+    lost: !!lost,
     sub,
     streak: L.currentStreak(getStats('daily'), today),
     onClick: () => go('daily'),
@@ -250,13 +254,26 @@ function settingsCard(gameView = null) {
 
 const LEN_NAMES = { 4: 'Kurz', 5: 'Klassisch', 6: 'Lang' };
 
+/** Fertiges Endlos-Wort, dessen Ergebnis nicht mehr gezeigt wurde (App während der Auflösung verlassen):
+ *  sicher verbuchen und kurz melden, damit «Spielen» direkt ein neues Wort startet. */
+function settleEndless(len) {
+  const key = 'e' + len;
+  const g = loadGame(key);
+  if (!g || g.status === 'playing' || wasShown(g)) return;
+  if (!g.counted) setStats(key, L.recordResult(getStats(key), { won: g.status === 'won', guesses: g.guesses.length }));
+  saveGame(key, { ...g, counted: true, shown: true });
+  toast(g.status === 'won' ? `«${g.answer}» erraten – gut gemacht!` : `Das Wort war «${g.answer}»`, 2400);
+}
+
 function renderMenu() {
   const len = getLen();
+  settleEndless(len);
   const eg = loadGame('e' + len);
   const resume = eg && eg.status === 'playing' && eg.guesses.length > 0;
   const logo = buildLogo();
   const secondary = [{ label: 'Statistik', icon: 'grid', onClick: () => openStats('e' + len) }];
   if (resume) secondary.push({ label: 'Neues Wort', icon: 'refresh', onClick: () => menuNewWord(len) });
+  const daily = dailyInfo();
   menuEl = gameMenu({
     id: ID,
     title: 'Wortrate',
@@ -264,7 +281,7 @@ function renderMenu() {
     accent: ACCENT,
     art: logo,
     primary: primaryFor(len),
-    daily: dailyInfo(),
+    daily: daily,
     modes: {
       label: 'Endlos · Wortlänge',
       value: String(len),
@@ -281,6 +298,13 @@ function renderMenu() {
     backHref: '../',
   });
   menuEl.classList.add('wr-menu');
+  if (daily.lost) {
+    // gameMenu hängt sonst «Heute noch offen» an – nach einem verlorenen Tageswort widersprüchlich.
+    const card = menuEl.querySelector('.gm-daily');
+    const small = card && card.querySelector('.gm-daily-text small');
+    if (card) card.classList.add('lost');
+    if (small) small.textContent = 'Heute nicht erraten · Morgen gibt’s ein neues Wort';
+  }
   const keepScroll = app.querySelector('.gm-scroll');
   const top = keepScroll ? keepScroll.scrollTop : 0;
   app.replaceChildren(menuEl);
@@ -398,14 +422,19 @@ class GameView {
       saveGame(this.key, g);
       return g;
     }
-    if (ok) return saved;
+    // Fertiges Wort, dessen Ergebnis schon gezeigt wurde: direkt ein neues Wort (ein Tipp ins Spiel).
+    if (ok && (saved.status === 'playing' || !wasShown(saved))) return saved;
+    if (ok && !saved.counted) {
+      setStats(this.key, L.recordResult(getStats(this.key), { won: saved.status === 'won', guesses: saved.guesses.length }));
+    }
     return this.freshEndless();
   }
 
   freshEndless() {
     const usedKey = 'wordle.used.' + this.len;
     let used = store.get(usedKey, []);
-    const exclude = this.len === 5 ? [L.dailyWord(this.words.answers, todayKey())] : [];
+    // Tageswörter der letzten 30 und nächsten 90 Tage nicht als Endlos-Wort (sonst Déjà-vu beim Tageswort).
+    const exclude = this.len === 5 ? L.dailyWordsNear(this.words.answers, todayKey(), 30, 90) : [];
     const { word, resetUsed } = L.pickEndless(this.words.answers, used, Math.random, exclude);
     if (resetUsed) used = [];
     used.push(word);
@@ -457,11 +486,12 @@ class GameView {
     this.ro.observe(this.wrap);
     this.onKeyDown = (e) => this.handlePhysical(e);
     window.addEventListener('keydown', this.onKeyDown);
-    if (isDaily && this.game.status !== 'playing' && !this.game.counted) this.finish(false);
+    if (this.game.status !== 'playing' && !wasShown(this.game)) this.finish(false);
   }
 
   destroy() {
     this.alive = false;
+    clearTimeout(this.msgTimer);
     if (this.ro) this.ro.disconnect();
     window.removeEventListener('keydown', this.onKeyDown);
   }
@@ -627,13 +657,15 @@ class GameView {
     if (!res.ok) {
       if (res.reason === 'over') return;
       sfx.play('error');
-      toast(res.message);
+      this.say(res.message);
       shake(this.rows[rowIndex]);
       return;
     }
     this.busy = true;
     this.game = res.game;
     this.save();
+    // Ergebnis sofort verbuchen – auch wenn die App während der Auflösung verlassen wird.
+    if (res.won || res.lost) this.record();
     if (this.enterKey) this.enterKey.classList.remove('ready');
     const row = this.rows[rowIndex];
     row.classList.remove('current');
@@ -663,24 +695,57 @@ class GameView {
     }
   }
 
+  /** Kurze Meldung direkt unter der aktiven Zeile (verdeckt keine früheren Versuche). */
+  say(text) {
+    if (this.msgEl) this.msgEl.remove();
+    clearTimeout(this.msgTimer);
+    const el = h('div.row-msg', { role: 'status' }, text);
+    this.wrap.append(el);
+    const wr = this.wrap.getBoundingClientRect();
+    const next = this.rows[this.game.guesses.length + 1];
+    if (next) {
+      // mittig über der nächsten (leeren) Zeile
+      const nr = next.getBoundingClientRect();
+      el.classList.add('mid');
+      el.style.top = (nr.top + nr.height / 2 - wr.top) + 'px';
+    } else {
+      // letzte Zeile: mittig auf die Lücke zwischen Spielfeld und Tastatur
+      const br = this.board.getBoundingClientRect();
+      const kb = this.bottom.getBoundingClientRect();
+      el.classList.add('mid');
+      el.style.top = ((br.bottom + kb.top) / 2 - wr.top) + 'px';
+    }
+    this.msgEl = el;
+    this.msgTimer = setTimeout(() => {
+      el.classList.add('gone');
+      setTimeout(() => el.remove(), 260);
+      if (this.msgEl === el) this.msgEl = null;
+    }, 1800);
+  }
+
   async showBanner() {
     this.banner.replaceChildren('Das gesuchte Wort war', h('b', null, this.game.answer));
     this.banner.classList.add('show');
     await sleep(reduced ? 600 : 1700);
   }
 
-  /** Spielende verbuchen (einmal), Leiste zeigen, Ergebnis öffnen. */
-  finish(animated) {
+  /** Spielende verbuchen (genau einmal): Statistik, Tageshaken, Zusammenfassung. */
+  record() {
     const g = this.game;
-    if (!g.counted) {
-      const won = g.status === 'won';
-      const key = this.key;
-      setStats(key, L.recordResult(getStats(key), { won, guesses: g.guesses.length, day: g.mode === 'daily' ? g.day : null }));
-      if (won && g.mode === 'daily') markDailyDone(ID, g.day);
-      this.game = { ...g, counted: true };
-      this.save();
-      report();
-    }
+    if (g.status === 'playing' || g.counted) return;
+    const won = g.status === 'won';
+    const key = this.key;
+    setStats(key, L.recordResult(getStats(key), { won, guesses: g.guesses.length, day: g.mode === 'daily' ? g.day : null }));
+    if (won && g.mode === 'daily') markDailyDone(ID, g.day);
+    this.game = { ...g, counted: true, shown: false };
+    this.save();
+    report();
+  }
+
+  /** Spielende zeigen: Leiste statt Tastatur, Ergebnis öffnen. */
+  finish(animated) {
+    this.record();
+    if (!this.game.shown) { this.game = { ...this.game, shown: true }; this.save(); }
     this.busy = false;
     this.buildEndbar(animated);
     setTimeout(() => { if (this.alive) this.showResult(); }, animated ? 650 : 250);
@@ -743,6 +808,7 @@ class GameView {
     this.busy = true;
     this.game = { ...g, input: '', status: 'lost', finished: Date.now() };
     this.save();
+    this.record();
     this.renderBoard();
     sfx.play('thud');
     await this.showBanner();

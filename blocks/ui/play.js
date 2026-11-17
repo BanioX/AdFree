@@ -500,7 +500,7 @@ export function mountPlay(app, opts, nav) {
       await sleep(900);
     }
     const undoBtnDef = canUndo()
-      ? { label: classic ? `Letzten Zug zurück (${meta.undosLeft}×)` : 'Letzten Zug zurück', value: 'undo', icon: 'undo' }
+      ? { label: classic ? `Letzten Zug zurück (${meta.undosLeft}×)` : 'Letzten Zug zurück', value: 'undo', icon: 'undo', primary: !classic && game.rescues > 0 }
       : null;
     if (classic) {
       const first = !(meta.startBest > 0);

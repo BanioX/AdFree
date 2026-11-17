@@ -7,7 +7,7 @@
 //   #levels      Levelübersicht
 
 import { setupPage } from '../shared/ui.js';
-import { themeById } from './data/themes.js';
+import { themeById, themeShort } from './data/themes.js';
 import { generateLevel, generateFree, SIZES } from './logic/generator.js';
 import { mountPlay } from './play.js';
 import { mountMenu, mountFree, mountLevels, tagLabel } from './menu.js';
@@ -104,7 +104,7 @@ function startReplay(L) {
     level,
     saved,
     title: `Level ${L}`,
-    subtitle: `${theme.title} · Wiederholung`,
+    subtitle: `${themeShort(theme)} · Wiederholung`,
     tag: theme.title,
     save: (g) => writeSave('level', { levelNo: L, seed: level.seed, game: g }),
     onStart: () => updateStats((s) => { s.played++; }),
@@ -156,7 +156,8 @@ function startFree(themeId, sizeId, seed) {
     kind: 'free',
     level,
     saved,
-    title: theme.title,
+    title: themeShort(theme),
+    bannerTitle: theme.title,
     subtitle: `Freies Spiel · ${SIZES[sizeId].title}`,
     tag: `${SIZES[sizeId].title} · ${level.tiles.length} Steine`,
     save: (g) => writeSave('free', { theme: themeId, size: sizeId, seed, game: g }),

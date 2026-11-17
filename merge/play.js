@@ -35,10 +35,38 @@ function starsRow(n, cls = '') {
 }
 
 /**
+ * Knopf, der schon beim Loslassen des Fingers auslöst (pointerup) statt erst beim «click».
+ * So gehen schnelle Taps (mehrmals «Zurück», Tippen direkt nach dem Wischen) nicht verloren.
+ * Tastatur-Bedienung (Enter/Leertaste → click) funktioniert weiterhin.
+ */
+function onTap(btn, fn) {
+  let downId = null;
+  let firedAt = -1e9;
+  btn.addEventListener('pointerdown', (e) => {
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    downId = e.pointerId;
+  });
+  btn.addEventListener('pointercancel', () => { downId = null; });
+  btn.addEventListener('pointerup', (e) => {
+    if (e.pointerId !== downId) return;
+    downId = null;
+    const r = btn.getBoundingClientRect();
+    if (e.clientX < r.left - 8 || e.clientX > r.right + 8 || e.clientY < r.top - 8 || e.clientY > r.bottom + 8) return;
+    firedAt = performance.now();
+    fn();
+  });
+  btn.addEventListener('click', () => {
+    if (performance.now() - firedAt < 800) return; // schon per pointerup ausgelöst
+    fn();
+  });
+}
+
+/**
  * opts: { kind: 'free', mode } | { kind: 'level', n }
  * nav: { menu(), map(), free(mode), level(n) }
+ * extra: { onHelp() }  – öffnet «So geht's»
  */
-export function mountPlay(app, opts, nav) {
+export function mountPlay(app, opts, nav, extra = {}) {
   const prog = P.getProg();
   const isLevel = opts.kind === 'level';
   const mode = isLevel ? null : modeById(opts.mode);
@@ -49,6 +77,7 @@ export function mountPlay(app, opts, nav) {
 
   let alive = true;
   let locked = false;
+  let endTimer = 0;       // Zeitgeber für Sieges-/Spielende-Blatt nach der Zug-Animation
   let save = P.loadSave(slot);
   const fits = save && isValidState(save.state) && (isLevel
     ? save.n === level.n && save.state.size === level.size
@@ -78,7 +107,9 @@ export function mountPlay(app, opts, nav) {
   const title = h('div.title-wrap',
     h('div.title', null, isLevel ? `Etappe ${level.n}` : mode.title),
     h('div.subtitle', null, isLevel ? chapterTitle(level.gci) : mode.sub));
-  const top = h('header.topbar', null, back, title, soundButton());
+  const helpBtn = h('button.icon-btn', { type: 'button', 'aria-label': 'So geht’s', html: '<span class="gm-q">?</span>' });
+  helpBtn.addEventListener('click', () => { sfx.play('click'); extra.onHelp && extra.onHelp(); });
+  const top = h('header.topbar', null, back, title, extra.onHelp ? helpBtn : null, soundButton());
 
   const scoreVal = h('div.val', null, '0');
   const scoreBox = h('div.stat.score', null, h('div.lbl', null, 'Punkte'), scoreVal);
@@ -117,6 +148,13 @@ export function mountPlay(app, opts, nav) {
     const s = Math.max(160, Math.floor(Math.min(w, hh, 560)));
     boardWrap.style.width = s + 'px';
     boardWrap.style.height = s + 'px';
+    // Meldungen (toast) in die Lücke über dem Brett setzen; ist dort kein Platz, über die
+    // Anzeige (Punkte/Ziel) – nie über das Brett oder die Knöpfe unten.
+    const r = stage.getBoundingClientRect();
+    const gapAbove = (r.height - s) / 2;
+    const hr = hud.getBoundingClientRect();
+    const top = gapAbove >= 46 ? r.top + (gapAbove - 40) / 2 : hr.top + (hr.height - 40) / 2;
+    document.body.style.setProperty('--mg-toast-top', Math.round(top) + 'px');
   };
   const ro = new ResizeObserver(fit);
   ro.observe(stage);
@@ -182,7 +220,7 @@ export function mountPlay(app, opts, nav) {
   }
 
   function onDir(dir) {
-    if (locked || !alive) return;
+    if (locked || !alive || document.querySelector('.tut-backdrop')) return;
     board.clearHint();
     const prev = save.state;
     const res = move(prev, dir);
@@ -199,6 +237,7 @@ export function mountPlay(app, opts, nav) {
       }
     }
     board.animate(res, onMerge);
+    board.clearCoach();
 
     // Klang
     if (res.merges.length) sfx.play(res.merges.length >= 3 ? 'sparkle' : 'pop');
@@ -237,12 +276,29 @@ export function mountPlay(app, opts, nav) {
     P.report();
 
     if (res.won) {
-      locked = true;
-      setTimeout(() => alive && (isLevel ? showLevelDone() : showWin()), SLIDE_MS + 330);
+      afterMove(res.state, () => (isLevel ? showLevelDone() : showWin()), SLIDE_MS + 330);
     } else if (res.over) {
-      locked = true;
-      setTimeout(() => alive && showOver(), SLIDE_MS + 520);
+      afterMove(res.state, () => showOver(), SLIDE_MS + 520);
     }
+  }
+
+  /**
+   * Blatt (Sieg/Spielende) erst nach der Animation zeigen. Wird inzwischen rückgängig gemacht
+   * oder neu begonnen, verfällt es (der Zustand ist dann nicht mehr derselbe).
+   */
+  function afterMove(state, show, ms) {
+    locked = true;
+    clearTimeout(endTimer);
+    endTimer = setTimeout(() => {
+      endTimer = 0;
+      if (!alive) return;
+      if (save.state !== state) { locked = false; return; }
+      show();
+    }, ms);
+  }
+  function cancelPending() {
+    clearTimeout(endTimer);
+    endTimer = 0;
   }
 
   function undo() {
@@ -253,7 +309,10 @@ export function mountPlay(app, opts, nav) {
       toast(`Nächstes Rückgängig in ${save.refill} ${save.refill === 1 ? 'Zug' : 'Zügen'}`);
       return;
     }
+    cancelPending();
     save.state = save.hist.pop();
+    // Ein einmal erreichtes Ziel bleibt erreicht (sonst gäbe es den Sieg nochmals)
+    if (save.winSeen && !save.state.won) save.state = { ...save.state, won: true };
     save.undos -= 1;
     locked = false;
     board.renderAll(save.state);
@@ -273,12 +332,15 @@ export function mountPlay(app, opts, nav) {
   }
 
   async function restart(askFirst = true) {
+    // Während das Sieges-/Spielende-Blatt gleich erscheint: nichts tun – das Blatt bietet «Neu» an.
+    if (askFirst && endTimer) return;
     const s = save.state;
     if (askFirst && s.moves > 0 && !s.over && !(s.won && isLevel)) {
       const ok = await confirmDialog(isLevel ? 'Etappe neu starten?' : 'Neues Spiel?',
         'Der aktuelle Spielstand geht verloren.', isLevel ? 'Neu starten' : 'Neues Spiel', 'Abbrechen');
       if (!ok || !alive) return;
     }
+    cancelPending();
     save = freshSave();
     locked = false;
     persist();
@@ -289,18 +351,20 @@ export function mountPlay(app, opts, nav) {
     sfx.play('whoosh');
     setScore(save.state.score, false);
     updateHud();
-    if (isLevel && level.tip) setTimeout(() => alive && toast(level.tip, 3200), 350);
+    startHints(350);
   }
 
   // ---------- Blätter ----------
   async function showWin(quiet) {
     if (!quiet) sfx.play('complete');
     celebrate(skin.tiles.slice(3, 9).map((t) => t.color).concat(['#ffd23f', '#ff7a59']));
-    const p = P.getProg();
-    p.won[statKey] = (p.won[statKey] | 0) + 1;
-    P.saveProg();
-    save.winSeen = true;
-    persist();
+    if (!save.winSeen) {
+      const p = P.getProg();
+      p.won[statKey] = (p.won[statKey] | 0) + 1;
+      P.saveProg();
+      save.winSeen = true;
+      persist();
+    }
     const big = h('div.sheet-tile', null, tileFace(skin, save.state.goal.e));
     const content = h('div.sheet-content', null, big,
       h('p', null, `Du hast ${tileName(skin, save.state.goal.e)} erreicht – mit ${P.formatNumber(save.state.score)} Punkten.`),
@@ -387,24 +451,43 @@ export function mountPlay(app, opts, nav) {
   }
 
   // ---------- Eingabe ----------
-  undoBtn.addEventListener('click', () => { sfx.play('click'); undo(); });
-  hintBtn.addEventListener('click', hint);
-  newBtn.addEventListener('click', () => { sfx.play('click'); restart(true); });
+  onTap(undoBtn, () => { sfx.play('click'); undo(); });
+  onTap(hintBtn, hint);
+  onTap(newBtn, () => { sfx.play('click'); restart(true); });
   const unbind = bindInput(app, onDir, { undo, u: undo, Backspace: undo, h: hint, n: () => restart(true) });
 
   // Zustand nach dem Laden
+  /**
+   * Hinweise zu Beginn: Etappe 1 und allererstes freies Spiel → Coach-Mark direkt am Brett
+   * (Finger wischt, verschwindet nach dem ersten Zug); andere Etappen → kurzer Tipp.
+   */
+  function startHints(delay) {
+    if (save.state.moves > 0) return;
+    const firstEver = !isLevel && (P.getProg().moves | 0) === 0;
+    if ((isLevel && level.n === 1) || firstEver) {
+      setTimeout(() => {
+        if (!alive || save.state.moves > 0) return;
+        board.coach(bestMove(save.state) || 'left', isLevel && level.tip ? level.tip : 'Wische über das Brett');
+      }, delay);
+    } else if (isLevel && level.tip) {
+      setTimeout(() => alive && save.state.moves === 0 && toast(level.tip, 3200), delay);
+    }
+  }
+
   const s0 = save.state;
-  if (s0.won && !save.winSeen) { locked = true; setTimeout(() => alive && (isLevel ? showLevelDone(true) : showWin(true)), 300); }
-  else if (s0.won && isLevel) { locked = true; setTimeout(() => alive && showLevelDone(true), 300); }
-  else if (s0.over) { locked = true; setTimeout(() => alive && showOver(true), 300); }
-  else if (isLevel && level.tip && s0.moves === 0) setTimeout(() => alive && toast(level.tip, 3200), 400);
+  if (s0.won && !save.winSeen) afterMove(s0, () => (isLevel ? showLevelDone(true) : showWin(true)), 300);
+  else if (s0.won && isLevel) afterMove(s0, () => showLevelDone(true), 300);
+  else if (s0.over) afterMove(s0, () => showOver(true), 300);
+  else startHints(400);
 
   P.report();
 
   return {
     destroy() {
       alive = false;
+      cancelPending();
       unbind();
+      document.querySelectorAll('.sp-toast.show').forEach((el) => el.classList.remove('show'));
       ro.disconnect();
       cancelAnimationFrame(scoreAnim);
       board.destroy();

@@ -114,7 +114,7 @@ export function tutorialSteps(setId) {
     },
     {
       title: 'Hilfe ist gratis',
-      text: 'Tipp, Mischen und Zurück kosten nichts. Ohne Hilfe gibt es ★★★.',
+      text: 'Tipp, Mischen und Rückgängig kosten nichts. Ohne Hilfe gibt es ★★★.',
       demo(stage, api) {
         const t = [demoTile(stage, setId, B, 24, 36), demoTile(stage, setId, A, 50, 36), demoTile(stage, setId, B, 76, 36)];
         const tools = h('div.td-tools', null,

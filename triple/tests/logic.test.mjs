@@ -4,7 +4,7 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { themes, themeById } from '../data/themes.js';
+import { themes, themeById, lookalikes, themeShort } from '../data/themes.js';
 import { shapes } from '../data/shapes.js';
 import { generate, generateLevel, generateFree, levelParams, themeForLevel, SIZES, STYLES } from '../logic/generator.js';
 import { Game, simulate, starsFor, TRAY_SIZE } from '../logic/rules.js';
@@ -49,6 +49,19 @@ test('Themen: mindestens 12, gültig und abwechslungsreich', () => {
     assert.equal(new Set(t.emoji).size, t.emoji.length, `${t.id}: doppelte Emoji`);
     for (const e of t.emoji) assert.ok(typeof e === 'string' && e.length > 0 && e.length <= 8, `${t.id}: Emoji «${e}»`);
     assert.equal(themeById(t.id), t);
+  }
+});
+
+test('Themen: keine Fast-Doppelgänger (lookalikes) und kurze Titel', () => {
+  const norm = (e) => e.replace(/\uFE0F/g, '');
+  for (const t of themes) {
+    const set = new Set(t.emoji.map(norm));
+    for (const g of lookalikes) {
+      const hit = g.filter((e) => set.has(norm(e)));
+      assert.ok(hit.length <= 1, `${t.id}: verwechselbar ${hit.join(' / ')}`);
+    }
+    // Titelzeile im Spiel ist schmal (375 px): Kurzname höchstens 15 Zeichen
+    assert.ok(themeShort(t).length <= 15, `${t.id}: «short» fehlt oder ist zu lang`);
   }
 });
 

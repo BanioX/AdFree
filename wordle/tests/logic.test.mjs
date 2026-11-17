@@ -161,3 +161,17 @@ test('shareText: Emoji-Raster', () => {
   assert.equal(t, 'Wortrate 17.11.2026 · 2/6*\n\n🟩🟨🟨⬜⬜\n🟩🟩🟩🟩🟩');
   assert.match(L.shareText(g, { contrast: true }), /🟧🟦🟦/);
 });
+
+test('dailyWordsNear: enthält die Tageswörter rund um heute (für den Endlos-Ausschluss)', () => {
+  const words = Array.from({ length: 300 }, (_, i) => 'W' + String(i).padStart(4, '0'));
+  const big = Array.from({ length: 2000 }, (_, i) => 'W' + String(i).padStart(4, '0'));
+  assert.equal(L.dailyWordsNear(big, '2026-11-17', 30, 90).length, 121);
+  const near = L.dailyWordsNear(words, '2026-11-17', 30, 90);
+  for (const d of ['2026-10-18', '2026-11-17', '2026-11-18', '2027-02-15']) assert.ok(near.includes(L.dailyWord(words, d)), d);
+  // Über eine Rundengrenze hinweg (Runde = 300 Tage) bleibt es stimmig
+  const day = L.addDays('2026-01-01', 299 - L.dayNumber('2026-01-01') + 300);
+  const near2 = L.dailyWordsNear(words, day, 2, 2);
+  for (let i = -2; i <= 2; i++) assert.ok(near2.includes(L.dailyWord(words, L.addDays(day, i))));
+  const { word } = L.pickEndless(words, [], () => 0.5, near);
+  assert.ok(!near.includes(word));
+});

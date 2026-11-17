@@ -30,7 +30,10 @@ export const firstTips = {
 
 /** Freundliche Sätze für das Ende eines Levels. */
 export const winTitles = ['Geschafft!', 'Wunderbar!', 'Prima gemacht!', 'Bravo!', 'Herrlich!', 'Glänzend!'];
-export const loseTitles = ['Fast geschafft!', 'Knapp daneben!', 'Beinahe!'];
+// Titel beim Verlieren – je nachdem, wie viel vom Ziel noch fehlt:
+export const loseTitles = ['Fast geschafft!', 'Knapp daneben!', 'Beinahe!'];      // höchstens ein Viertel fehlt
+export const loseTitlesMid = ['Gut unterwegs!', 'Schon ein schönes Stück!'];        // bis gut die Hälfte fehlt
+export const loseTitlesFar = ['Züge aufgebraucht', 'Keine Züge mehr'];             // noch weit vom Ziel
 
 /** Meilensteine im Entspannt-Modus (Punkte). */
 export const zenMilestones = [2500, 5000, 10000, 20000, 35000, 50000, 75000, 100000, 150000, 200000, 300000, 500000];

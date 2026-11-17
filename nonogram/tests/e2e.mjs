@@ -199,6 +199,105 @@ step(`Pinch: ${fitCs.toFixed(1)} → ${pinchCs.toFixed(1)} px`);
 assert.ok(pinchCs > fitCs * 1.4, 'Pinch zoomt');
 assert.deepEqual(await cells(), cellsBeforePinch, 'Pinch verändert keine Felder');
 
+// Prüfen: falsch gefüllte Felder bleiben markiert, bis man sie ändert; Meldung über der Werkzeugleiste
+step('Prüfen markiert Fehler dauerhaft');
+const fz = await info();
+const cur20 = await cells();
+const wrongIdx = fz.mask.findIndex((v, i) => !v && !cur20[i]);
+await page.evaluate((i) => { window.__nono.board.centerOn(Math.floor(i / 20), i % 20); }, wrongIdx);
+let wq = await cellXY(Math.floor(wrongIdx / 20), wrongIdx % 20);
+await page.touchscreen.tap(wq.x, wq.y);
+assert.equal((await cells())[wrongIdx], 1);
+await page.waitForTimeout(450);
+await page.tap('[data-tool="check"]');
+await page.waitForTimeout(300);
+const pos = await page.evaluate(() => ({
+  toast: document.querySelector('.sp-toast').getBoundingClientRect().bottom,
+  tools: document.querySelector('.toolbar').getBoundingClientRect().top,
+  clues: window.__nono.board.vy + window.__nono.board.cv.getBoundingClientRect().top,
+  toastTop: document.querySelector('.sp-toast').getBoundingClientRect().top,
+}));
+assert.ok(pos.toast <= pos.tools + 1 && pos.toastTop > pos.clues, 'Meldung liegt über der Werkzeugleiste, nicht über den Zahlen');
+await shot('05b-check');
+await page.waitForTimeout(2200);
+assert.ok(await page.evaluate((i) => window.__nono.board.marks.has(i), wrongIdx), 'Markierung bleibt nach 2.5 s');
+wq = await cellXY(Math.floor(wrongIdx / 20), wrongIdx % 20);
+await page.touchscreen.tap(wq.x, wq.y);
+assert.ok(await page.evaluate((i) => !window.__nono.board.marks.has(i), wrongIdx), 'Markierung weg nach Änderung');
+
+// Zoom und Ausschnitt überstehen das Neuladen
+step('Zoom nach Neuladen');
+await page.waitForTimeout(450);
+const zBefore = await page.evaluate(() => { const b = window.__nono.board; return { cs: b.cs, sx: b.sx, sy: b.sy }; });
+await page.reload();
+await page.waitForFunction(() => window.__nono && window.__nono.game.w === 20);
+await page.waitForTimeout(300);
+const zAfter = await page.evaluate(() => { const b = window.__nono.board; return { cs: b.cs, sx: b.sx, sy: b.sy }; });
+assert.ok(Math.abs(zAfter.cs - zBefore.cs) < 0.6 && Math.abs(zAfter.sx - zBefore.sx) < 2, `Zoom bleibt (${zBefore.cs.toFixed(1)} → ${zAfter.cs.toFixed(1)})`);
+
+// Rückgängig in den ersten Sekunden: kein veralteter Spielstand
+step('Rückgängig löscht frischen Spielstand');
+await page.evaluate(() => { location.hash = '#play/m-pilz'; });
+await page.waitForFunction(() => window.__nono && location.hash === '#play/m-pilz');
+await page.waitForTimeout(300);
+const pz = await info();
+const pi = pz.mask.indexOf(1);
+const pq = await cellXY(Math.floor(pi / 5), pi % 5);
+await page.touchscreen.tap(pq.x, pq.y);
+await page.waitForTimeout(400);
+assert.ok(await page.evaluate(() => localStorage.getItem('spielpause.nonogram.p.m-pilz')), 'gespeichert');
+await page.tap('[data-tool="undo"]');
+await page.waitForTimeout(400);
+assert.equal(await page.evaluate(() => localStorage.getItem('spielpause.nonogram.p.m-pilz')), null, 'Stand gelöscht');
+
+// Älteres Tagesrätsel nochmals lösen: Serie bleibt
+step('Altes Tagesrätsel lässt die Serie in Ruhe');
+const { today, past } = await page.evaluate(async () => {
+  const S = await import('/shared/storage.js');
+  const d = new Date(); d.setDate(d.getDate() - 7);
+  return { today: S.todayKey(), past: S.todayKey(d) };
+});
+await page.evaluate((t) => localStorage.setItem('spielpause.dailyStreak.nonogram', JSON.stringify({ last: t, count: 5 })), today);
+await page.evaluate((d) => { location.hash = '#play/daily-' + d; }, past);
+await page.waitForFunction((d) => window.__nono && location.hash === '#play/daily-' + d, past);
+await page.waitForTimeout(300);
+const dm = await info();
+const lastI = dm.mask.lastIndexOf(1);
+await page.evaluate((li) => { const g = window.__nono.game; g.p.mask.forEach((v, i) => { if (v && i !== li) g.cells[i] = 1; }); window.__nono.board.invalidate(); }, lastI);
+await page.evaluate((i) => { window.__nono.board.centerOn(Math.floor(i / window.__nono.game.w), i % window.__nono.game.w); }, lastI);
+const lq = await cellXY(Math.floor(lastI / dm.w), lastI % dm.w);
+await page.touchscreen.tap(lq.x, lq.y);
+await page.waitForSelector('.sp-modal .win', { timeout: 8000 });
+const streak = await page.evaluate(() => JSON.parse(localStorage.getItem('spielpause.dailyStreak.nonogram')));
+assert.deepEqual(streak, { last: today, count: 5 }, 'Serie unverändert');
+await page.click('.sp-modal .btn >> text=Zum Menü');
+await page.waitForFunction(() => !location.hash);
+
+// Angefangenes Perlenbild: Menü zeigt «Weiter»
+step('Perlenbild «Weiter»');
+const pid = await page.evaluate(async () => {
+  const L = await import('/nonogram/core/library.js');
+  const bp = await L.loadBeadsPack(() => import('/beads/art/index.js'));
+  return bp.puzzles[0].id;
+});
+await page.evaluate((id) => { location.hash = '#play/' + id; }, pid);
+await page.waitForFunction((id) => window.__nono && location.hash === '#play/' + id, pid);
+await page.waitForTimeout(300);
+const bm = await info();
+const bi = bm.mask.indexOf(1);
+await page.evaluate((i) => { window.__nono.board.centerOn(Math.floor(i / window.__nono.game.w), i % window.__nono.game.w); }, bi);
+const bq = await cellXY(Math.floor(bi / bm.w), bi % bm.w);
+await page.touchscreen.tap(bq.x, bq.y);
+await page.waitForTimeout(400);
+await page.goto(BASE);
+await page.waitForFunction(() => /Weiter/.test(document.querySelector('.gm-primary')?.textContent || ''));
+assert.match(await page.textContent('.gm-primary'), /Perlenbilder/);
+await page.waitForSelector('.gm-art.custom canvas');
+await shot('02c-menu-weiter');
+await page.goto(BASE + '#stats');
+await page.waitForSelector('.stat-grid');
+assert.match(await page.textContent('.stats-body'), /Perlenbilder/, 'Perlen-Zeile auch nach direktem Neuladen');
+
 // 5) Album, Statistik, Paket
 step('Album / Statistik / Paket');
 await page.evaluate(() => { location.hash = '#album'; });
@@ -206,7 +305,7 @@ await page.waitForSelector('.album-item');
 await shot('07-album');
 await page.evaluate(() => { location.hash = '#stats'; });
 await page.waitForSelector('.stat-grid');
-assert.equal((await page.textContent('.stat-grid .stat b')).trim(), '1');
+assert.equal((await page.textContent('.stat-grid .stat b')).trim(), '2');
 await shot('08-stats');
 await page.evaluate(() => { location.hash = '#pack/mini'; });
 await page.waitForSelector('.tile.solved');

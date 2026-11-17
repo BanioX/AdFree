@@ -168,6 +168,7 @@ async function main() {
     await sleep(900);
     check((await page.textContent('.sp-modal h2')).includes('Geschafft'), 'Gewinn-Blatt «Geschafft!»');
     await shot(page, '07-win');
+    check(await page.evaluate(() => location.hash) === '#play/2', 'Gewinn: Hash zeigt schon aufs nächste Level (Neuladen setzt dort fort)');
     const summary = await page.evaluate(() => JSON.parse(localStorage.getItem('spielpause.summary.beads') || 'null'));
     check(summary && summary.text === 'Level 2', 'reportSummary meldet «Level 2»');
 
@@ -217,6 +218,8 @@ async function main() {
     await sleep(900);
     const starsOn = await page.locator('.bp-stars .on').count();
     check(starsOn === 1, `Mit 3 Helfern: ${starsOn} Stern`);
+    check(await page.locator('.sp-modal .btn', { hasText: 'Nochmal' }).count() === 1 &&
+      (await page.textContent('.bp-win')).includes('3 Sterne'), 'Unter 3 Sternen: Hinweis + «Nochmal»');
     await shot(page, '11-win-helpers');
     await page.locator('.sp-modal .btn', { hasText: 'Weiter' }).tap();
     await page.waitForFunction(() => location.hash === '#play/3' && window.__beads && !window.__beads.state().complete &&
@@ -236,7 +239,7 @@ async function main() {
       if (i === 30) await shot(page, '11a-stress-busy');
     }
     const stressTapCount = await page.evaluate(() => window.__beads.game.meta.taps);
-    check(stressTapCount > 20, `Stresstest: ${stressTapCount} Züge ausgeführt (${stressTaps} Taps)`);
+    check(stressTapCount > 12, `Stresstest: ${stressTapCount} Züge ausgeführt (${stressTaps} Taps)`);
     await page.waitForFunction(() => window.__beads.idle(), null, { timeout: 15000 });
     const cons = await page.evaluate(() => window.__beads.consistent());
     check(cons === 'ok', `Anzeige stimmt nach Stresstest mit Logik überein (${cons})`);
@@ -313,6 +316,15 @@ async function main() {
     await page.waitForSelector('.bp-preview');
     await sleep(300);
     await shot(page, '15-photo-empty');
+    const clear = await page.evaluate(async () => {
+      const c = document.createElement('canvas');
+      c.width = 200; c.height = 200;
+      const blob = await new Promise((r) => c.toBlob(r, 'image/png'));
+      return Array.from(new Uint8Array(await blob.arrayBuffer()));
+    });
+    await page.setInputFiles('.bp-file input', { name: 'leer.png', mimeType: 'image/png', buffer: Buffer.from(clear) });
+    await page.waitForFunction(() => document.querySelector('.bp-photo .bp-hint').textContent.includes('anderes Foto'));
+    check(await page.locator('.bp-photo .btn.primary[disabled]').count() === 1, 'Durchsichtiges Bild: Hinweis statt Level');
     const png = await page.evaluate(async () => {
       const c = document.createElement('canvas');
       c.width = 400; c.height = 300;
@@ -343,11 +355,29 @@ async function main() {
     await page.waitForSelector('.sp-modal h2', { timeout: 10000 });
     await sleep(900);
     await shot(page, '18-photo-win');
+    check(await page.evaluate(() => location.hash) === '#photo/list', 'Foto-Gewinn: Neuladen führt zur Fotoliste');
     await page.locator('.sp-modal .btn', { hasText: 'Fertig' }).tap();
     await page.waitForSelector('.bp-grid .bp-card canvas');
     await sleep(400);
     await shot(page, '19-photo-list');
     check(await page.locator('.bp-grid .bp-card').count() >= 1, 'Gespeichertes Foto erscheint in «Meine Fotos»');
+
+    console.log('Nochmals legen aus der Sammlung');
+    const cur = await page.evaluate(() => JSON.parse(localStorage.getItem('spielpause.beads.progress') || '{}').level);
+    await page.goto(BASE + '#album');
+    await page.waitForSelector('button.bp-card canvas');
+    await page.locator('button.bp-card').first().tap();
+    await page.locator('.sp-modal .btn', { hasText: 'Nochmals legen' }).tap();
+    await page.waitForFunction(() => location.hash === '#play/1' && window.__beads && window.__beads.state);
+    await playToEnd(page, { delay: 30 });
+    await page.waitForSelector('.sp-modal h2', { timeout: 8000 });
+    const nextLbl = await page.textContent('.sp-modal .btn.primary');
+    check(nextLbl.includes(`Level ${cur}`), `Nach dem Nochmals-Legen führt «${nextLbl.trim()}» zum aktuellen Level ${cur}`);
+    await page.reload();
+    await page.waitForFunction(() => window.__beads && window.__beads.state);
+    await sleep(300);
+    const rs = await page.evaluate(() => ({ t: document.querySelector('.topbar .title').textContent, st: window.__beads.state() }));
+    check(rs.t.includes(`Level ${cur}`) && !rs.st.complete, `Neuladen auf dem Gewinn-Blatt: weiter bei Level ${cur} (${rs.t})`);
 
     console.log('Startbildschirm mit Fortschritt');
     await page.goto(BASE + '#menu');

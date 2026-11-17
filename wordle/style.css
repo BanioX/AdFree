@@ -6,9 +6,10 @@
   --t-correct: #3f9f66;
   --t-correct-2: #348a57;
   --t-present: #e6a82a;
-  --t-present-2: #cf941c;
-  --t-absent: #a0968b;
-  --t-absent-2: #8c8277;
+  --t-present-2: #d59a1e;
+  --t-present-ink: #3b2a10; /* dunkle Schrift auf Bernstein: Kontrast ca. 6:1 */
+  --t-absent: #8a8076;
+  --t-absent-2: #7b7168;
   --t-empty: #ffffff;
   --t-line: #e6dccf;
   --t-line-2: #b9aa97;
@@ -19,10 +20,11 @@
   --key-h: 54px;
 }
 .contrast {
-  --t-correct: #ec7a33;
-  --t-correct-2: #d4661f;
-  --t-present: #4b98e3;
-  --t-present-2: #3683cf;
+  --t-correct: #e06c22;
+  --t-correct-2: #c95d17;
+  --t-present: #3a86d4;
+  --t-present-2: #2f76c0;
+  --t-present-ink: #ffffff;
 }
 
 .app { background: var(--bg); }
@@ -82,7 +84,7 @@
 }
 .wd-label.show { opacity: 1; transform: none; }
 .wd-label.correct { background: var(--t-correct); }
-.wd-label.present { background: var(--t-present); }
+.wd-label.present { background: var(--t-present); color: var(--t-present-ink); }
 .wd-label.absent { background: var(--t-absent); }
 .wd-cards { display: flex; gap: 12px; }
 .wd-card {
@@ -131,7 +133,7 @@
   text-shadow: 0 1px 0 rgba(0,0,0,.12);
 }
 .tile[data-state="correct"] { background: linear-gradient(180deg, var(--t-correct), var(--t-correct-2)); box-shadow: 0 3px 0 rgba(0,0,0,.10); }
-.tile[data-state="present"] { background: linear-gradient(180deg, var(--t-present), var(--t-present-2)); box-shadow: 0 3px 0 rgba(0,0,0,.10); }
+.tile[data-state="present"] { background: linear-gradient(180deg, var(--t-present), var(--t-present-2)); box-shadow: 0 3px 0 rgba(0,0,0,.10); color: var(--t-present-ink); text-shadow: none; }
 .tile[data-state="absent"] { background: linear-gradient(180deg, var(--t-absent), var(--t-absent-2)); box-shadow: 0 3px 0 rgba(0,0,0,.08); }
 .row.current .tile[data-state="empty"] { border-color: #ddd0bf; background: #fffefb; }
 .row.current .tile.cursor { border-color: color-mix(in srgb, var(--accent) 70%, white); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent); }
@@ -164,7 +166,7 @@
 .key.wide svg { width: 24px; height: 24px; }
 .key.down { transform: translateY(1px) scale(.96); filter: brightness(.94); }
 .key[data-state="correct"] { background: var(--t-correct); color: #fff; box-shadow: 0 2px 0 var(--t-correct-2); }
-.key[data-state="present"] { background: var(--t-present); color: #fff; box-shadow: 0 2px 0 var(--t-present-2); }
+.key[data-state="present"] { background: var(--t-present); color: var(--t-present-ink); box-shadow: 0 2px 0 var(--t-present-2); }
 .key[data-state="absent"] { background: var(--t-absent); color: #fff; box-shadow: 0 2px 0 var(--t-absent-2); }
 .key.enter.ready { background: var(--accent); color: #fff; box-shadow: 0 2px 0 #b9860f; }
 /* Lupe über der Taste (wie auf dem iPhone) */
@@ -175,6 +177,24 @@
   pointer-events: none; transition: opacity .08s, transform .12s var(--ease-out); z-index: 3;
 }
 .key.pop .bubble { opacity: 1; transform: translateX(-50%) scale(1); }
+/* Randtasten: Lupe nicht über den Bildschirmrand hinausragen lassen */
+.krow .key:first-child .bubble { left: 0; transform: scale(.6); transform-origin: 30% 100%; }
+.krow .key:last-child .bubble { left: auto; right: 0; transform: scale(.6); transform-origin: 70% 100%; }
+.krow .key:first-child.pop .bubble, .krow .key:last-child.pop .bubble { transform: scale(1); }
+
+/* Meldung direkt am Spielfeld (statt Toast über der ersten Zeile) */
+.row-msg {
+  position: absolute; left: 50%; top: 0; transform: translate(-50%, 0); z-index: 5;
+  max-width: calc(100% - 24px); padding: 8px 16px; border-radius: 14px;
+  background: #2b2420; color: #fff; font-weight: 800; font-size: 15px; line-height: 1.25; text-align: center;
+  box-shadow: 0 8px 22px rgba(60, 40, 20, .28); pointer-events: none; width: max-content;
+  animation: wr-msg-in .22s var(--ease-spring) both;
+  transition: opacity .22s;
+}
+.row-msg.mid { transform: translate(-50%, -50%); }
+.row-msg.gone { opacity: 0; }
+@keyframes wr-msg-in { from { opacity: 0; scale: .8; } to { opacity: 1; scale: 1; } }
+@media (prefers-reduced-motion: reduce) { .row-msg { animation: none; } }
 @media (hover: hover) and (pointer: fine) { .key:hover { filter: brightness(.97); } }
 
 /* Spielende-Leiste (ersetzt die Tastatur) */
@@ -218,7 +238,7 @@
 .countdown b { color: var(--text); font-variant-numeric: tabular-nums; font-size: 18px; display: block; }
 
 .tabs { display: flex; gap: 6px; justify-content: center; margin: 2px 0 14px; flex-wrap: wrap; }
-.tabs .chip { height: 36px; padding: 0 11px; font-size: 14px; border: 0; }
+.tabs .chip { height: 44px; min-width: 44px; padding: 0 11px; font-size: 14px; border: 0; }
 .stats-note { font-size: 14px; margin: 10px 0 0; }
 
 .setting { display: flex; align-items: center; gap: 12px; padding: 12px 2px; border-bottom: 1px solid var(--line); }
@@ -247,3 +267,6 @@
   .key { font-size: 16px; }
   .krow { gap: 4px; }
 }
+
+/* Tageswort heute nicht erraten: Karte gedämpft */
+.wr-menu .gm-daily.lost .gm-cal { filter: grayscale(.7); opacity: .75; }

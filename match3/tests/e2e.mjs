@@ -123,6 +123,15 @@ assert.ok(prog.max >= 2 && prog.stars[1] >= 1, 'Fortschritt gespeichert');
 const summary = await page.evaluate(() => localStorage.getItem('spielpause.summary.match3') || Object.keys(localStorage).filter((k) => k.includes('summary')).map((k) => localStorage.getItem(k)).join('|'));
 log('Level 1 gewonnen, Sterne:', prog.stars[1], 'Summary:', summary);
 
+// Neuladen (oder iOS startet die Seite neu) auf dem Gewinn-Blatt: Blatt kommt wieder, nichts doppelt
+const statsBefore = await page.evaluate(() => localStorage.getItem('spielpause.match3.stats'));
+await page.reload();
+await page.waitForSelector('.m3-win', { timeout: 15000 });
+assert.match(await modalText(), /Weiter zu Level 2/, 'Gewinn-Blatt nach Neuladen');
+assert.equal(await page.evaluate(() => localStorage.getItem('spielpause.match3.stats')), statsBefore, 'Statistik nach Neuladen unverändert');
+assert.equal(await page.$('.m3-intro'), null, 'kein Level-Intro nach Neuladen');
+log('Gewinn-Blatt übersteht Neuladen');
+
 // ---------- 4) Level 2, zwei Züge, Neuladen → gleicher Stand ----------
 await clickModal(/Weiter zu Level 2/);
 await page.waitForFunction(() => location.hash === '#level/2' && window.__m3.cur && window.__m3.cur.n === 2);
@@ -202,7 +211,11 @@ assert.equal(await settle(), 'modal');
 await page.waitForTimeout(500);
 await shot('10-lose');
 assert.match(await modalText(), /\+5 Züge/);
+assert.doesNotMatch(await page.textContent('.sp-modal-backdrop'), /Fast geschafft|Knapp daneben|Beinahe/, 'kein «Fast geschafft» ohne Fortschritt');
 await clickModal(/\+5 Züge/);
+await page.waitForSelector('.sp-toast.show');
+const toastOk = await page.evaluate(() => document.querySelector('.sp-toast').getBoundingClientRect().top > document.querySelector('.m3-hud').getBoundingClientRect().bottom);
+assert.ok(toastOk, 'Meldung verdeckt die Ziele nicht');
 assert.equal(await settle(), 'ready');
 assert.equal(await page.evaluate(() => window.__m3.cur.game.movesLeft), 5, '+5 Züge geschenkt');
 log('Niederlage-Blatt mit +5 Züge funktioniert');

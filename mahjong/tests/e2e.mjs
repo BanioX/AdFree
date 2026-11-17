@@ -107,6 +107,17 @@ try {
   check(await mj(() => window.__mahjong.route()) === 'spiel', 'Route #spiel erwartet');
   await shot('03-game-start');
   check(await page.locator('.coach-ring').count() === 2, 'Coach-Mark beim ersten Layout fehlt');
+  const coachHit = await mj(() => {
+    const b = document.querySelector('.coach-bubble').getBoundingClientRect();
+    const s = window.__mahjong.session, w = window.__mahjong.tileWidth();
+    for (let i = 0; i < s.n; i++) {
+      if (!s.present[i]) continue;
+      const c = window.__mahjong.center(i);
+      if (Math.abs(c.x - (b.left + b.width / 2)) < w / 2 + b.width / 2 && Math.abs(c.y - (b.top + b.height / 2)) < w * 0.68 + b.height / 2) return i;
+    }
+    return -1;
+  });
+  check(coachHit < 0, 'Coach-Sprechblase verdeckt Stein ' + coachHit);
   const n = await mj(() => window.__mahjong.session.n);
   log('Level 1 gestartet,', n, 'Steine, Steinbreite', (await mj(() => window.__mahjong.tileWidth())).toFixed(1), 'px');
 
@@ -160,6 +171,29 @@ try {
   check(after.route === 'spiel', 'Nach dem Neuladen nicht mehr im Spiel');
   check(after.left === before.left && after.faces === before.faces, 'Spielstand nach dem Neuladen verändert');
   log('Neuladen mitten im Spiel: Stand bleibt erhalten (', after.left, 'Steine )');
+
+  // 7b) Schnelle Taps auf die Werkzeugleiste gehen nicht verloren
+  const ub = await page.locator('.tool.undo').boundingBox();
+  const leftBefore = after.left;
+  for (let k = 0; k < 4; k++) { await page.touchscreen.tap(ub.x + ub.width / 2, ub.y + ub.height / 2); await wait(200); }
+  await wait(300);
+  const leftUndo = await mj(() => window.__mahjong.session.remaining);
+  check(leftUndo === leftBefore + 8, `4 schnelle Rückgängig-Taps sollten 8 Steine zurücklegen (${leftUndo - leftBefore})`);
+  await playPairs(4);
+  await wait(300);
+  const tsel = await mj(() => window.__mahjong.nextPair());
+  await tapTile(tsel[0]);
+  await wait(80);
+  await page.locator('.tool.more').tap();
+  await wait(350);
+  check(await page.locator('.sp-modal h2').count() === 1, '«Mehr» direkt nach einem Stein-Tipp öffnet nichts');
+  check(await page.locator('.sp-modal').count() === 1, 'Dialog doppelt geöffnet');
+  // «Neue Verteilung» fragt bei begonnenem Spiel nach
+  await closeModal('Neue Verteilung');
+  check(await page.locator('.sp-modal h2', { hasText: 'Neu verteilen?' }).isVisible(), '«Neue Verteilung» fragt nicht nach');
+  await closeModal('Abbrechen');
+  check(await mj(() => window.__mahjong.session.remaining) === leftBefore, '«Abbrechen» hat das Spiel trotzdem ersetzt');
+  log('Schnelle Taps, «Mehr» und Nachfrage bei «Neue Verteilung» ok');
 
   // 8) Mischen
   await page.locator('.tool.shuffle').tap();
@@ -279,6 +313,8 @@ try {
   const dn = await mj(() => window.__mahjong.session.n);
   log('Tagesrätsel:', dn, 'Steine');
   await playPairs(Infinity, { onPair: async (k) => { if (k === 10) await shot('19-daily-mid'); } });
+  // Sieg wird sofort gespeichert (nicht erst nach der Animation)
+  check(await mj(() => Object.keys(localStorage).some((k) => /^spielpause\.daily\.mahjong\./.test(k))), 'Tagesrätsel nicht sofort als gelöst markiert');
   await wait(1500);
   await shot('20-daily-win');
   check(await page.locator('.sp-modal h2', { hasText: 'Tagesrätsel gelöst' }).isVisible(), 'Gewinnblatt Tagesrätsel fehlt');
@@ -289,6 +325,15 @@ try {
   const summary = await mj(() => JSON.parse(localStorage.getItem('spielpause.summary.mahjong')).text);
   log('Zusammenfassung:', summary);
   check(/Tagesrätsel ✓/.test(summary), 'reportSummary ohne Tagesrätsel-Häkchen');
+  // Gelöstes Tagesrätsel erneut öffnen: Dialog über dem Menü (nicht über leerem Bildschirm)
+  await page.goto(BASE + '/mahjong/#daily');
+  await wait(900);
+  check(await page.locator('.sp-modal h2', { hasText: 'Heute schon gelöst' }).isVisible(), 'Hinweis «Heute schon gelöst» fehlt');
+  check(await page.locator('.gm-daily.done').count() === 1, 'Hinter «Heute schon gelöst» fehlt das Menü');
+  await shot('21b-daily-again');
+  await closeModal('Zum Menü');
+  await wait(400);
+  check(await mj(() => window.__mahjong.route()) === '', 'Nicht zurück im Menü');
 
   // 16) Zufallsspiel (klein) starten
   await page.locator('.gm-sec', { hasText: 'Zufall' }).tap();

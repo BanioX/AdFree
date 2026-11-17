@@ -370,11 +370,25 @@ export class BoardView {
       rr(ctx, g.D, g.D, g.pw, g.H, R); ctx.fill();
       ctx.fillRect(R, R, g.pw, g.H);
     } else if (key === 'sel') {
-      ctx.fillStyle = 'rgba(255, 196, 120, .28)';
+      // Auswahl: kräftiger Rahmen mit Leuchten, kaum Füllung (Bonus-Steine sind rosa/blau, Tipp ist gold)
+      ctx.fillStyle = 'rgba(255, 150, 90, .14)';
       rr(ctx, 0, 0, g.pw, g.H, R); ctx.fill();
-      ctx.lineWidth = Math.max(2, g.pw * 0.07);
-      ctx.strokeStyle = '#e0682f';
-      rr(ctx, ctx.lineWidth / 2, ctx.lineWidth / 2, g.pw - ctx.lineWidth, g.H - ctx.lineWidth, R * 0.85); ctx.stroke();
+      const lw = Math.max(2.5, g.pw * 0.09);
+      ctx.lineWidth = lw;
+      ctx.shadowColor = 'rgba(214, 74, 22, .75)';
+      ctx.shadowBlur = g.pw * 0.22;
+      ctx.strokeStyle = '#d9541c';
+      rr(ctx, lw / 2, lw / 2, g.pw - lw, g.H - lw, R * 0.85); ctx.stroke();
+      ctx.shadowBlur = 0;
+      ctx.lineWidth = Math.max(1, g.pw * 0.025);
+      ctx.strokeStyle = 'rgba(255, 255, 255, .85)';
+      rr(ctx, lw * 1.1, lw * 1.1, g.pw - lw * 2.2, g.H - lw * 2.2, R * 0.6); ctx.stroke();
+    } else if (key === 'lift') {
+      // weicher Schatten an der alten Stelle des angehobenen Steins
+      ctx.shadowColor = 'rgba(60, 34, 12, .55)';
+      ctx.shadowBlur = g.pw * 0.18;
+      ctx.fillStyle = 'rgba(60, 34, 12, .32)';
+      rr(ctx, g.D * 0.6, g.D * 0.6, g.pw, g.H, R); ctx.fill();
     } else if (key === 'hint') {
       ctx.shadowColor = 'rgba(255, 190, 40, .95)';
       ctx.shadowBlur = g.pw * 0.25;
@@ -717,7 +731,10 @@ export class BoardView {
     let x = p.x, y = p.y, alpha = 1;
     if (fx) { x += fx.dx || 0; y += fx.dy || 0; alpha = fx.a ?? 1; }
     if (alpha <= 0.01) return;
-    if (o.lifted) { x -= this.cam.w * 0.05; y -= this.cam.w * 0.09; }
+    if (o.lifted) {
+      drawSprite('lift', x, y, alpha, fx);
+      x -= this.cam.w * 0.07; y -= this.cam.w * 0.14;
+    }
     const face = this.faceOverride.has(i) ? this.faceOverride.get(i) : this.faces[i];
     drawSprite('f' + face, x, y, alpha, fx);
     const t = this.board.tiles[i];

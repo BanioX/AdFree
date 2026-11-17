@@ -32,7 +32,8 @@ export async function loadImage(file) {
 
 /**
  * Tastet das Bild quadratisch (mittiger Ausschnitt) auf N×N Zellen ab.
- * Rückgabe: { N, lab: Float32Array(N*N*3) }
+ * Durchsichtige Stellen (z. B. freigestellte PNGs) werden keine Perlen.
+ * Rückgabe: { N, lab: Float32Array(N*N*3), mask: Uint8Array(N*N) (1 = Perle) }
  */
 export function sampleImage(img, N) {
   const iw = img.width || img.naturalWidth;
@@ -61,28 +62,32 @@ export function sampleImage(img, N) {
   const c = cv.getContext('2d', { willReadFrequently: true });
   c.imageSmoothingEnabled = true;
   c.imageSmoothingQuality = 'high';
-  c.fillStyle = '#ffffff';
-  c.fillRect(0, 0, M, M);
+  c.clearRect(0, 0, M, M);
   c.drawImage(src, sx0, sy0, sw, sw, 0, 0, M, M);
   const px = c.getImageData(0, 0, M, M).data;
   const lab = new Float32Array(N * N * 3);
+  const mask = new Uint8Array(N * N);
+  const WHITE = linearToOklab(1, 1, 1);
   for (let y = 0; y < N; y++) {
     for (let x = 0; x < N; x++) {
-      let r = 0, g = 0, b = 0;
+      // Farbe nach Deckkraft gewichtet: halb durchsichtige Ränder färben nicht nach Weiss
+      let r = 0, g = 0, b = 0, wa = 0;
       for (let dy = 0; dy < SUB; dy++) {
         for (let dx = 0; dx < SUB; dx++) {
           const o = ((y * SUB + dy) * M + (x * SUB + dx)) * 4;
-          r += srgbToLinear(px[o]);
-          g += srgbToLinear(px[o + 1]);
-          b += srgbToLinear(px[o + 2]);
+          const a = px[o + 3] / 255;
+          r += srgbToLinear(px[o]) * a;
+          g += srgbToLinear(px[o + 1]) * a;
+          b += srgbToLinear(px[o + 2]) * a;
+          wa += a;
         }
       }
-      const n = SUB * SUB;
-      const L = linearToOklab(r / n, g / n, b / n);
-      lab.set(L, (y * N + x) * 3);
+      const i = y * N + x;
+      mask[i] = wa / (SUB * SUB) >= 0.5 ? 1 : 0;
+      lab.set(wa > 0 ? linearToOklab(r / wa, g / wa, b / wa) : WHITE, i * 3);
     }
   }
-  return { N, lab };
+  return { N, lab, mask };
 }
 
 /** k-means (k-means++ Start) in OKLab. Rückgabe: { centers, assign } */
@@ -141,6 +146,7 @@ export function despeckle(assign, N) {
     for (let x = 0; x < N; x++) {
       const i = y * N + x;
       const own = assign[i];
+      if (own < 0) continue; // keine Perle
       const counts = new Map();
       let same = 0;
       for (let dy = -1; dy <= 1; dy++) {
@@ -149,6 +155,7 @@ export function despeckle(assign, N) {
           const xx = x + dx, yy = y + dy;
           if (xx < 0 || yy < 0 || xx >= N || yy >= N) continue;
           const v = assign[yy * N + xx];
+          if (v < 0) continue;
           if (v === own) same++;
           counts.set(v, (counts.get(v) || 0) + (dx && dy ? 1 : 2));
         }
@@ -167,12 +174,19 @@ const CHARS = 'abcdefghijklmnopqrstuvwxyz';
 
 /** Baut aus der Abtastung ein Muster mit `colors` Farben. */
 export function quantize(sample, colors = 8, seed = 'photo', { chroma = 1.12 } = {}) {
-  const { N, lab } = sample;
+  const { N, lab, mask } = sample;
   const k = Math.max(MIN_COLORS, Math.min(MAX_COLORS, colors | 0));
-  const { centers, assign } = kmeans(lab, N * N, k, seed + ':' + k);
+  // nur Zellen mit Perle (durchsichtige Stellen bleiben leer)
+  const idx = [];
+  for (let i = 0; i < N * N; i++) if (!mask || mask[i]) idx.push(i);
+  const sub = new Float32Array(idx.length * 3);
+  idx.forEach((i, j) => { sub[j * 3] = lab[i * 3]; sub[j * 3 + 1] = lab[i * 3 + 1]; sub[j * 3 + 2] = lab[i * 3 + 2]; });
+  const { centers, assign: a0 } = idx.length ? kmeans(sub, idx.length, k, seed + ':' + k) : { centers: [], assign: [] };
+  const assign = new Int16Array(N * N).fill(-1);
+  idx.forEach((i, j) => { assign[i] = a0[j]; });
   const clean = despeckle(assign, N);
   // genutzte Farben, dunkel -> hell sortiert
-  const used = [...new Set(clean)].sort((a, b) => centers[a][0] - centers[b][0]);
+  const used = [...new Set(clean)].filter((c) => c >= 0).sort((a, b) => centers[a][0] - centers[b][0]);
   const charOf = new Map();
   const palette = {};
   used.forEach((c, i) => {
@@ -184,7 +198,7 @@ export function quantize(sample, colors = 8, seed = 'photo', { chroma = 1.12 } =
   const rows = [];
   for (let y = 0; y < N; y++) {
     let r = '';
-    for (let x = 0; x < N; x++) r += charOf.get(clean[y * N + x]);
+    for (let x = 0; x < N; x++) r += clean[y * N + x] < 0 ? '.' : charOf.get(clean[y * N + x]);
     rows.push(r);
   }
   return { palette, rows };

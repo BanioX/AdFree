@@ -204,3 +204,56 @@ test('Modi sind vollständig beschrieben', () => {
   }
   assert.ok(cloneState(newDeal('spider2', 1)).piles !== newDeal('spider2', 1).piles);
 });
+
+// Folgt den Tipps; jeder Tipp muss ausführbar sein (Spider: nie «Geben» bei leerer Spalte).
+function followHints(mode, seed, steps) {
+  const st = newDeal(mode, seed);
+  const hist = [];
+  const seen = [JSON.stringify(st.piles)];
+  for (let k = 0; k < steps && !isWon(st); k++) {
+    const h = findHint(st, hist);
+    if (!h) break;
+    let ops;
+    if (h.kind === 'stock') {
+      const r = stockAction(st);
+      assert.ok(!r.error, `${mode} #${seed} Schritt ${k}: Tipp «Geben» nicht ausführbar (${r.error})`);
+      ops = r.ops;
+    } else {
+      assert.ok(canPick(st, h.from, h.index) && canDrop(st, h.from, h.index, h.to), `${mode} #${seed} Schritt ${k}: Tipp illegal`);
+      ops = doMove(st, h.from, h.index, h.to);
+    }
+    hist.push({ ops });
+    const key = JSON.stringify(st.piles);
+    assert.ok(!seen.slice(-12).includes(key), `${mode} #${seed} Schritt ${k}: Tipp führt zurück in eine eben gesehene Stellung`);
+    seen.push(key);
+  }
+}
+
+test('Tipps sind immer ausführbar und pendeln nicht hin und her', () => {
+  for (let seed = 1; seed <= 12; seed++) followHints('spider1', seed, 160);
+  for (let seed = 1; seed <= 6; seed++) followHints('spider2', seed, 120);
+  for (let seed = 1; seed <= 12; seed++) followHints('freecell', seed, 120);
+  for (let seed = 1; seed <= 6; seed++) followHints('klondike1', seed, 120);
+});
+
+test('Spider: leere Spalte → Tipp füllt sie statt zu geben', () => {
+  const st = newDeal('spider1', 6);
+  const L = LAYOUTS.spider;
+  // Spalte 0 leeren (Karten in Spalte 1 verschieben – Struktur egal, nur Zustand)
+  st.piles[L.tab[1]].push(...st.piles[L.tab[0]].splice(0));
+  for (const id of st.piles[L.tab[1]]) st.up[id] = 1;
+  const h = findHint(st);
+  assert.ok(h && h.kind === 'move', 'kein «Geben» bei leerer Spalte');
+  assert.ok(canDrop(st, h.from, h.index, h.to));
+});
+
+test('FreeCell: Karte in Zelle → kein Tipp zurück auf dieselbe Spalte', () => {
+  for (const seed of [1, 2]) {
+    const st = newDeal('freecell', seed);
+    const L = LAYOUTS.freecell;
+    const p = L.tab[7];
+    const ops = doMove(st, p, st.piles[p].length - 1, L.cells[0]);
+    const h = findHint(st, [{ ops }]);
+    if (h && h.kind === 'move') assert.ok(!(h.from === L.cells[0] && h.to === p), 'kein Zurück-Tipp');
+  }
+});

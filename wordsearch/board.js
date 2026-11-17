@@ -308,23 +308,33 @@ export class Board {
     setTimeout(() => el.remove(), 1300);
   }
 
-  /** Tipp: die ersten `count` Buchstaben eines Wortes pulsieren lassen. */
-  showHint(index, count = 1) {
+  /**
+   * Tipp: Stufe 1–2 markiert die ersten 1–2 Buchstaben mit Ringen, ab Stufe 3 wird das ganze Wort
+   * als gestrichelte Kapsel umrandet. Bleibt stehen, bis clearHint() (Wort gefunden).
+   * fresh=false (z.B. nach dem Neuladen): ohne Hüpf-Animation der Buchstaben.
+   */
+  showHint(index, level = 1, fresh = true) {
     this.clearHint();
     const p = this.pz.words[index];
-    const cells = wordCells(p).slice(0, count);
+    if (!p) return;
+    const all = wordCells(p);
+    if (level >= 3) {
+      const a = all[0], e = all[all.length - 1];
+      const pos = { x1: a.c + 0.5, y1: a.r + 0.5, x2: e.c + 0.5, y2: e.r + 0.5 };
+      this.gHint.append(
+        svg('line', { class: 'hint-cap', ...pos }),
+        svg('line', { class: 'hint-cap-dash', ...pos, pathLength: 100 }));
+    }
+    const cells = level >= 3 ? all : all.slice(0, level);
     cells.forEach(({ r, c }, i) => {
       const ring = svg('circle', { class: 'hint-ring', cx: c + 0.5, cy: r + 0.5, r: 0.44 });
-      ring.style.animationDelay = i * 120 + 'ms';
+      ring.style.animationDelay = i * 90 + 'ms';
       this.gHint.append(ring);
-      this.bump(this.spans[r * this.n + c], 'hinted', i * 120);
+      if (fresh) this.bump(this.spans[r * this.n + c], 'hinted', i * 90);
     });
-    clearTimeout(this.hintTimer);
-    this.hintTimer = setTimeout(() => this.clearHint(), 3600);
   }
 
   clearHint() {
-    clearTimeout(this.hintTimer);
     this.gHint.replaceChildren();
   }
 

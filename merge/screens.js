@@ -1,24 +1,17 @@
 // Verdoppeln – Menü, Etappen-Karte, Album und Info-Blätter.
 
 import { h, icon, soundButton, backButton, showModal, toast } from '../shared/ui.js';
+import { gameMenu } from '../shared/gamemenu.js';
 import { sfx } from '../shared/sfx.js';
 import { valueOf } from './logic.js';
 import { tileFace } from './board.js';
-import { modes, modeById, undoRules } from './data/modes.js';
+import { modes, modeById } from './data/modes.js';
 import { skins, skinById } from './data/skins.js';
 import { chapters, LEVELS_PER_CHAPTER } from './data/levels.js';
 import { makeLevel, chapterOf, chapterTitle } from './levelgen.js';
 import * as P from './progress.js';
 
 const fmt = P.formatNumber;
-
-function quickBtn(ic, label, onClick) {
-  const b = h('button.quick', { type: 'button' });
-  b.innerHTML = `<span class="qi">${icon(ic, { size: 22 })}</span>`;
-  b.append(h('span', null, label));
-  b.addEventListener('click', () => { sfx.play('click'); onClick(); });
-  return b;
-}
 
 /** Kleines animiertes Bild: zwei gleiche Kacheln verschmelzen. */
 function heroArt(skin) {
@@ -34,88 +27,126 @@ function heroArt(skin) {
   return strip;
 }
 
-// ---------- Menü ----------
+// ---------- Menü (gemeinsamer Startbildschirm shared/gamemenu.js) ----------
 
-export function mountMenu(app, nav) {
-  const prog = P.getProg();
+/** Brett-Auswahl für das freie Spiel (Segment-Schalter im Stil des Startbildschirms). */
+function boardPicker(p, onPick) {
+  const seg = h('div.gm-seg.mg-boards', { role: 'tablist' });
+  for (const m of modes) {
+    const b = h('button', { type: 'button', role: 'tab', 'data-id': m.id, class: m.id === p.mode ? 'on' : '' },
+      h('span', null, m.sub.replace(/ /g, '')), h('small', null, m.title));
+    b.addEventListener('click', () => { if (m.id !== P.getProg().mode) { sfx.play('click'); onPick(m.id); } });
+    seg.append(b);
+  }
+  return h('div.gm-block', null, h('div.gm-label', null, 'Brett'), seg);
+}
+
+/** Karte der aktuellen Etappe mit Fortschritt und Knopf zur Karte. */
+function levelCard(nav) {
+  const p = P.getProg();
+  const n = p.levelMax;
+  const lv = makeLevel(n);
+  const info = chapterOf(n);
+  const lskin = skinById(lv.skin);
+  const mapBtn = h('button.btn.mg-map-btn', { type: 'button', html: icon('grid', { size: 20 }) }, 'Karte');
+  mapBtn.addEventListener('click', () => { sfx.play('click'); nav.map(); });
+  return h('div.gm-block', null, h('div.gm-label', null, 'Etappen'),
+    h('div.card.mg-level', null,
+      h('div.lv-head', null,
+        h('div.lv-icon', null, info.chapter.icon),
+        h('div.grow', null, h('div.lbl', null, chapterTitle(info.gci)), h('div.mg-lv-n', null, `Etappe ${n}`)),
+        h('div.lv-goal', null, tileFace(lskin, lv.goal.e, { value: false }), lv.goal.type === 'count' ? h('b', null, `${lv.goal.n}×`) : null)),
+      h('div.progress', null, h('i', { style: { width: `${(info.pos / LEVELS_PER_CHAPTER) * 100}%` } })),
+      h('div.mg-level-foot', null, h('span', null, `${info.pos} von ${LEVELS_PER_CHAPTER} geschafft`, h('br'), 'Steine, Lücken, eigene Ziele'), mapBtn)));
+}
+
+export function mountMenu(app, nav, { start, onHelp }) {
+  const p0 = P.getProg();
   app.className = 'app menu';
   app.textContent = '';
-  const top = h('header.topbar', null, backButton('../'), h('div.title', null, 'Verdoppeln'), soundButton());
-  const scroll = h('main.scroll.menu-scroll');
-  app.append(top, scroll);
 
-  function render() {
+  function primary() {
     const p = P.getProg();
-    const skin = skinById(p.skin);
-    scroll.textContent = '';
-    const hero = h('section.hero', null, heroArt(skin), h('p.hero-sub', null, 'Wischen, verschmelzen, wachsen.'));
-
-    const seg = h('div.segmented' + (p.tab === 'levels' ? '.right' : ''));
-    const segFree = h('button', { type: 'button', class: p.tab !== 'levels' ? 'active' : '' }, 'Freies Spiel');
-    const segLv = h('button', { type: 'button', class: p.tab === 'levels' ? 'active' : '' }, 'Etappen');
-    segFree.addEventListener('click', () => { if (p.tab !== 'free') { sfx.play('click'); P.saveProg({ tab: 'free' }); render(); } });
-    segLv.addEventListener('click', () => { if (p.tab !== 'levels') { sfx.play('click'); P.saveProg({ tab: 'levels' }); render(); } });
-    seg.append(segFree, segLv);
-
-    const card = h('section.card.menu-card');
-    let main;
-    if (p.tab !== 'levels') {
-      const mode = modeById(p.mode);
-      const grid = h('div.mode-grid');
-      for (const m of modes) {
-        const b = h('button.mode-opt' + (m.id === mode.id ? '.active' : ''), { type: 'button' },
-          h('b', null, m.title), h('span', null, m.sub));
-        b.addEventListener('click', () => { sfx.play('click'); P.saveProg({ mode: m.id }); render(); });
-        grid.append(b);
-      }
-      const save = P.loadSave(mode.id);
-      const running = save && save.state && !save.state.over && save.state.moves > 0;
-      const goal = h('div.mini-goal', null, tileFace(skin, mode.target, { value: false }));
-      card.append(grid,
-        h('div.card-row', null,
-          h('div', null, h('div.lbl', null, 'Rekord'), h('div.big', null, p.best[mode.id] ? fmt(p.best[mode.id]) : '–')),
-          h('div.goal-col', null, h('div.lbl', null, 'Ziel'), h('div.goal-line', null, goal, h('b', null, fmt(valueOf(mode.target)))))),
-        h('p.blurb', null, mode.blurb + (running ? ` Laufendes Spiel: ${fmt(save.state.score)} Punkte.` : '')));
-      main = h('button.btn.primary.block.big-play', { type: 'button' });
-      main.innerHTML = icon('play', { size: 22 });
-      main.append(running ? 'Weiter' : 'Spielen');
-      main.addEventListener('click', () => { sfx.play('click'); P.dropFinished(mode.id); nav.free(mode.id); });
-    } else {
+    if (p.tab === 'levels') {
       const n = p.levelMax;
-      const lv = makeLevel(n);
-      const info = chapterOf(n);
-      const lskin = skinById(lv.skin);
       const save = P.loadSave('etappe');
-      const running = save && save.n === n && save.state && save.state.moves > 0 && !save.state.over;
-      const bar = h('div.progress', null, h('i', { style: { width: `${(info.pos / LEVELS_PER_CHAPTER) * 100}%` } }));
-      card.append(
-        h('div.lv-head', null,
-          h('div.lv-icon', null, info.chapter.icon),
-          h('div.grow', null, h('div.lbl', null, chapterTitle(info.gci)), h('div.big', null, `Etappe ${n}`)),
-          h('div.lv-goal', null, tileFace(lskin, lv.goal.e, { value: false }), lv.goal.type === 'count' ? h('b', null, `${lv.goal.n}×`) : null)),
-        bar,
-        h('p.blurb', null, `Besondere Bretter mit Steinen und Lücken, jede Etappe mit eigenem Ziel. ★ ${P.totalStars()} Sterne gesammelt.`));
-      main = h('div.btn-pair');
-      const play = h('button.btn.primary.big-play', { type: 'button' });
-      play.innerHTML = icon('play', { size: 22 });
-      play.append(running ? 'Weiter' : `Etappe ${n}`);
-      play.addEventListener('click', () => { sfx.play('click'); P.dropFinished('etappe'); nav.level(n); });
-      const map = h('button.btn.map-btn', { type: 'button', 'aria-label': 'Karte' });
-      map.innerHTML = icon('grid', { size: 22 });
-      map.append('Karte');
-      map.addEventListener('click', () => { sfx.play('click'); nav.map(); });
-      main.append(play, map);
+      const running = save && save.n === n && save.state && save.state.moves > 0 && !save.state.over && !save.state.won;
+      return {
+        label: running || n > 1 ? 'Weiterspielen' : 'Spielen',
+        sub: `Etappe ${n} · ${chapterTitle(chapterOf(n).gci)}`,
+        onClick: () => start(() => { P.dropFinished('etappe'); nav.level(n); }),
+      };
     }
-
-    const quick = h('div.quick-row', null,
-      quickBtn('grid', 'Statistik', showStats),
-      quickBtn('star', 'Album', () => nav.album()),
-      quickBtn('sparkle', 'Aussehen', () => pickSkin(render)),
-      quickBtn('hint', "So geht's", showHelp));
-
-    scroll.append(hero, seg, card, main, quick);
+    const mode = modeById(p.mode);
+    const save = P.loadSave(mode.id);
+    const running = save && save.state && !save.state.over && save.state.moves > 0;
+    return {
+      label: running ? 'Weiterspielen' : 'Spielen',
+      sub: `${mode.title} ${mode.sub} · ${running ? fmt(save.state.score) + ' Punkte' : 'Ziel ' + fmt(valueOf(mode.target))}`,
+      onClick: () => start(() => { P.dropFinished(mode.id); nav.free(mode.id); }),
+    };
   }
-  render();
+
+  function stats() {
+    const p = P.getProg();
+    if (p.tab === 'levels') {
+      let three = 0;
+      for (const k in p.levelStars) if ((p.levelStars[k] | 0) >= 3) three++;
+      return [
+        { label: 'Geschafft', value: fmt(Math.max(0, p.levelMax - 1)) },
+        { label: 'Sterne', value: fmt(P.totalStars()) },
+        { label: '3 Sterne', value: fmt(three) },
+      ];
+    }
+    const mode = modeById(p.mode);
+    const bt = p.bestTile[mode.id] | 0;
+    return [
+      { label: 'Rekord', value: p.best[mode.id] ? fmt(p.best[mode.id]) : '–' },
+      { label: 'Beste Kachel', value: bt ? fmt(valueOf(bt)) : '–' },
+      { label: 'Ziel erreicht', value: fmt(p.won[mode.id] | 0) },
+    ];
+  }
+
+  function sections() {
+    const p = P.getProg();
+    return [p.tab === 'levels' ? levelCard(nav) : boardPicker(p, (id) => { P.saveProg({ mode: id }); refresh(); })];
+  }
+
+  function refresh() {
+    menu.update({ primary: primary(), stats: stats(), sections: sections() });
+  }
+
+  const menu = gameMenu({
+    id: 'merge',
+    title: 'Verdoppeln',
+    tagline: 'Wischen, verschmelzen, wachsen.',
+    accent: '#e2795a',
+    art: heroArt(skinById(p0.skin)),
+    primary: primary(),
+    modes: {
+      label: 'Spielart', value: p0.tab === 'levels' ? 'levels' : 'free',
+      options: [
+        { id: 'free', label: 'Freies Spiel', sub: `${modes.length} Bretter` },
+        { id: 'levels', label: 'Etappen', sub: `★ ${P.totalStars()}` },
+      ],
+      onChange(id) { P.saveProg({ tab: id }); refresh(); },
+    },
+    secondary: [
+      { label: 'Statistik', icon: 'grid', onClick: showStats },
+      { label: 'Album', icon: 'star', onClick: () => nav.album() },
+      { label: 'Aussehen', icon: 'sparkle', onClick: () => pickSkin(() => {
+        const art = menu.querySelector('.gm-art');
+        if (art) art.replaceChildren(heroArt(skinById(P.getProg().skin)));
+        refresh();
+      }) },
+    ],
+    stats: stats(),
+    sections: sections(),
+    onHelp,
+    backHref: '../',
+  });
+  menu.classList.add('mg-menu');
+  app.append(menu);
   P.report();
   return { destroy() {} };
 }
@@ -146,27 +177,6 @@ export function pickSkin(onDone) {
   });
   close = () => { const bd = list.closest('.sp-modal-backdrop'); if (bd) bd.click(); };
   pr.then(() => onDone && onDone());
-}
-
-// ---------- So geht's ----------
-
-export function showHelp() {
-  const skin = skinById(P.getProg().skin);
-  const demo = h('div.help-demo', null,
-    h('div.ht', null, tileFace(skin, 1)), h('b', null, '+'), h('div.ht', null, tileFace(skin, 1)), h('b', null, '='),
-    h('div.ht', null, tileFace(skin, 2)));
-  const ul = h('ul.help-list', null,
-    h('li', null, h('b', null, 'Wischen: '), 'Alle Kacheln rutschen in die Richtung, bis sie anstossen.'),
-    h('li', null, h('b', null, 'Verschmelzen: '), 'Zwei gleiche Kacheln werden zur nächsten Stufe – der Wert verdoppelt sich.'),
-    h('li', null, h('b', null, 'Neue Kachel: '), 'Nach jedem Zug kommt eine kleine Kachel dazu.'),
-    h('li', null, h('b', null, 'Ziel: '), 'Bau die Ziel-Kachel. Danach darfst du weiterspielen. Geht kein Zug mehr, ist die Runde vorbei.'),
-    h('li', null, h('b', null, 'Hilfen: '), `Rückgängig ${undoRules.start}× (alle ${undoRules.refillEvery} Züge gibt es eins zurück). «Tipp» zeigt einen guten Zug.`),
-    h('li', null, h('b', null, 'Etappen: '), 'Steine bewegen sich nie, Lücken gehören nicht zum Brett. Wenige Züge geben mehr Sterne.'));
-  return showModal({
-    title: "So geht's",
-    content: h('div.help', null, demo, ul, h('p.small', null, 'Tipp: Sammle die grösste Kachel in einer Ecke. Am Computer gehen auch die Pfeiltasten.')),
-    buttons: [{ label: 'Los geht\'s', value: true, primary: true }],
-  });
 }
 
 // ---------- Statistik ----------

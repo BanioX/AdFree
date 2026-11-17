@@ -54,6 +54,10 @@ In `data/pictures.js` hinten anhängen – zwei Formate:
 Die erzeugten Bild-Level verwenden die Bilder der Reihe nach; neue Bilder kommen also in späteren
 Bild-Leveln dran. Bilder, die ein handgemachtes Level schon verwendet, werden dort übersprungen.
 
+Das Bild wird in das Rechteck um die verdeckten Felder (`cover`) eingepasst: Ist z.B. nur die untere
+Brett-Hälfte verdeckt, erscheint das ganze Motiv dort (nicht abgeschnitten). Beim Sieg blendet das Bild
+im ganzen Rechteck ein, also auch in Ecken ausserhalb einer runden oder herzförmigen Maske.
+
 ## Neue Welt
 
 In `data/worlds.js` anhängen (`id`, `title`, `emoji`, `color`, `tint`). Jede Welt bringt 20 neue Level.

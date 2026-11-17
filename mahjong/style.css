@@ -85,7 +85,7 @@
 }
 
 .toolbar {
-  flex: 0 0 auto; display: flex; justify-content: space-around; gap: 6px;
+  flex: 0 0 auto; display: flex; justify-content: space-around; gap: 6px; touch-action: manipulation;
   padding: 8px 10px calc(8px + var(--safe-bottom));
 }
 .tool {
@@ -231,3 +231,8 @@
   font-weight: 800; font-size: 14.5px; box-shadow: var(--shadow);
 }
 .coach-bubble.above { transform: translate(-50%, -100%); }
+
+/* Menü: drei Zusatz-Knöpfe auf schmalen Geräten (375 px) – Beschriftung nicht abschneiden */
+@media (max-width: 389px) {
+  .menu-screen .gm-sec { padding: 8px 6px; gap: 5px; }
+}

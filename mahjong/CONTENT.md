@@ -34,7 +34,7 @@ Regeln (prüft `tests/content.test.mjs`):
 - Lösbarkeit muss man nicht selbst sicherstellen: Der Generator verteilt die Bilder immer so, dass
   das Brett aufgeht (rückwärts aufgebaut, mit Lösungs-Zertifikat).
 
-Sterne: ★★★ ohne Tipp und Mischen, ★★ mit höchstens zwei Hilfen, sonst ★. «Zurück» ist gratis.
+Sterne: ★★★ ohne Tipp und Mischen, ★★ mit höchstens zwei Hilfen, sonst ★. «Rückgängig» ist gratis.
 Freigeschaltet sind immer die nächsten drei noch nicht geschafften Layouts.
 
 ## Steinsätze (`data/tilesets.js`)
@@ -56,6 +56,10 @@ Neuen Emoji-Satz hinzufügen – einfach ein Objekt anhängen:
 ```
 
 - Keine doppelten Emoji im ganzen Satz, gut unterscheidbar (nicht fünf ähnliche Gesichter).
+  Bei 26–35 px Steinbreite verwechselt man leicht: Maus/Hamster/Bär, Wal/Delfin, Spatz/Ente,
+  Kuchen/Torte/Muffin, Reiscracker/Reisbällchen, Donut/Bagel – lieber Bilder mit eigener Form und Farbe.
+- Bonus-Gruppen erhalten automatisch einen rosa bzw. blauen Rahmen mit Eck-Band (nie gelb/orange –
+  Gold ist der Tipp, Orange die Auswahl).
 - Keine Marken oder bekannten Figuren.
 - Der Satz erscheint automatisch im Startbildschirm (Schalter «Steine») und in den Einstellungen.
   Mehr als vier Sätze passen nicht gut in den Schalter – dann lieber einen bestehenden ersetzen.

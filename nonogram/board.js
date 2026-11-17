@@ -644,13 +644,15 @@ export function drawThumb(canvas, def, { mode = 'color', cells = null, size = 72
       ctx.fillRect(c * px, r * px, px, px);
     }
   } else {
-    ctx.fillStyle = '#ffffff';
+    // Fortschritt: helles Raster wie das Spielfeld, gefüllte Felder dunkel
+    const gap = px >= 6 ? Math.max(1, Math.round(px * 0.08)) : 0;
+    ctx.fillStyle = gap ? '#eee4d8' : '#ffffff';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-    if (cells) {
-      ctx.fillStyle = COLORS.inkHi;
-      for (let i = 0; i < w * h; i++) {
-        if (cells.charCodeAt(i) === 49) ctx.fillRect((i % w) * px, Math.floor(i / w) * px, px, px);
-      }
+    for (let i = 0; i < w * h; i++) {
+      const filled = cells && cells.charCodeAt(i) === 49;
+      if (!filled && !gap) continue;
+      ctx.fillStyle = filled ? COLORS.inkHi : '#ffffff';
+      ctx.fillRect((i % w) * px + gap, Math.floor(i / w) * px + gap, px - gap, px - gap);
     }
   }
 }

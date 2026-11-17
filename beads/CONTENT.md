@@ -77,11 +77,20 @@ Kategorien: `Liebe`, `Essen`, `Tiere`, `Natur`, `Dinge`, `Jahreszeiten`.
 
 «Eigenes Foto» wandelt ein Bild aus der Fotomediathek in ein Muster um (Grösse 16/24/32 Perlen,
 4–12 Farben, Farbreduktion in `photo.js`). Die Muster liegen nur auf dem Gerät (IndexedDB,
-Schlüssel `beads.photo.<id>`), die Liste in `localStorage` (`spielpause.beads.photos`).
+Schlüssel `beads.photo.<id>`), die Liste in `localStorage` (`spielpause.beads.photos`). Durchsichtige
+Stellen (freigestellte PNGs) werden keine Perlen; leere oder einfarbige Bilder lehnt der Bildschirm
+mit einem Hinweis ab.
 
 ## 4. Schwierigkeit anpassen
 
 `levelConfig()` in `level.js`: Spalten im Vorrat (`C`), Höhe der aktiven Zone (`R`),
 Ablageplätze (`S`), Unordnung (`disorder`, `bury`) und Steine pro Zug (`maxChunk`, wächst mit der
 Bildgrösse über `chunkMax()`). `generateTray()` verringert die Unordnung so lange, bis der Löser
-eine Lösung ohne Helfer findet.
+eine Lösung ohne Helfer findet **und** (Schalter `greedy`) auch ein einfacher «gieriger» Spielstil
+durchkommt – bis Level 24 sogar mit einem Ablageplatz weniger und mit gelegentlichen Fehltipps.
+Der Vorrat hat mindestens so viele Spalten wie das Bild Farben hat (höchstens 8).
+
+Neue Muster einreihen: Viele Farben **pro Zeilenpaar** (z. B. Regenbogen, Cupcake) machen ein Bild
+mit nur 4 Ablageplätzen deutlich schwerer als seine Grösse vermuten lässt. Nach dem Einreihen die
+Kurve prüfen, z. B. mit einem kleinen Skript, das `greedyClears()` (mit `noise: 0.05`) für jedes
+Level oft laufen lässt – kein Level sollte deutlich schwerer sein als seine Nachbarn.

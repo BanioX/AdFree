@@ -152,6 +152,39 @@ function iconBtn(name, onClick, label) {
   return b;
 }
 
+/**
+ * Knopf, der schon beim Loslassen (pointerup) auslöst – gepaart mit pointerdown auf demselben Knopf.
+ * So gehen schnelle Taps (z. B. mehrmals Rückgängig) nie verloren, auch wenn der Browser ein
+ * click-Ereignis auslässt. Das nachfolgende synthetische click wird unterdrückt (kein Doppel-Auslösen,
+ * kein «Geister-Tipp» in einen Dialog, der gerade aufgeht). Tastatur-Klicks (detail 0) gehen weiter.
+ */
+function onTapUp(btn, fn) {
+  let down = null;
+  let suppress = false;
+  btn.addEventListener('pointerdown', (e) => {
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    down = e.pointerId;
+    suppress = false;
+  });
+  btn.addEventListener('pointercancel', () => { down = null; });
+  btn.addEventListener('pointerup', (e) => {
+    if (down !== e.pointerId) return;
+    down = null;
+    const r = btn.getBoundingClientRect();
+    const slop = 12;
+    if (e.clientX < r.left - slop || e.clientX > r.right + slop || e.clientY < r.top - slop || e.clientY > r.bottom + slop) return;
+    suppress = true;
+    fn();
+  });
+  // Das synthetische click nach einem Tipp unterdrücken (touchend kommt nach pointerup).
+  btn.addEventListener('touchend', (e) => {
+    if (suppress && e.cancelable) e.preventDefault();
+    suppress = false;
+  }, { passive: false });
+  // Nur Tastatur/Bedienungshilfen (detail 0) lösen über click aus – Zeiger-Klicks liefen schon über pointerup.
+  btn.addEventListener('click', (e) => { if (e.detail === 0) fn(); });
+}
+
 function helpBtn() {
   const b = h('button.icon-btn', { type: 'button', 'aria-label': 'So geht’s', html: '<span class="gm-q">?</span>' });
   b.addEventListener('click', () => { sfx.play('click'); showHelp(); });
@@ -215,7 +248,7 @@ async function chooseEndless() {
     text: 'Neue Form, neue Steine – so oft du magst. Wie gross soll das Brett sein?',
     buttons: [
       { label: 'Klein · bis 72 Steine', value: 'klein', primary: true },
-      { label: 'Mittel · bis 110 Steine', value: 'mittel', primary: true },
+      { label: 'Mittel · bis 108 Steine', value: 'mittel', primary: true },
       { label: 'Gross · bis 144 Steine', value: 'gross', primary: true },
       { label: 'Abbrechen', value: null, ghost: true },
     ],
@@ -276,7 +309,7 @@ function showMenu() {
     secondary: [
       { label: 'Reise', sub: `${done}/${layouts.length}`, icon: 'grid', onClick: () => go('reise') },
       { label: 'Zufall', sub: 'Endlos', icon: 'shuffle', onClick: () => chooseEndless() },
-      { label: 'Statistik', icon: 'star', onClick: () => showStats() },
+      { label: 'Statistik', sub: `${stats.won} ${stats.won === 1 ? 'Sieg' : 'Siege'}`, icon: 'star', onClick: () => showStats() },
     ],
     stats: [
       { label: 'Gewonnen', value: stats.won },
@@ -329,12 +362,12 @@ function showJourney() {
 
 // ------------------------------------------------------------ Spiele starten
 
-async function confirmReplace() {
+async function confirmReplace({ title = 'Laufendes Spiel beenden?', what = 'Ein neues Spiel ersetzt es.', ok: okLabel = 'Neues Spiel' } = {}) {
   const cur = loadCur();
   if (!cur || cur.history.length === 0) return true;
-  const ok = await confirmDialog('Laufendes Spiel beenden?',
-    `«${cur.layout.name}» ist zu ${Math.round(cur.progress * 100)} % abgeräumt. Ein neues Spiel ersetzt es.`,
-    'Neues Spiel', 'Abbrechen');
+  const ok = await confirmDialog(title,
+    `«${cur.layout.name}» ist zu ${Math.round(cur.progress * 100)} % abgeräumt. ${what}`,
+    okLabel, 'Abbrechen');
   if (ok) store.update(K.stats, {}, (s) => ({ ...s, streak: 0 }));
   return ok;
 }
@@ -386,11 +419,11 @@ async function openDaily() {
   };
   if (!s) { s = create(); fresh = true; }
   if (s.won) {
-    // Schon gelöst: hübsche Ansicht + Wahl
-    mount(h('div.screen'), {});
+    // Schon gelöst: Menü im Hintergrund + Wahl
+    showMenu();
     const v = await showModal({
       title: 'Heute schon gelöst ✓',
-      html: `<p>Das Tagesrätsel von heute hast du geschafft${dailyStreak(ID) > 1 ? ` – ${dailyStreak(ID)} Tage in Folge` : ''}. Morgen gibt's ein neues!</p>`,
+      html: `<p>Das Tagesrätsel von heute hast du geschafft${dailyStreak(ID) > 1 ? ` – ${dailyStreak(ID)} Tage in Folge` : ''}. Morgen gibt’s ein neues!</p>`,
       buttons: [
         { label: 'Nochmal spielen', value: 'again', primary: true, icon: 'refresh' },
         { label: 'Zum Menü', value: 'menu', ghost: true },
@@ -417,6 +450,8 @@ function showGame(session, slot, { fresh = false } = {}) {
   let deadWarned = false;
   let coachEl = null;
   let tipCount = store.get(K.hints, 0);
+  let alive = true;
+  let winning = false;
 
   const persist = () => {
     if (slot === 'daily') store.set(K.daily, { date: session.meta.date, save: session.serialize() });
@@ -432,11 +467,11 @@ function showGame(session, slot, { fresh = false } = {}) {
   wrap.append(fitBtn, comboEl);
 
   const tool = (cls, ic, label, fn) => {
-    const b = h('button.tool', { type: 'button', class: 'tool ' + cls }, h('span.ib', { html: icon(ic) }), h('span', null, label));
-    b.addEventListener('click', () => { if (!busy) fn(); });
+    const b = h('button.tool', { type: 'button', class: 'tool ' + cls, 'aria-label': label }, h('span.ib', { html: icon(ic) }), h('span', null, label));
+    onTapUp(b, () => { if (!busy && !b.disabled) fn(); });
     return b;
   };
-  const undoBtn = tool('undo', 'undo', 'Zurück', doUndo);
+  const undoBtn = tool('undo', 'undo', 'Rückgängig', doUndo);
   const hintBtn = tool('hint', 'hint', 'Tipp', doHint);
   const shuffleBtn = tool('shuffle', 'shuffle', 'Mischen', () => doShuffle());
   const moreBtn = tool('more', 'more', 'Mehr', showMore);
@@ -466,6 +501,7 @@ function showGame(session, slot, { fresh = false } = {}) {
 
   mount(el, {
     destroy() {
+      alive = false;
       clearInterval(timer);
       tick();
       persist();
@@ -517,10 +553,16 @@ function showGame(session, slot, { fresh = false } = {}) {
       coachEl.append(h('div.coach-ring', { style: { left: c.x + 'px', top: c.y + 'px', width: W + 10 + 'px', height: H + 10 + 'px' } }));
       top = Math.min(top, c.y - H / 2); bottom = Math.max(bottom, c.y + H / 2);
     }
-    const below = bottom + 60 < view.viewH;
+    // Sprechblase ausserhalb des Bretts (unter oder über allen Steinen), damit sie nichts verdeckt
+    const boardTop = view.cam.oy - 4;
+    const boardBottom = view.cam.oy + view.ext.h * W + 4;
+    let below = true, y;
+    if (boardBottom + 48 <= view.viewH) y = boardBottom + 8;
+    else if (boardTop >= 48) { below = false; y = boardTop - 8; }
+    else { below = bottom + 60 < view.viewH; y = below ? bottom + 12 : top - 12; }
     const bubble = h('div.coach-bubble', { class: 'coach-bubble ' + (below ? 'below' : 'above') }, 'Tippe die zwei gleichen Steine an');
     bubble.style.left = '50%';
-    bubble.style.top = (below ? bottom + 12 : top - 12) + 'px';
+    bubble.style.top = y + 'px';
     coachEl.append(bubble);
     wrap.append(coachEl);
   }
@@ -534,6 +576,7 @@ function showGame(session, slot, { fresh = false } = {}) {
   if (!session.won && !session.hasMoves()) setTimeout(() => showNoMoves(), 500);
 
   function leave() {
+    if (winning) return; // Sieg ist schon gespeichert – gleich kommt das Ergebnis
     tick();
     persist();
     goBackToMenu();
@@ -585,8 +628,11 @@ function showGame(session, slot, { fresh = false } = {}) {
     const anim = view.animateMatch(a, b, fa, fb);
     if (session.won) {
       busy = true;
+      winning = true;
+      // Sofort (synchron) festhalten: Statistik, Sterne, Tagesrätsel-Häkchen – auch wenn die App gleich zugeht
+      const res = saveWin();
       await anim;
-      handleWin();
+      handleWin(res);
       return;
     }
     if (!session.hasMoves()) {
@@ -599,12 +645,13 @@ function showGame(session, slot, { fresh = false } = {}) {
   }
 
   function checkDeadEnd() {
-    if (session.won || deadWarned || session.cert || session.remaining > 60) return;
+    if (!alive || session.won || deadWarned || session.cert || session.remaining > 60) return;
+    if (!session.hasMoves() || document.querySelector('.sp-modal-backdrop')) return;
     const r = solve(session.board, session.faces, session.present, { maxNodes: 2500 });
     if (r.result === 'unsolvable') {
       deadWarned = true;
       shuffleBtn.classList.add('pulse');
-      toast('So geht es nicht mehr ganz auf – Mischen oder Zurück hilft');
+      toast('So geht es nicht mehr ganz auf – Mischen oder Rückgängig hilft');
     }
   }
 
@@ -662,7 +709,7 @@ function showGame(session, slot, { fresh = false } = {}) {
         title: 'Mischen hilft hier nicht',
         text: 'Die übrigen Steine liegen so, dass sie sich nicht mehr abräumen lassen. Nimm ein paar Züge zurück oder beginne von vorne.',
         buttons: [
-          { label: 'Zurück', value: 'undo', primary: true, icon: 'undo' },
+          { label: 'Rückgängig', value: 'undo', primary: true, icon: 'undo' },
           { label: 'Von vorne', value: 'restart' },
           { label: 'Schliessen', value: null, ghost: true },
         ],
@@ -696,14 +743,17 @@ function showGame(session, slot, { fresh = false } = {}) {
   }
 
   async function showNoMoves() {
-    if (session.won) return;
+    if (session.won || !alive) return;
     shuffleBtn.classList.add('pulse');
+    deadWarned = true;
+    const t = document.querySelector('.sp-toast.show');
+    if (t) t.classList.remove('show');
     const v = await showModal({
       title: 'Keine Paare mehr frei',
       text: 'Gerade passt kein freies Paar zusammen. Mischen verteilt die übrigen Steine neu – garantiert lösbar und gratis.',
       buttons: [
         { label: 'Mischen', value: 'shuffle', primary: true, icon: 'shuffle' },
-        { label: 'Zurück', value: 'undo', icon: 'undo' },
+        { label: 'Rückgängig', value: 'undo', icon: 'undo' },
         { label: 'Später', value: null, ghost: true },
       ],
     });
@@ -727,6 +777,9 @@ function showGame(session, slot, { fresh = false } = {}) {
     if (v === 'restart') {
       if (await confirmDialog('Von vorne beginnen?', 'Alle Steine kommen zurück aufs Brett – gleiche Verteilung.', 'Von vorne', 'Abbrechen')) doRestart();
     } else if (v === 'redeal') {
+      tick();
+      persist();
+      if (!(await confirmReplace({ title: 'Neu verteilen?', what: 'Neue Verteilung beginnt dieses Layout mit anderen Steinen von vorne.', ok: 'Neu verteilen' }))) return;
       if (session.meta.kind === 'level') {
         const idx = layouts.findIndex((l) => l.id === session.meta.ref);
         if (idx >= 0) startLevel(idx, { skipConfirm: true });
@@ -743,17 +796,23 @@ function showGame(session, slot, { fresh = false } = {}) {
     else if (v === 'settings') showSettings(() => view.setOptions(settings));
   }
 
-  async function handleWin() {
+  function saveWin() {
     tick();
     clearInterval(timer);
     const res = recordWin(session);
     persist();
     if (slot === 'cur') store.remove(K.cur);
     updateSummary();
+    return res;
+  }
+
+  async function handleWin(res) {
+    if (!alive) return;
     view.winBurst();
     sfx.play('complete');
     celebrate(CONFETTI);
     await sleep(1100);
+    if (!alive) return; // Bildschirm inzwischen verlassen – Menü zeigt den Sieg schon
     showWinSheet(session, res);
   }
 }

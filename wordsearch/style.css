@@ -47,7 +47,8 @@
   background: var(--surface-3); border-radius: 18px;
 }
 .seg-btn {
-  position: relative; border: 0; border-radius: 14px; background: transparent; padding: 8px 4px 7px;
+  position: relative; border: 0; border-radius: 14px; background: transparent; padding: 8px 4px 7px; min-height: 44px;
+  justify-content: center;
   display: flex; flex-direction: column; align-items: center; gap: 1px; color: var(--text-2);
   transition: background .2s, color .2s, transform .15s var(--ease-out), box-shadow .2s;
 }
@@ -112,13 +113,23 @@
   background: color-mix(in srgb, var(--g) 16%, #fff);
 }
 .g-text { min-width: 0; display: flex; flex-direction: column; line-height: 1.15; }
+.g-text { flex: 1 1 auto; }
 .g-text b { font-size: 18px; font-weight: 850; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.g-text small { font-size: 13px; font-weight: 700; color: var(--text-2); white-space: nowrap; }
-.timer {
-  flex: 0 0 auto; display: flex; align-items: center; gap: 5px; height: 36px; padding: 0 12px; border-radius: 99px;
-  background: var(--surface); box-shadow: var(--shadow); font-weight: 800; font-variant-numeric: tabular-nums; font-size: 15.5px;
+/* Lange Themennamen (per JS erkannt): etwas kleiner, notfalls zweizeilig */
+.g-text b.fit1 { font-size: 15.5px; }
+.g-text b.fit2 {
+  font-size: 15px; line-height: 1.08; white-space: normal; overflow-wrap: anywhere;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
 }
-.timer svg { width: 17px; height: 17px; color: var(--text-2); }
+.g-text small {
+  display: flex; align-items: center; gap: 6px; margin-top: 2px;
+  font-size: 13px; font-weight: 700; color: var(--text-2); white-space: nowrap;
+}
+.timer {
+  flex: 0 0 auto; display: inline-flex; align-items: center; gap: 3px; height: 19px; padding: 0 7px 0 5px; border-radius: 99px;
+  background: var(--surface-3); color: var(--ink); font-weight: 800; font-variant-numeric: tabular-nums; font-size: 13px;
+}
+.timer svg { width: 13px; height: 13px; color: var(--text-2); }
 
 .play-main {
   flex: 1 1 auto; min-height: 0; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -126,13 +137,14 @@
 }
 .board-wrap { flex: 0 0 auto; position: relative; }
 
+/* Buchstaben-Vorschau beim Wischen: sitzt über dem Brett (Unterkante im Brettrand), deckt also nie Buchstaben ab */
 .sel-pill {
-  position: absolute; top: -6px; left: 50%; z-index: 6; transform: translate(-50%, -8px) scale(.9);
+  position: absolute; top: 5px; left: 50%; z-index: 6; transform: translate(-50%, -80%) scale(.9);
   padding: 6px 16px; border-radius: 99px; background: var(--ink); color: #fff; font-weight: 850; font-size: 17px;
   letter-spacing: .08em; opacity: 0; pointer-events: none; transition: opacity .15s, transform .2s var(--ease-spring);
   box-shadow: 0 6px 16px rgba(40, 28, 18, .25); white-space: nowrap;
 }
-.sel-pill.show { opacity: 1; transform: translate(-50%, 0) scale(1); }
+.sel-pill.show { opacity: 1; transform: translate(-50%, -100%) scale(1); }
 
 /* Brett */
 .board {
@@ -175,6 +187,12 @@
 @keyframes rej { to { opacity: 0; stroke-width: .3px; } }
 .board.nudge { animation: sp-shake .32s ease; }
 
+.hint-cap { stroke: #ffc93c; stroke-linecap: round; stroke-width: .8px; opacity: .3; fill: none; animation: fade-in .4s ease both; }
+.hint-cap-dash {
+  stroke: #e0960f; stroke-linecap: round; stroke-width: .07px; fill: none; opacity: .9;
+  stroke-dasharray: 3 2.4; animation: fade-in .5s ease both;
+}
+@keyframes fade-in { from { opacity: 0; } }
 .hint-ring {
   fill: rgba(255, 201, 60, .28); stroke: #f0a91c; stroke-width: .07px;
   transform-box: fill-box; transform-origin: center; animation: ring 1.1s ease-in-out 3 both;
@@ -197,11 +215,11 @@
 .board.won { box-shadow: 0 0 0 3px var(--accent-2), 0 10px 28px rgba(70, 45, 20, .12); transition: box-shadow .4s; }
 
 /* Wortliste */
-.words { flex: 0 1 auto; min-height: 0; display: flex; flex-direction: column; overflow: hidden; max-width: 100%; }
-.words-head { display: flex; align-items: center; gap: 8px; padding: 8px 8px 6px 6px; flex: 0 0 auto; }
+.words { position: relative; flex: 0 1 auto; min-height: 0; display: flex; flex-direction: column; overflow: hidden; max-width: 100%; }
+.words-head { display: flex; align-items: center; gap: 8px; padding: 6px 8px 4px 6px; flex: 0 0 auto; }
 .wh-toggle {
   flex: 1 1 auto; display: flex; align-items: center; gap: 8px; border: 0; background: transparent; padding: 6px 8px;
-  border-radius: 12px; min-height: 40px; text-align: left;
+  border-radius: 12px; min-height: 44px; text-align: left;
 }
 .wh-toggle b { font-size: 16px; font-weight: 850; }
 .wh-toggle .count { font-weight: 800; color: var(--accent-dark); background: var(--accent-soft); border-radius: 99px; padding: 2px 9px; font-size: 14px; font-variant-numeric: tabular-nums; }
@@ -211,7 +229,7 @@
 .words.collapsed .wh-chev { transform: rotate(-90deg); }
 .words.collapsed .words-list { display: none; }
 .hint-btn {
-  min-height: 40px; padding: 0 14px 0 11px; font-size: 15.5px; gap: 5px; background: #fff6dc; color: #9a6510;
+  min-height: 44px; padding: 0 14px 0 11px; font-size: 15.5px; gap: 5px; background: #fff6dc; color: #9a6510;
   box-shadow: inset 0 0 0 1.5px #f6dc9a;
 }
 .hint-btn svg { width: 20px; height: 20px; }
@@ -219,7 +237,7 @@
 @keyframes bulb { 40% { transform: scale(1.35) rotate(-10deg); color: #f0a91c; } }
 
 .words-list {
-  flex: 1 1 auto; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch;
+  position: relative; flex: 1 1 auto; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch;
   display: flex; flex-wrap: wrap; align-content: flex-start; gap: 7px; padding: 2px 12px 12px;
 }
 .wchip {
@@ -237,6 +255,27 @@
 .wchip.nudge { animation: chip-nudge .5s var(--ease-out); }
 .wchip.hinted { box-shadow: 0 0 0 2px #f0a91c; background: #fff6dc; }
 @keyframes chip-nudge { 30% { transform: scale(1.12); } 60% { transform: scale(.96); } }
+
+/* Viele Wörter (Schwer, kleine Bildschirme): kompaktere Chips, damit die ganze Liste sichtbar bleibt */
+.words.dense .words-list { gap: 5px; padding: 0 10px 10px; }
+.words.dense .wchip { padding: 3px 9px; font-size: 14px; }
+.words.dense .wchip::after { left: 7px; right: 7px; }
+
+/* Falls die Liste trotzdem scrollen muss: weicher Verlauf unten + «+N»-Knopf */
+.words-list.more {
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 30px), transparent);
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 30px), transparent);
+}
+.more-cue {
+  position: absolute; right: 10px; bottom: 8px; z-index: 2; display: none; align-items: center; gap: 1px;
+  height: 28px; padding: 0 6px 0 10px; border: 0; border-radius: 99px; background: var(--ink); color: #fff;
+  font-size: 13.5px; font-weight: 850; box-shadow: 0 4px 12px rgba(40, 28, 18, .22);
+  animation: sp-pop .35s var(--ease-out);
+}
+.more-cue::before { content: ''; position: absolute; inset: -9px -6px; }
+.more-cue svg { width: 18px; height: 18px; }
+.more-cue.show { display: flex; }
+.more-cue:active { transform: scale(.94); }
 
 /* Ergebnis im Wortlisten-Bereich */
 .words.done { flex: 0 0 auto; }

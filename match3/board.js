@@ -144,6 +144,29 @@ export class BoardView {
       bx.fillStyle = cols[(r + c) % 2];
       bx.fill();
     }
+    // Löcher im Inneren des Bretts: als gewollte Lücke zeigen (Mulde, gestrichelter Rand, Welt-Symbol)
+    const deco = (this.theme.deco && this.theme.deco[0]) || '✿';
+    for (const i of this._innerHoles()) {
+      const [r, c] = this.rc(i);
+      const x = ox + c * cs, y = oy + r * cs;
+      bx.save();
+      bx.beginPath();
+      bx.roundRect(x + 2, y + 2, cs - 4, cs - 4, cs * 0.22);
+      bx.fillStyle = 'rgba(70,40,25,.13)';
+      bx.fill();
+      bx.beginPath();
+      bx.roundRect(x + cs * 0.15, y + cs * 0.15, cs * 0.7, cs * 0.7, cs * 0.2);
+      bx.setLineDash([cs * 0.08, cs * 0.07]);
+      bx.lineWidth = Math.max(1.5, cs * 0.045);
+      bx.strokeStyle = 'rgba(255,255,255,.8)';
+      bx.stroke();
+      bx.globalAlpha = 0.6;
+      bx.font = `${Math.round(cs * 0.34)}px system-ui, "Apple Color Emoji", "Noto Color Emoji", sans-serif`;
+      bx.textAlign = 'center';
+      bx.textBaseline = 'middle';
+      bx.fillText(deco, x + cs / 2, y + cs / 2 + cs * 0.03);
+      bx.restore();
+    }
     // Ausgänge für Eicheln
     if (this.hasItems) {
       for (let c = 0; c < this.w; c++) {
@@ -161,6 +184,31 @@ export class BoardView {
       }
     }
     this.bg = bg;
+  }
+
+  /** Löcher, die ganz vom Brett umschlossen sind (nicht über andere Löcher mit dem Rand verbunden). */
+  _innerHoles() {
+    const { game, w } = this;
+    const h = game.size / w;
+    const outside = new Uint8Array(game.size);
+    const stack = [];
+    for (let i = 0; i < game.size; i++) {
+      const r = (i / w) | 0, c = i % w;
+      if (!game.mask[i] && (r === 0 || c === 0 || r === h - 1 || c === w - 1)) { outside[i] = 1; stack.push(i); }
+    }
+    while (stack.length) {
+      const i = stack.pop();
+      const r = (i / w) | 0, c = i % w;
+      for (const [dr, dc] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        const rr = r + dr, cc = c + dc;
+        if (rr < 0 || cc < 0 || rr >= h || cc >= w) continue;
+        const j = rr * w + cc;
+        if (!game.mask[j] && !outside[j]) { outside[j] = 1; stack.push(j); }
+      }
+    }
+    const out = [];
+    for (let i = 0; i < game.size; i++) if (!game.mask[i] && !outside[i]) out.push(i);
+    return out;
   }
 
   _newSprite(p, i, extra = {}) {

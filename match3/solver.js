@@ -120,27 +120,45 @@ export function measure(L, { runs = 4, cap = 70, key = 'm' } = {}) {
   return { need: sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * 0.75))], needs, fails, games };
 }
 
+const pct = (sorted, p) => sorted[Math.min(sorted.length - 1, Math.round((sorted.length - 1) * p))];
+
 /**
  * Punkte für 2 und 3 Sterne bei `moves` Zügen, abgeleitet aus den gewonnenen Bot-Partien.
- * Ein Mensch braucht meist etwas mehr Züge als der Bot – entsprechend weniger bleiben fürs Finale.
+ * - 2 Sterne: ein Mensch, der gut 1,6-mal so viele Züge braucht wie der Bot, soll sie meistens
+ *   schaffen (unteres Fünftel der so simulierten Partien, minus 10 %).
+ * - 3 Sterne: der Median des Bots selbst – möglich, aber mit etwas Geschick und Glück.
+ * Das Finale (übrige Züge werden zu Blitz-Juwelen) streut stark; darum genug Partien und
+ * tiefe Perzentile statt Median weniger Läufe.
  */
-export function starsFrom(games, moves) {
-  if (!games.length) return [0, moves * 150, moves * 230];
+export function starsFrom(games, moves, goalScore = 0) {
+  if (!games.length) return [0, Math.max(moves * 150, Math.round(goalScore * 1.15)), Math.max(moves * 230, Math.round(goalScore * 1.45))];
   const s2 = [], s3 = [];
   for (const g of games) {
-    for (const [f, add, mult, list] of [[1.9, 5, 1.3, s2], [1.35, 3, 1.12, s3]]) {
+    for (const [f, add, list] of [[1.6, 1, s2], [1, 0, s3]]) {
       const c = g.clone();
       c.movesLeft = Math.max(0, Math.round(moves - g.movesUsed * f - add));
-      c.score = Math.round(c.score * mult);
       c.finale();
       list.push(c.score);
     }
   }
   s2.sort((a, b) => a - b);
   s3.sort((a, b) => a - b);
-  const a = Math.max(500, Math.round(s2[(s2.length - 1) >> 1] / 100) * 100);
-  const b = Math.max(Math.round((a * 1.25) / 100) * 100, Math.round(s3[(s3.length - 1) >> 1] / 100) * 100);
+  // Das Finale streut stark (zufällige Blitz-Juwelen) – darum 10 % Polster auf die 2-Sterne-Marke.
+  const a = Math.max(500, Math.round(Math.max(pct(s2, 0.2) * 0.9, goalScore * 1.1) / 100) * 100);
+  const b = Math.max(Math.round((a * 1.25) / 100) * 100, Math.round(pct(s3, 0.5) / 100) * 100);
   return [0, a, b];
+}
+
+/** Sterne-Punkte für ein fertiges Level aus `runs` eigenen Bot-Partien (plus schon gemessenen `games`). */
+export function calibrateStars(L, moves = L.moves, { runs = 12, games: known = [] } = {}) {
+  const games = known.slice();
+  for (let k = 0; k < runs; k++) {
+    const g = new Game({ ...L, moves: 60, seed: hashString(`cal-st-${L.n}-${k}`) });
+    g.record = false;
+    if (autoplay(g, { seed: 41 + k, maxMoves: 60 })) games.push(g);
+  }
+  const sg = L.goals.find((x) => x.type === 'score');
+  return starsFrom(games, moves, sg ? sg.n : 0);
 }
 
 /** Medianer Punktestand des Bots nach `k` Zügen (für Punkte-Ziele). */

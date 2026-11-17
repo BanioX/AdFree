@@ -98,6 +98,7 @@ function miniCard(code, { x = 0, y = 0, rot = 0, up = true } = {}) {
 // ================================================================ Router
 
 let game = null;
+let routeTok = 0; // wird bei jedem Bildschirmwechsel erhöht – veraltete openGame-Fortsetzungen brechen ab
 
 function route() {
   const hash = decodeURIComponent(location.hash.replace(/^#/, ''));
@@ -118,6 +119,7 @@ function go(hash) {
 }
 
 function teardown() {
+  routeTok++;
   if (game) { game.unmount(); game = null; }
   document.querySelectorAll('.sp-modal-backdrop').forEach((n) => n.remove());
   app.className = 'app';
@@ -250,6 +252,7 @@ function setThemeColor(c) {
 
 async function openGame({ mode, daily }) {
   teardown();
+  const tok = routeTok;
   applyTheme();
   let sess;
   if (daily) {
@@ -257,6 +260,7 @@ async function openGame({ mode, daily }) {
     sess = loadSession('daily-' + daily);
     if (!sess || sess.day !== todayKey()) {
       const deal = await dailyDeal(daily);
+      if (tok !== routeTok) return;
       sess = makeSession({ mode: v.mode, daily, day: todayKey(), deal });
       sess.fresh = true;
     }
@@ -575,10 +579,21 @@ class Game {
     const ring = h('div.coach-ring');
     ring.style.cssText = `left:${r.x - 5}px;top:${r.y - 5}px;width:${r.w + 10}px;height:${r.h + 10}px`;
     const bubble = h('div.coach-bubble', null, tipText);
-    const below = r.y + r.h + 46 < g.H;
-    bubble.classList.toggle('above', !below);
-    bubble.style.top = (below ? r.y + r.h + 12 : r.y - 44) + 'px';
-    bubble.style.left = Math.max(8, Math.min(g.W - 190, r.x + r.w / 2 - 95)) + 'px';
+    const BW = 190, M = 8;
+    const topRow = r.y + r.h <= g.tabY;
+    const roomL = r.x - 6 - M - BW >= M, roomR = r.x + r.w + 6 + M + BW <= g.W - M;
+    if (topRow && (roomL || roomR)) {
+      // Obere Reihe: Blase seitlich, damit sie die Spalten nicht verdeckt
+      const leftSide = roomL && (!roomR || r.x + r.w / 2 > g.W / 2);
+      bubble.classList.add(leftSide ? 'side-l' : 'side-r');
+      bubble.style.top = Math.max(4, r.y + r.h / 2 - 18) + 'px';
+      bubble.style.left = (leftSide ? r.x - 6 - M - BW : r.x + r.w + 6 + M) + 'px';
+    } else {
+      const below = r.y + r.h + 46 < g.H;
+      bubble.classList.toggle('above', !below);
+      bubble.style.top = (below ? r.y + r.h + 12 : r.y - 44) + 'px';
+      bubble.style.left = Math.max(M, Math.min(g.W - BW - M, r.x + r.w / 2 - BW / 2)) + 'px';
+    }
     this.coachEl = h('div.coach', null, ring, bubble);
     this.boardEl.append(this.coachEl);
   }
@@ -608,9 +623,13 @@ class Game {
       if (r.solved && r.moves && r.moves.length) {
         const a = r.moves[0];
         hnt = { kind: 'move', from: a.from, index: a.index, to: a.to };
+      } else if (r.solved === false) {
+        // Der Löser hat alles durchsucht: von hier aus geht es nicht mehr auf
+        this.showStuck(true, true);
+        return;
       }
     }
-    if (!hnt) hnt = findHint(st);
+    if (!hnt) hnt = findHint(st, this.s.hist);
     if (!hnt) { this.showStuck(true); return; }
     sfx.play('sparkle');
     if (hnt.kind === 'stock') {
@@ -748,15 +767,17 @@ class Game {
     else go('');
   }
 
-  async showStuck(fromHint = false) {
+  async showStuck(fromHint = false, unsolvable = false) {
     if (this.dead || this.s.won) return;
     const buttons = [];
     if (this.s.hist.length) buttons.push({ label: 'Rückgängig', value: 'undo', primary: true, icon: 'undo' });
     buttons.push({ label: this.s.daily ? 'Neu beginnen' : 'Neue Partie', value: 'new', primary: !this.s.hist.length, icon: 'refresh' });
     buttons.push({ label: 'Weiter ansehen', value: null, ghost: true });
     const v = await showModal({
-      title: 'Keine Züge mehr',
-      text: fromHint
+      title: unsolvable ? 'Sackgasse' : 'Keine Züge mehr',
+      text: unsolvable
+        ? 'Von hier aus lässt sich die Partie nicht mehr lösen. Mit «Rückgängig» kannst du einen anderen Weg probieren.'
+        : fromHint
         ? 'Ich finde keinen sinnvollen Zug mehr. Mit «Rückgängig» kannst du einen anderen Weg probieren.'
         : 'Hier geht es nicht mehr weiter. Mit «Rückgängig» kannst du einen anderen Weg ausprobieren – so oft du willst.',
       buttons,
@@ -872,10 +893,13 @@ function showSettings(g = null) {
   if (!g) {
     // Klondike-Ziehweise direkt umstellbar
     const seg2 = h('div.seg');
+    const kv = store.get('solitaire.variant.klondike', 'klondike1');
     for (const m of ['klondike1', 'klondike3']) {
-      const b = h('button' + (selectedMode() === m ? '.active' : ''), { type: 'button' }, MODES[m].sub);
+      const b = h('button' + (kv === m ? '.active' : ''), { type: 'button' }, MODES[m].sub);
       b.addEventListener('click', () => {
-        store.set('solitaire.mode', m); store.set('solitaire.variant.klondike', m); sfx.play('click');
+        store.set('solitaire.variant.klondike', m);
+        if (familyOf(selectedMode()) === 'klondike') store.set('solitaire.mode', m);
+        sfx.play('click');
         seg2.querySelectorAll('button').forEach((x) => x.classList.toggle('active', x === b));
       });
       seg2.append(b);

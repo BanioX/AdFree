@@ -28,7 +28,8 @@ const COL_CLUES = [0, 1, 2, 3, 4].map((c) => runs(EX.map((r) => r[c]).join('')))
  * Gibt { el, cell(r, c), set(r, c, v), rowClue(r), colClue(c), refresh() } zurück.
  */
 function miniBoard(state, cs = 30) {
-  const el = h('div.nt-board', { style: { '--cs': cs + 'px' } });
+  const el = h('div.nt-board');
+  el.style.setProperty('--cs', cs + 'px');
   const cells = [];
   const rows = [], cols = [];
   el.append(h('div.nt-corner'));
@@ -183,7 +184,7 @@ export function tutorialSteps() {
     },
     {
       title: 'Hilfe ist gratis',
-      text: 'Tipp zeigt ein sicheres Feld, Prüfen findet Fehler, die Lupe zoomt grosse Bilder.',
+      text: 'Tipp zeigt ein sicheres Feld, Prüfen findet Fehler, die Lupe zoomt.',
       demo(stage, api) {
         const START = ['.....', '#####', '##.##', '.....', '.....'];
         const b = miniBoard(START, 24);

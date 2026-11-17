@@ -236,6 +236,25 @@ export function dailyWord(answers, dayKey, salt = 'wortrate') {
   return sorted[order[pos]];
 }
 
+/**
+ * Tageswörter rund um einen Tag (back Tage zurück bis ahead Tage voraus).
+ * Endlos schliesst sie aus, damit ein Endlos-Wort nicht bald (oder kürzlich) das Tageswort ist.
+ */
+export function dailyWordsNear(answers, dayKey, back = 30, ahead = 90, salt = 'wortrate') {
+  const sorted = [...new Set(answers)].sort();
+  const n = sorted.length;
+  if (!n) return [];
+  const d0 = dayNumber(dayKey);
+  const orders = new Map();
+  const out = new Set();
+  for (let d = d0 - back; d <= d0 + ahead; d++) {
+    const round = Math.floor(d / n);
+    if (!orders.has(round)) orders.set(round, seededOrder(n, `${salt}-runde-${round}`));
+    out.add(sorted[orders.get(round)[((d % n) + n) % n]]);
+  }
+  return [...out];
+}
+
 /** Laufende Nummer des Tagesworts (für «Wortrate Nr. 321»). */
 export function dailyNumber(dayKey) {
   return dayNumber(dayKey) + 1;

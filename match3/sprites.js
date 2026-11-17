@@ -181,28 +181,48 @@ function drawLine(ctx, c, s, dir) {
 
 /** Bombe: Juwel in einer schimmernden Seifenblase mit Funken. */
 function drawBomb(ctx, c, s) {
-  const [light, mid] = GEM_COLORS[c];
+  // Explosions-Stern: gezackter, dunkel umrandeter Strahlenkranz hinter dem Juwel + Funken-Plakette.
+  const [light, mid, deep, dark] = GEM_COLORS[c];
   ctx.save();
   ctx.translate(s / 2, s / 2);
-  const R = s * 0.47;
-  const g = ctx.createRadialGradient(0, 0, R * 0.55, 0, 0, R);
-  g.addColorStop(0, 'rgba(255,255,255,0)');
-  g.addColorStop(0.75, hexA(light, 0.55));
-  g.addColorStop(1, hexA(mid, 0.9));
-  ctx.beginPath(); ctx.arc(0, 0, R, 0, Math.PI * 2);
-  ctx.fillStyle = g; ctx.fill();
-  ctx.lineWidth = Math.max(1, s * 0.03);
-  ctx.strokeStyle = 'rgba(255,255,255,.95)';
-  ctx.stroke();
+  const R = s * 0.49, r = s * 0.37, N = 10;
+  const burst = () => {
+    ctx.beginPath();
+    for (let k = 0; k < N * 2; k++) {
+      const a = (k / (N * 2)) * Math.PI * 2 - Math.PI / 2;
+      const q = k % 2 ? r : R;
+      ctx.lineTo(Math.cos(a) * q, Math.sin(a) * q);
+    }
+    ctx.closePath();
+  };
+  ctx.save();
+  ctx.translate(0, s * 0.025);
+  burst();
+  ctx.fillStyle = 'rgba(60,30,20,.25)'; ctx.fill();
   ctx.restore();
-  drawGem(ctx, c, s, 0.78);
+  burst();
+  const g = ctx.createRadialGradient(0, 0, r * 0.4, 0, 0, R);
+  g.addColorStop(0, light);
+  g.addColorStop(0.6, mid);
+  g.addColorStop(1, deep);
+  ctx.fillStyle = g; ctx.fill();
+  ctx.lineJoin = 'round';
+  ctx.lineWidth = Math.max(1.5, s * 0.045);
+  ctx.strokeStyle = hexA(dark, 0.95);
+  ctx.stroke();
+  // dunkler Ring als Bühne für das Juwel
+  ctx.beginPath(); ctx.arc(0, 0, r * 0.98, 0, Math.PI * 2);
+  ctx.fillStyle = hexA(dark, 0.8); ctx.fill();
+  ctx.restore();
+  drawGem(ctx, c, s, 0.7);
   ctx.save();
   ctx.translate(s / 2, s / 2);
-  ctx.beginPath();
-  ctx.arc(0, 0, R * 0.93, Math.PI * 1.1, Math.PI * 1.45);
-  ctx.lineWidth = s * 0.04; ctx.lineCap = 'round'; ctx.strokeStyle = 'rgba(255,255,255,.9)'; ctx.stroke();
-  sparkle(ctx, R * 0.62, -R * 0.62, s * 0.1);
-  sparkle(ctx, -R * 0.7, R * 0.55, s * 0.06);
+  // Funken-Plakette oben rechts
+  const bx = s * 0.31, by = -s * 0.31, br = s * 0.12;
+  ctx.beginPath(); ctx.arc(bx, by, br, 0, Math.PI * 2);
+  ctx.fillStyle = '#3a2a2a'; ctx.fill();
+  ctx.lineWidth = Math.max(1, s * 0.03); ctx.strokeStyle = '#fff'; ctx.stroke();
+  sparkle(ctx, bx, by, br * 0.85, '#ffd43b');
   ctx.restore();
 }
 

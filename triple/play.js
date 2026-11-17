@@ -13,6 +13,7 @@ import { formatTime } from './progress.js';
 
 const ASPECT = 1.13;   // Steinhöhe / Steinbreite
 const LIFT = 0.05;     // optischer Versatz nach oben pro Ebene (Anteil der Steinhöhe)
+const SHIFT = 0.11;    // optischer Seitenversatz für Turm-Ebenen (Anteil der Steinbreite, < 2× Fuge)
 const FLY_MS = 290;
 const POP_MS = 300;
 
@@ -145,6 +146,29 @@ class Tweens {
  *   onWinChoice(value), onLoss(), restart(), menu()
  * }
  */
+/**
+ * Türme: Liegt eine Ebene (grösstenteils) exakt auf der darunter, wird sie abwechselnd leicht seitlich
+ * versetzt gezeichnet. Nur Optik – die Regeln (wer wen bedeckt) bleiben unverändert. So sind Stapel als
+ * Stapel lesbar (der dunklere Stein darunter blitzt seitlich hervor). → Versatz-Faktor 0/1 pro Ebene
+ */
+function layerShifts(tiles, maxZ) {
+  const at = [];
+  for (const t of tiles) (at[t.z] || (at[t.z] = new Set())).add(t.x + ',' + t.y);
+  const shift = [0];
+  for (let z = 1; z <= maxZ; z++) {
+    const cur = at[z], below = at[z - 1];
+    let same = 0;
+    if (cur && below) for (const k of cur) if (below.has(k)) same++;
+    shift[z] = cur && same * 2 >= cur.size ? 1 - shift[z - 1] : shift[z - 1];
+  }
+  return shift;
+}
+
+/** Hat der Nutzer schon getippt? (Klänge vorher nicht abspielen – Autoplay-Regeln der Browser) */
+function gestured() {
+  try { return !navigator.userActivation || navigator.userActivation.hasBeenActive; } catch { return true; }
+}
+
 export function mountPlay(root, ctx) {
   const level = ctx.level;
   const theme = themeById(level.theme) || themes[0];
@@ -175,10 +199,11 @@ export function mountPlay(root, ctx) {
   helpBtn.innerHTML = '<span class="tr-q">?</span>';
   onPress(helpBtn, () => { sfx.play('click'); showHelp(); });
 
+  const titleB = h('b', null, ctx.title);
   const top = h('header.topbar.tr-top', null,
     backBtn,
     h('div.tr-title', null,
-      h('b', null, ctx.title),
+      titleB,
       h('small', null, ctx.subtitle)),
     helpBtn,
     restartBtn,
@@ -213,11 +238,21 @@ export function mountPlay(root, ctx) {
 
   root.append(top, hud, stage, helpers);
 
+  /** Langer Titel: Schrift stufenweise verkleinern, zuletzt mit «…» kürzen (CSS). */
+  function fitTitle() {
+    titleB.classList.remove('fit-1', 'fit-2');
+    if (titleB.scrollWidth <= titleB.clientWidth + 1) return;
+    titleB.classList.add('fit-1');
+    if (titleB.scrollWidth > titleB.clientWidth + 1) titleB.classList.replace('fit-1', 'fit-2');
+  }
+
   // ---------- Sprites ----------
   const sp = new Array(game.n).fill(null);
   let L = null; // Layout
   let vTray = []; // { id, pending }
   const b = bounds(level.tiles);
+  const lshift = layerShifts(level.tiles, b.maxZ);
+  const shiftW = lshift.some(Boolean) ? SHIFT : 0;
   const symbol = (i) => level.symbols[game.types[i]] || '❓';
 
   function makeSprite(i) {
@@ -240,20 +275,31 @@ export function mountPlay(root, ctx) {
     const trayX = (W - trayW) / 2;
     const shelfH = Math.round(trayTileH + 8);
     const shelfY = trayY - shelfH - 6;
-    const boardTop = 4, boardBottom = shelfY - 4;
+    const boardTop = 4;
     const boardW = W - 2 * padX;
+    const unitByW = boardW / (b.w + shiftW);
+    const hUnits = b.h * ASPECT + b.maxZ * LIFT * ASPECT;
+    const fitU = (bottom) => Math.max(16, Math.min(unitByW, Math.max(60, bottom - boardTop) / hUnits, 72));
+    // Solange die Auslage leer ist, darf die Spielfläche deren Platz mitbenutzen – aber nur, wenn die
+    // Steine dadurch spürbar grösser werden (sonst bliebe das Brett unnötig in Bewegung).
+    const uShelf = fitU(shelfY - 4), uFull = fitU(trayY - 10);
+    const reclaim = uFull > uShelf + 0.5;
+    const shelfOn = !reclaim || game.shelf.length > 0;
+    const boardBottom = shelfOn ? shelfY - 4 : trayY - 10;
     const boardH = Math.max(60, boardBottom - boardTop);
-    const unitByW = boardW / b.w;
-    const unitByH = boardH / (b.h * ASPECT + b.maxZ * LIFT * ASPECT);
-    const u = Math.max(16, Math.min(unitByW, unitByH, 72));
+    const u = shelfOn ? uShelf : uFull;
     const gap = Math.max(2, u * 0.065);
     const tileW = u - gap;
     const tileH = u * ASPECT - gap;
-    const pxW = b.w * u;
+    const pxW = (b.w + shiftW) * u;
     const pxH = b.h * u * ASPECT + b.maxZ * LIFT * u * ASPECT;
     const ox = (W - pxW) / 2;
-    const oy = boardTop + (boardH - pxH) / 2 + b.maxZ * LIFT * u * ASPECT;
-    L = { W, H, u, tileW, tileH, ox, oy, trayX, trayY, trayW, trayH, slotW, trayTileW, shelfY, shelfH, trayScale: trayTileW / tileW };
+    const bTop = boardTop + (boardH - pxH) / 2;
+    const oy = bTop + b.maxZ * LIFT * u * ASPECT;
+    L = {
+      W, H, u, tileW, tileH, ox, oy, trayX, trayY, trayW, trayH, slotW, trayTileW, shelfY, shelfH,
+      trayScale: trayTileW / tileW, reclaim, shelfOn, boardBottom, bTop, bBot: bTop + pxH,
+    };
     const edge = Math.max(3, Math.round(tileW * 0.075));
     stage.style.setProperty('--tw', tileW.toFixed(2) + 'px');
     stage.style.setProperty('--th', tileH.toFixed(2) + 'px');
@@ -274,7 +320,7 @@ export function mountPlay(root, ctx) {
   function boardPos(i) {
     const t = level.tiles[i];
     return {
-      x: L.ox + (t.x - b.minX) * L.u + L.u / 2,
+      x: L.ox + (t.x - b.minX + lshift[t.z] * SHIFT) * L.u + L.u / 2,
       y: L.oy + (t.y - b.minY) * L.u * ASPECT + (L.u * ASPECT) / 2 - t.z * LIFT * L.u * ASPECT,
     };
   }

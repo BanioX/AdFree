@@ -227,6 +227,32 @@ export class BoardView {
     this.hintTimer = setTimeout(() => this.clearHint(), 2600);
   }
 
+  /**
+   * Coach-Mark für den allerersten Zug: ein Finger wischt in Richtung dir über das Brett,
+   * dazu ein kurzer Text. Verschwindet mit clearCoach() (nach dem ersten Zug).
+   */
+  coach(dir, text) {
+    this.clearCoach();
+    const v = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] }[dir] || [-1, 0];
+    const el = h('div.coach', { 'aria-hidden': 'true' });
+    el.style.setProperty('--dx', v[0]);
+    el.style.setProperty('--dy', v[1]);
+    el.style.setProperty('--rot', { up: -90, right: 0, down: 90, left: 180 }[dir] + 'deg');
+    el.innerHTML = '<div class="coach-trail"></div>'
+      + '<div class="coach-hand"><svg viewBox="0 0 48 48"><path d="M19 6.5c2 0 3.5 1.5 3.5 3.5v13.2l1.3-.3c.3-1.6 1.7-2.7 3.4-2.7 1.4 0 2.6.8 3.1 2 .6-.6 1.5-1 2.5-1 1.6 0 2.9 1 3.3 2.5.5-.3 1.1-.4 1.7-.4 1.9 0 3.4 1.5 3.4 3.4V34c0 6-4.6 10.5-10.6 10.5h-3.6c-3.6 0-6.3-1.3-8.4-4.1l-7.3-9.6c-1.1-1.5-.8-3.6.7-4.7 1.4-1 3.3-.8 4.4.4l2.2 2.4V10c0-2 1.5-3.5 3.4-3.5z"/></svg></div>';
+    if (text) el.append(h('div.coach-text' + (v[1] > 0 ? '.top' : ''), null, text));
+    this.fx.append(el);
+    this.coachEl = el;
+  }
+
+  clearCoach() {
+    if (!this.coachEl) return;
+    const el = this.coachEl;
+    this.coachEl = null;
+    el.classList.add('out');
+    setTimeout(() => el.remove(), 300);
+  }
+
   clearHint() {
     clearTimeout(this.hintTimer);
     if (this.hintEl) {
@@ -240,6 +266,7 @@ export class BoardView {
   destroy() {
     this.settle();
     this.clearHint();
+    this.clearCoach();
     this.el.remove();
   }
 }
@@ -283,7 +310,7 @@ export function bindInput(area, onDir, extraKeys = {}) {
     w: 'up', s: 'down', a: 'left', d: 'right', W: 'up', S: 'down', A: 'left', D: 'right',
   };
   const key = (e) => {
-    if (e.metaKey || e.altKey || document.querySelector('.sp-modal-backdrop')) return;
+    if (e.metaKey || e.altKey || document.querySelector('.sp-modal-backdrop, .tut-backdrop')) return;
     if (extraKeys[e.key] && !e.ctrlKey) { e.preventDefault(); extraKeys[e.key](); return; }
     if ((e.ctrlKey && e.key === 'z') && extraKeys.undo) { e.preventDefault(); extraKeys.undo(); return; }
     const dir = keys[e.key];

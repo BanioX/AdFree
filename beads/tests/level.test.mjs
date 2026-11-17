@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   parsePattern, makeState, levelConfig, generateTray, solve, Game, applyTap, cloneState,
-  zoneCells, legalColumns, MAX_SLOTS, isValidPattern, remainingTraySequence,
+  zoneCells, legalColumns, MAX_SLOTS, isValidPattern, remainingTraySequence, greedyClears,
 } from '../level.js';
 import { fixtures } from '../engine-fixtures.js';
 
@@ -147,6 +147,22 @@ test('alle Ersatz-Muster sind ohne Helfer lösbar', () => checkSolvable(fixtures
 
 test('alle Muster der Bibliothek sind ohne Helfer lösbar', { skip: !artPatterns.length && 'keine Bibliothek' }, () => {
   checkSolvable(artPatterns, 'art');
+});
+
+test('Schwierigkeitskurve: auch ein gieriger Spielstil kommt ohne Helfer durch', { skip: !artPatterns.length && 'keine Bibliothek' }, () => {
+  artPatterns.forEach((p, i) => {
+    const n = i + 1;
+    const L = parsePattern(p);
+    const cfg = { ...levelConfig(L, n), seed: `beads:${p.id}:${n}` };
+    const gen = generateTray(L, cfg);
+    const fresh = (S = cfg.S) => makeState(L, gen.cols, S, cfg.R, gen.pri);
+    assert.ok(greedyClears(L, fresh()), `Level ${n} ${p.id}: gierig lösbar`);
+    if (n > 24) return;
+    // frühe Level: auch mit gelegentlichen Fehltipps fast immer ohne Helfer (QA: Spitzen bei Level 8/16)
+    let stuck = 0;
+    for (let r = 0; r < 12; r++) if (!greedyClears(L, fresh(), { noise: 0.05, seed: `t${r}` })) stuck++;
+    assert.ok(stuck <= (n <= 18 ? 1 : 3), `Level ${n} ${p.id}: ${stuck}/12 Mal stecken geblieben`);
+  });
 });
 
 test('Bibliothek auch in späteren Runden (höhere Schwierigkeit) lösbar', { skip: !artPatterns.length && 'keine Bibliothek' }, () => {

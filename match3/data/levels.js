@@ -17,7 +17,9 @@
 //   { type: 'stone' }                   alle Steine zerbrechen
 //   { type: 'item', n: 3 }              n Eicheln nach unten bringen
 // itemsMax: wie viele Eicheln gleichzeitig auf dem Brett sein dürfen (Standard 2).
-// stars: optional [0, Punkte für 2 Sterne, Punkte für 3 Sterne] – sonst automatisch.
+// stars: optional [0, Punkte für 2 Sterne, Punkte für 3 Sterne] – sonst misst der Test-Spieler sie
+//        automatisch. Die Werte hier sind gemessen und für die ersten Level bewusst grosszügig;
+//        der Test «Sterne» prüft, dass der Test-Spieler meistens mindestens 2 Sterne holt.
 // tip:   optional, kurzer Hinweis beim Levelstart.
 
 export const levels = [
@@ -31,7 +33,7 @@ export const levels = [
       '.......',
       '.......',
     ],
-    colors: 4, moves: 15,
+    colors: 4, moves: 15, stars: [0, 11000, 17000],
     goals: [{ type: 'color', color: 0, n: 35 }],
     tip: 'Wische ein Juwel auf ein Nachbarfeld. Drei gleiche in einer Reihe verschwinden!',
   },
@@ -46,7 +48,7 @@ export const levels = [
       '........',
       '........',
     ],
-    colors: 4, moves: 12,
+    colors: 4, moves: 12, stars: [0, 16000, 24000],
     goals: [{ type: 'score', n: 14000 }],
     tip: 'Fallen neue Juwelen in eine Reihe, gibt es eine Kettenreaktion – und mehr Punkte.',
   },
@@ -61,7 +63,7 @@ export const levels = [
       '........',
       '........',
     ],
-    colors: 5, moves: 16,
+    colors: 5, moves: 16, stars: [0, 7500, 11500],
     goals: [{ type: 'color', color: 4, n: 24 }, { type: 'color', color: 3, n: 24 }],
     tip: 'Vier in einer Reihe ergeben ein Blitz-Juwel. Es räumt die ganze Reihe ab.',
   },
@@ -77,7 +79,7 @@ export const levels = [
       '.........',
       '-.......-',
     ],
-    colors: 5, moves: 15,
+    colors: 5, moves: 15, stars: [0, 13000, 17000],
     goals: [{ type: 'score', n: 8000 }],
     tip: 'Eine L- oder T-Form ergibt eine Bombe. Sie sprengt alles rundherum.',
   },
@@ -92,7 +94,7 @@ export const levels = [
       '........',
       '........',
     ],
-    colors: 5, moves: 16,
+    colors: 5, moves: 16, stars: [0, 6500, 9500],
     goals: [{ type: 'ice' }],
   },
   { // 6
@@ -106,7 +108,7 @@ export const levels = [
       '........',
       '........',
     ],
-    colors: 5, moves: 24,
+    colors: 5, moves: 24, stars: [0, 14000, 19500],
     goals: [{ type: 'color', color: 2, n: 35 }, { type: 'color', color: 0, n: 35 }],
     tip: 'Fünf in einer Reihe ergeben ein Regenbogen-Juwel. Tausche es mit einem Juwel – alle dieser Farbe verschwinden!',
   },
@@ -122,7 +124,7 @@ export const levels = [
       '-i.....i-',
       '--iiiii--',
     ],
-    colors: 5, moves: 26,
+    colors: 5, moves: 26, stars: [0, 13000, 22000],
     goals: [{ type: 'ice' }],
   },
   { // 8
@@ -136,7 +138,7 @@ export const levels = [
       '.iiiiii.',
       '........',
     ],
-    colors: 5, moves: 24,
+    colors: 5, moves: 24, stars: [0, 14500, 18500],
     goals: [{ type: 'ice' }],
     tip: 'Dickes Eis braucht zwei Treffer. Sonderjuwelen helfen sehr!',
   },
@@ -152,7 +154,7 @@ export const levels = [
       '.........',
       '.........',
     ],
-    colors: 5, moves: 22,
+    colors: 5, moves: 22, stars: [0, 8500, 14000],
     goals: [{ type: 'color', color: 2, n: 22 }, { type: 'color', color: 1, n: 22 }],
   },
   { // 10
@@ -167,7 +169,7 @@ export const levels = [
       '--..i..--',
       '--..i..--',
     ],
-    colors: 5, moves: 26,
+    colors: 5, moves: 26, stars: [0, 11000, 16500],
     goals: [{ type: 'ice' }],
   },
   { // 11
@@ -181,7 +183,7 @@ export const levels = [
       '........',
       '........',
     ],
-    colors: 4, moves: 16,
+    colors: 4, moves: 16, stars: [0, 18000, 35000],
     goals: [{ type: 'item', n: 3 }],
   },
   { // 12
@@ -195,7 +197,7 @@ export const levels = [
       '........',
       '........',
     ],
-    colors: 5, moves: 34,
+    colors: 5, moves: 34, stars: [0, 9000, 14000],
     goals: [{ type: 'item', n: 3 }],
     tip: 'Eicheln fallen auch durch Lücken im Brett.',
   },
@@ -210,7 +212,7 @@ export const levels = [
       '........',
       '........',
     ],
-    colors: 5, moves: 24,
+    colors: 5, moves: 24, stars: [0, 8000, 13000],
     goals: [{ type: 'ice' }, { type: 'color', color: 3, n: 20 }],
   },
   { // 14
@@ -225,7 +227,7 @@ export const levels = [
       '--.....--',
       '---...---',
     ],
-    colors: 5, moves: 18,
+    colors: 5, moves: 18, stars: [0, 8000, 12000],
     goals: [{ type: 'ice' }],
   },
   { // 15
@@ -240,7 +242,7 @@ export const levels = [
       'iiiiiiiii',
       '.........',
     ],
-    colors: 5, moves: 36,
+    colors: 5, moves: 36, stars: [0, 17000, 22000],
     goals: [{ type: 'item', n: 3 }, { type: 'ice' }],
     itemsMax: 3,
   },
@@ -255,7 +257,7 @@ export const levels = [
       '........',
       '........',
     ],
-    colors: 5, moves: 12,
+    colors: 5, moves: 12, stars: [0, 5000, 7500],
     goals: [{ type: 'stone' }],
   },
   { // 17
@@ -270,7 +272,7 @@ export const levels = [
       '.S.....S.',
       '.........',
     ],
-    colors: 5, moves: 20,
+    colors: 5, moves: 20, stars: [0, 12500, 18500],
     goals: [{ type: 'stone' }],
     tip: 'Dunkle Steine sind hart und brauchen zwei Treffer.',
   },
@@ -286,7 +288,7 @@ export const levels = [
       '.iiiiiii.',
       '.........',
     ],
-    colors: 5, moves: 24,
+    colors: 5, moves: 24, stars: [0, 14500, 20500],
     goals: [{ type: 'stone' }, { type: 'ice' }],
   },
   { // 19
@@ -301,7 +303,7 @@ export const levels = [
       '.........',
       '.........',
     ],
-    colors: 5, moves: 26,
+    colors: 5, moves: 26, stars: [0, 14000, 24500],
     goals: [{ type: 'item', n: 3 }, { type: 'stone' }],
   },
   { // 20
@@ -316,7 +318,7 @@ export const levels = [
       '---...---',
       '----.----',
     ],
-    colors: 5, moves: 26,
+    colors: 5, moves: 26, stars: [0, 11500, 15000],
     goals: [{ type: 'ice' }, { type: 'color', color: 0, n: 30 }],
     tip: 'Ein Herz für dich! Schmilz das ganze Eis.',
   },

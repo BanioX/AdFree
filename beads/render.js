@@ -824,6 +824,18 @@ export class BoardView {
       if (sl && sl.n > 0) {
         used++;
         const bump = fx < 380 ? 1 + 0.16 * Math.sin((fx / 380) * Math.PI) * (1 - fx / 380) : 1;
+        if (this.colorInfo[sl.k].light) {
+          // helle Steine (weiss, creme) auf dem hellen Platz sichtbar machen: getönter Grund + Rand
+          ctx.beginPath();
+          ctx.arc(x, y, g.slotD / 2 - 0.5, 0, TAU);
+          ctx.fillStyle = '#c3cfe2';
+          ctx.fill();
+          ctx.beginPath();
+          ctx.arc(x, y, g.slotD * 0.42 * bump + 1.2, 0, TAU);
+          ctx.lineWidth = 1.6;
+          ctx.strokeStyle = 'rgba(60, 80, 125, 0.55)';
+          ctx.stroke();
+        }
         drawGem(ctx, L.colors[sl.k], x, y, g.slotD * 0.84 * bump, dpr);
         if (sl.n > 1) {
           const label = String(sl.n);

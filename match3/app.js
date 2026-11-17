@@ -11,7 +11,7 @@ import { Game, zenLevel } from './engine.js';
 import { getLevel, setLevelStore, worldIndex, worldInfo, PER_WORLD, MIN_LEVELS, features } from './levels.js';
 import { BoardView } from './board.js';
 import { spriteURL, iceURL, GEM_COLORS } from './sprites.js';
-import { gemNames, winTitles, loseTitles, firstTips, zenMilestones } from './data/texts.js';
+import { gemNames, winTitles, loseTitles, loseTitlesMid, loseTitlesFar, firstTips, zenMilestones } from './data/texts.js';
 import { tutorialSteps } from './howto.js';
 
 const ID = 'match3';
@@ -47,7 +47,7 @@ function threeStars(p = getProg()) { return Object.values(p.stars).filter((s) =>
 function levelsShown(p = getProg()) { return Math.ceil(Math.max(MIN_LEVELS, p.max + 5) / PER_WORLD) * PER_WORLD; }
 function currentLevel() {
   const run = store.get(K.run, null);
-  if (run && run.n) return run.n;
+  if (run && run.n && !run.won) return run.n;
   return getProg().max;
 }
 
@@ -68,6 +68,9 @@ function route() {
   if (teardown) { try { teardown(); } catch { /* egal */ } teardown = null; }
   document.querySelectorAll('.sp-modal-backdrop').forEach((m) => m.remove());
   const [name, arg] = location.hash.replace(/^#/, '').split('/');
+  // Ein gewonnenes Level bleibt nur gespeichert, solange sein Gewinn-Blatt offen ist.
+  const run = store.get(K.run, null);
+  if (run && run.won && !(name === 'level' && Math.floor(+arg) === run.n)) store.remove(K.run);
   if (name === 'level' && +arg >= 1) {
     const n = Math.floor(+arg);
     if (n > getProg().max) return go('karte');
@@ -434,16 +437,24 @@ function playLevel(n) {
       if (res) { save(); await board.play(res.events); if (my !== session) return; updateHud(); }
     }
     const stars = game.stars();
-    const p = getProg();
-    const prevBest = p.best[n] || 0;
-    p.stars[n] = Math.max(p.stars[n] || 0, stars);
-    p.best[n] = Math.max(prevBest, game.score);
-    p.max = Math.max(p.max, n + 1);
-    setProg(p);
-    const st = getStats();
-    st.won++; st.gems += game.gemsCleared; st.specials += game.specialsMade; st.combo = Math.max(st.combo, game.maxCombo);
-    setStats(st);
-    store.remove(K.run);
+    // Bis ein Knopf gewählt ist, bleibt der Sieg gespeichert: Neuladen zeigt das Blatt wieder,
+    // ohne Fortschritt und Statistik doppelt zu zählen.
+    const saved = store.get(K.run, null);
+    let prevBest;
+    if (saved && saved.n === n && saved.won) {
+      prevBest = saved.prevBest || 0;
+    } else {
+      const p = getProg();
+      prevBest = p.best[n] || 0;
+      p.stars[n] = Math.max(p.stars[n] || 0, stars);
+      p.best[n] = Math.max(prevBest, game.score);
+      p.max = Math.max(p.max, n + 1);
+      setProg(p);
+      const st = getStats();
+      st.won++; st.gems += game.gemsCleared; st.specials += game.specialsMade; st.combo = Math.max(st.combo, game.maxCombo);
+      setStats(st);
+      if (my === session) store.set(K.run, { n, s: game.save(), won: true, prevBest });
+    }
     reportSummary(ID, summary());
     sfx.play('complete');
     celebrate(CONFETTI);
@@ -463,6 +474,7 @@ function playLevel(n) {
       ],
     });
     if (my !== session) return;
+    store.remove(K.run);
     if (v === 'next') go(`level/${n + 1}`);
     else if (v === 'again') go(`level/${n}`);
     else go('karte');
@@ -474,8 +486,13 @@ function playLevel(n) {
     setHammer(false);
     sfx.play('thud');
     const left = game.goalRemaining();
+    // Wie viel fehlt noch (0 … 1, Mittel über alle Ziele)? Danach richtet sich der Titel.
+    const startOf = (g) => (g.type === 'ice' ? L.ice.filter((x) => x > 0).length
+      : g.type === 'stone' ? L.stone.filter((x) => x > 0).length : g.n || 1);
+    const missing = L.goals.reduce((a, g, k) => a + Math.min(1, left[k] / Math.max(1, startOf(g))), 0) / L.goals.length;
+    const titles = missing <= 0.25 ? loseTitles : missing <= 0.6 ? loseTitlesMid : loseTitlesFar;
     const list = h('div.m3-lose', null,
-      h('p', null, 'Dir fehlt nur noch:'),
+      h('p', null, missing <= 0.25 ? 'Dir fehlt nur noch:' : 'Es fehlt noch:'),
       h('div.m3-lose-goals', null, ...L.goals.map((g, k) => (left[k] > 0
         ? h('div.m3-goal', null, goalIcon(g) ? h('img', { src: goalIcon(g), alt: '' }) : h('span.m3-goal-t', null, '🎯'), h('b', null, g.type === 'score' ? fmt(left[k]) : String(left[k])))
         : null)).filter(Boolean)),
@@ -484,7 +501,7 @@ function playLevel(n) {
     if (!game.extraUsed) buttons.push({ label: '+5 Züge (gratis)', value: 'extra', primary: true, icon: 'plus' });
     buttons.push({ label: 'Nochmal versuchen', value: 'again', primary: game.extraUsed, icon: 'refresh' });
     buttons.push({ label: 'Levelkarte', value: 'map', ghost: true });
-    const v = await showModal({ title: loseTitles[n % loseTitles.length], content: list, buttons, dismissible: false });
+    const v = await showModal({ title: titles[n % titles.length], content: list, buttons, dismissible: false });
     if (my !== session) return;
     if (v === 'extra') {
       ending = false;

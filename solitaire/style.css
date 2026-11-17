@@ -109,6 +109,10 @@
 .compact .face .art.court-bg { top: 41%; left: 6%; right: 6%; }
 .compact .face .art .big { width: calc(var(--cw) * .62); height: calc(var(--cw) * .62); }
 .tiny .face .si { display: none; }
+/* Ziehe 3: verdeckte Talon-Karten zeigen Wert und Farbe untereinander im sichtbaren Streifen */
+.card.peek .face .si { left: 8%; right: auto; top: calc(var(--cw) * .49); width: calc(var(--cw) * .28); height: calc(var(--cw) * .28); }
+.card.peek .face .art { visibility: hidden; }
+.compact .card.peek .face .si { top: calc(var(--cw) * .55); }
 .tiny .face .rk { font-size: calc(var(--cw) * .55); }
 
 /* Zustände */
@@ -282,7 +286,7 @@
 /* ================================================================ Menü */
 
 .variants { display: flex; gap: 8px; margin: 10px 0 0; justify-content: center; flex-wrap: wrap; }
-.variants .chip { min-height: 40px; padding: 0 16px; font-weight: 800; }
+.variants .chip { min-height: 44px; padding: 0 16px; font-weight: 800; }
 .variants .chip.active { background: var(--accent); color: #fff; }
 
 .daily-list { display: flex; flex-direction: column; gap: 10px; }

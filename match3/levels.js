@@ -5,7 +5,7 @@ import { levels as handmade } from './data/levels.js';
 import { shapes } from './data/shapes.js';
 import { worlds } from './data/worlds.js';
 import { parseLevel, Rng } from './engine.js';
-import { measure, starsFrom, scoreAfter } from './solver.js';
+import { measure, calibrateStars, scoreAfter } from './solver.js';
 import { hashString } from '../shared/rng.js';
 
 export const PER_WORLD = 15;
@@ -286,8 +286,7 @@ function genLevel(n) {
       const target = scoreAfter(L, Math.max(6, Math.round(moves / k)));
       def.goals[0].n = Math.max(1000, Math.round(target / 250) * 250);
       def.moves = moves;
-      const m = measure(parseLevel(def, n), { runs: 3, cap: moves * 2 });
-      def.stars = starsFrom(m.games, moves);
+      def.stars = calibrateStars(parseLevel(def, n), moves);
       return def;
     }
     // Ziele so lange anpassen, bis der Bot zwischen ~7 und ~26 Zügen braucht.
@@ -299,7 +298,7 @@ function genLevel(n) {
       }
       if (m.need < 7 && round < 3 && scaleGoals(def, 1.45)) continue;
       def.moves = Math.max(12, Math.min(45, Math.round(m.need * k + 3)));
-      def.stars = starsFrom(m.games, def.moves);
+      def.stars = calibrateStars(parseLevel(def, n), def.moves, { runs: 8, games: m.games });
       return def;
     }
   }
@@ -340,7 +339,7 @@ const cache = new Map();
 let persist = null;
 /** Optionaler Zwischenspeicher (z.B. localStorage), damit die Kalibrierung nur einmal läuft. */
 export function setLevelStore(p) { persist = p; }
-const VERSION = 9;
+const VERSION = 10;
 
 /** Spielbereites Level n (1, 2, 3, …). */
 export function getLevel(n) {
@@ -349,10 +348,7 @@ export function getLevel(n) {
   let def = persist && persist.get(`${VERSION}:${n}`);
   if (!def || !Array.isArray(def.map)) {
     def = levelDef(n);
-    if (!def.stars) {
-      const m = measure(parseLevel(def, n), { runs: 4, cap: 60 });
-      def.stars = starsFrom(m.games, def.moves);
-    }
+    if (!def.stars) def.stars = calibrateStars(parseLevel(def, n), def.moves);
     if (persist) persist.set(`${VERSION}:${n}`, def);
   }
   const L = parseLevel(def, n);

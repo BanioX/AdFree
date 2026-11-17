@@ -1,12 +1,13 @@
 // Tipps, "Keine Züge mehr"-Erkennung und automatisches Beenden (reine Logik).
 //
-// findHint(st)        → { kind:'move', from, index, to } | { kind:'stock' } | null
+// findHint(st, hist)  → { kind:'move', from, index, to } | { kind:'stock' } | null
+//                       (hist = Zugliste der Sitzung; Züge zurück in eine eben gesehene Stellung entfallen)
 // isStuck(st)         → true, wenn kein sinnvoller Zug und auch der Talon nichts mehr bringt
 // finishActions(st)   → Aktionsliste zum automatischen Beenden (oder null, wenn nicht trivial)
 
 import {
-  LAYOUTS, suitOf, rankOf, canPick, canDrop, cloneState, doMove, stockAction, isWon,
-  hiddenCount, foundCounts, isSafeToFound, top,
+  LAYOUTS, suitOf, rankOf, canPick, canDrop, cloneState, doMove, stockAction, canStock, isWon,
+  hiddenCount, foundCounts, isSafeToFound, top, revertOps,
 } from './rules.js';
 
 // ---------------------------------------------------------------- Kandidaten
@@ -164,13 +165,66 @@ export function candidates(st) {
   return all;
 }
 
-export function findHint(st) {
-  const c = candidates(st);
+const posKey = (st) => st.piles.map((a) => a.join(',')).join('|');
+
+/** Stellungen der letzten Züge (ohne die aktuelle). */
+function recentPositions(st, hist, depth = 12) {
+  const keys = new Set();
+  if (!hist || !hist.length) return keys;
+  const sim = cloneState(st);
+  for (let k = hist.length - 1; k >= 0 && k >= hist.length - depth; k--) {
+    if (!hist[k] || !hist[k].ops) break;
+    revertOps(sim, hist[k].ops);
+    keys.add(posKey(sim));
+  }
+  return keys;
+}
+
+/** Entfernt Züge, die genau in eine eben gesehene Stellung zurückführen (Hin-und-her-Tipps). */
+function withoutRepeats(st, list, hist) {
+  const seen = recentPositions(st, hist);
+  if (!seen.size) return list;
+  return list.filter((m) => {
+    const sim = cloneState(st);
+    doMove(sim, m.from, m.index, m.to);
+    return !seen.has(posKey(sim));
+  });
+}
+
+/** Spider: legale Züge der obersten Karte in eine leere Spalte (beste zuerst). */
+function gapFills(st) {
+  const L = LAYOUTS[st.game];
+  const gap = L.tab.find((p) => !st.piles[p].length);
+  const out = [];
+  if (gap == null) return out;
+  for (const p of L.tab) {
+    const a = st.piles[p];
+    if (a.length < 2) continue;
+    const i = a.length - 1;
+    if (!canPick(st, p, i) || !canDrop(st, p, i, gap)) continue;
+    // lieber eine Karte, die nicht auf ihrer Folge-Karte liegt
+    const natural = st.up[a[i - 1]] && suitOf(st.codes[a[i - 1]]) === suitOf(st.codes[a[i]])
+      && rankOf(st.codes[a[i - 1]]) === rankOf(st.codes[a[i]]) + 1;
+    out.push({ kind: 'move', from: p, index: i, to: gap, score: (natural ? 0 : 10) - rankOf(st.codes[a[i]]) * 0.1 });
+  }
+  return out.sort((x, y) => y.score - x.score);
+}
+
+export function findHint(st, hist = null) {
+  const c = withoutRepeats(st, candidates(st), hist);
   const L = LAYOUTS[st.game];
   if (st.game === 'spider') {
-    // Geben ist besser als ein reiner Notzug
+    // Geben ist besser als ein reiner Notzug – aber nur, wenn Geben überhaupt erlaubt ist
     if (c.length && c[0].score >= 20) return c[0];
-    if (L.stock >= 0 && st.piles[L.stock].length) return { kind: 'stock' };
+    if (canStock(st)) return { kind: 'stock' };
+    if (st.piles[L.stock].length) {
+      // Leere Spalte muss zuerst gefüllt werden
+      const fill = c.find((m) => !st.piles[m.to].length);
+      if (fill) return fill;
+      if (c.length) return c[0];
+      const fills = gapFills(st);
+      return withoutRepeats(st, fills, hist)[0] || fills[0] || null;
+    }
     return c[0] || null;
   }
   if (c.length) return c[0];

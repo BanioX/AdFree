@@ -41,6 +41,12 @@ async function modalTitle() {
   const t = page.locator('.sp-modal h2');
   return (await t.count()) ? (await t.first().textContent()) : null;
 }
+/** Echter Finger-Tipp (Touch) auf ein Element. */
+async function tapEl(sel) {
+  const b = await page.locator(sel).first().boundingBox();
+  await page.touchscreen.tap(b.x + b.width / 2, b.y + b.height / 2);
+}
+const undoSel = '.tool:has-text("Zurück")';
 async function clickModal(label) {
   await page.locator('.sp-modal .btn', { hasText: label }).first().click();
   await wait(350);
@@ -48,34 +54,50 @@ async function clickModal(label) {
 
 try {
   // ---------- Erster Start: Anleitung ----------
-  step('Erster Start zeigt «So geht\'s»');
+  step('Erster Start zeigt das animierte «So geht\'s» (shared/tutorial.js)');
   await page.goto(BASE);
-  await page.evaluate(() => { for (const k of Object.keys(localStorage)) if (k.startsWith('spielpause.merge')) localStorage.removeItem(k); });
+  await page.evaluate(() => { for (const k of Object.keys(localStorage)) if (k.startsWith('spielpause.merge') || k === 'spielpause.tutorial.merge') localStorage.removeItem(k); });
   await page.reload();
-  await page.waitForSelector('.sp-modal h2');
-  assert.equal(await modalTitle(), "So geht's");
+  await page.waitForSelector('.tut-backdrop.show');
+  assert.equal(await page.locator('.tut-dots span').count(), 4, '4 Schritte');
+  await wait(1700);
   await shot('01-help');
-  await clickModal("Los geht's");
-  assert.equal(await page.locator('.sp-modal').count(), 0);
+  for (let i = 0; i < 3; i++) { await page.locator('.tut-next').click(); await wait(i === 1 ? 2600 : 300); if (i === 1) await shot('01b-help-step3'); }
+  assert.equal(await page.locator('.tut-title').textContent(), 'Etappen');
+  await page.locator('.tut-next').click();
+  await wait(400);
+  assert.equal(await page.locator('.tut-backdrop').count(), 0, 'Tutorial geschlossen');
   assert.equal(await page.locator('.topbar a.icon-btn').getAttribute('href'), '../', 'Zurück zur Startseite');
+  assert.equal(await page.locator('.gm-topbar .icon-btn[aria-label="So geht’s"]').count(), 1, '«?» im Menü');
   await shot('02-menu');
 
   // ---------- Menü: Aussehen, Statistik ----------
   step('Aussehen wählen und Statistik öffnen');
-  await page.locator('.quick', { hasText: 'Aussehen' }).click();
+  await page.locator('.gm-sec', { hasText: 'Aussehen' }).click();
   await page.locator('.skin-row', { hasText: 'Tiere' }).click();
   await wait(400);
   assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem('spielpause.merge.progress')).skin), 'tiere');
-  await page.locator('.quick', { hasText: 'Statistik' }).click();
+  await page.locator('.gm-sec', { hasText: 'Statistik' }).click();
   await page.waitForSelector('table.stats');
   await shot('03-stats');
   await clickModal('Schliessen');
 
   // ---------- Freies Spiel: Züge, Rückgängig, Neu laden ----------
   step('Freies Spiel 4×4 starten, wischen, rückgängig, neu laden');
-  await page.locator('.big-play').click();
+  await page.locator('.gm-primary').click();
   await page.waitForSelector('.board .tile');
   assert.match(page.url(), /#spiel\/klassisch$/);
+  await wait(500);
+  assert.equal(await page.locator('.coach').count(), 1, 'Coach-Mark beim allerersten Spiel');
+  await shot('03b-coach');
+  // Meldung ohne Zug: erscheint über dem Brett, nicht über den Knöpfen
+  await tapEl(undoSel);
+  await wait(300);
+  const toastBox = await page.locator('.sp-toast.show').boundingBox();
+  const toolsBox = await page.locator('.tools').boundingBox();
+  const boardBox0 = await page.locator('.board').boundingBox();
+  assert.ok(toastBox && toastBox.y + toastBox.height <= boardBox0.y + 8 && toastBox.y + toastBox.height < toolsBox.y - 20, 'Toast nicht über Brett oder Knöpfen');
+  assert.ok(toastBox.height < 50, 'Toast einzeilig');
   let moves = 0;
   for (const d of ['down', 'left', 'down', 'right', 'down', 'left', 'up', 'left', 'down', 'right']) {
     const before = (await save('klassisch')).state.moves;
@@ -87,6 +109,7 @@ try {
   await page.keyboard.press('ArrowDown'); await wait(160);
   await page.keyboard.press('ArrowLeft'); await wait(160);
   const s1 = await save('klassisch');
+  assert.equal(await page.locator('.coach').count(), 0, 'Coach-Mark weg nach dem ersten Zug');
   await page.locator('.tool', { hasText: 'Zurück' }).click();
   await wait(250);
   const s2 = await save('klassisch');
@@ -111,6 +134,45 @@ try {
   assert.equal(await page.locator('.stat.score .val').textContent(), scoreBefore, 'Punkte nach Neuladen gleich');
   assert.equal((await save('klassisch')).state.moves, s2.state.moves);
 
+  step('«?» im Spiel öffnet das Tutorial');
+  await page.locator('.topbar .icon-btn[aria-label="So geht’s"]').click();
+  await page.waitForSelector('.tut-backdrop.show');
+  await page.keyboard.press('ArrowUp'); // darf das Brett nicht bewegen
+  await page.locator('.tut-skip').click();
+  await wait(350);
+  assert.equal(await page.locator('.tut-backdrop').count(), 0);
+  assert.equal((await save('klassisch')).state.moves, s2.state.moves, 'Pfeiltaste im Tutorial bewegt nichts');
+
+  step('Schnelle Taps auf «Zurück» gehen nicht verloren');
+  await page.evaluate(() => {
+    const k = 'spielpause.merge.save.klassisch';
+    const sv = JSON.parse(localStorage.getItem(k));
+    sv.undos = 3; sv.hist = [];
+    localStorage.setItem(k, JSON.stringify(sv));
+  });
+  await page.reload();
+  await page.waitForSelector('.board .tile');
+  await wait(300);
+  const movesOf = async () => (await save('klassisch')).state.moves;
+  const m0 = await movesOf();
+  let dirs = ['left', 'right', 'up', 'down'];
+  async function oneMove() {
+    const before = await movesOf();
+    for (const d of dirs) { await swipe(d); await wait(30); if ((await movesOf()) > before) return; }
+    throw new Error('kein Zug möglich');
+  }
+  await oneMove();
+  await wait(250 - 30);
+  await tapEl(undoSel);              // 250 ms nach dem Wischen
+  await wait(120);
+  assert.equal(await movesOf(), m0, 'Tipp kurz nach dem Wischen wirkt');
+  await wait(200);
+  await oneMove(); await wait(200); await oneMove(); await wait(200);
+  await tapEl(undoSel); await wait(90); await tapEl(undoSel); // zwei schnelle Taps
+  await wait(200);
+  assert.equal(await movesOf(), m0, 'zwei schnelle Taps nehmen zwei Züge zurück');
+  assert.equal((await save('klassisch')).undos, 0);
+
   // ---------- Freies Spiel: Ziel erreichen, weiterspielen ----------
   step('Ziel 2048 erreichen → Siegesblatt → weiterspielen');
   await page.evaluate(async () => {
@@ -130,11 +192,50 @@ try {
   assert.equal(await page.locator('.sp-modal').count(), 0);
   const w = await save('klassisch');
   assert.ok(w.state.won && w.winSeen);
+  step('Rückgängig nach dem Sieg: Ziel bleibt erreicht, kein zweiter Sieg');
+  await tapEl(undoSel);
+  await wait(300);
+  const wu = await save('klassisch');
+  assert.equal(wu.state.moves, 0);
+  assert.equal(wu.state.won, true, 'won bleibt nach Rückgängig');
+  await page.keyboard.press('ArrowLeft'); await wait(900);
+  assert.equal(await page.locator('.sp-modal').count(), 0, 'kein zweites Siegesblatt nach Rückgängig');
+  const pw = await page.evaluate(() => JSON.parse(localStorage.getItem('spielpause.merge.progress')));
+  assert.equal(pw.won.klassisch, 1, 'Ziel nur einmal gezählt');
   await page.keyboard.press('ArrowDown'); await wait(200);
   await page.keyboard.press('ArrowRight'); await wait(200);
   assert.equal(await page.locator('.sp-modal').count(), 0, 'kein zweites Siegesblatt');
 
   // ---------- Spielende ----------
+  step('Rückgängig direkt nach dem letzten Zug: kein Spielende-Blatt');
+  const deadly = async (undos) => page.evaluate(async (u) => {
+    const L = await import('/merge/logic.js');
+    const s = L.fromText('2 4 8\n8 2 4\n4 8 .', { target: 8 });
+    s.seed = 'a';
+    localStorage.setItem('spielpause.merge.save.knifflig', JSON.stringify({ kind: 'free', mode: 'knifflig', state: s, hist: [], undos: u, refill: 3, winSeen: false }));
+  }, undos);
+  await deadly(3);
+  await page.goto(BASE + '#spiel/knifflig');
+  await page.waitForSelector('.board .tile');
+  await wait(300);
+  await swipe('right');
+  await wait(420);
+  await tapEl(undoSel);
+  await wait(900);
+  assert.equal(await page.locator('.sp-modal').count(), 0, 'kein «Keine Züge mehr» über spielbarem Brett');
+  let ks = await save('knifflig');
+  assert.equal(ks.state.over, false);
+  assert.equal(ks.state.moves, 0);
+  step('«Neu» direkt nach dem letzten Zug: genau ein Spielende-Blatt');
+  await swipe('right');
+  await wait(300);
+  await tapEl('.tool:has-text("Neu")');
+  await wait(900);
+  assert.equal(await page.locator('.sp-modal').count(), 1);
+  assert.equal(await modalTitle(), 'Keine Züge mehr');
+  await clickModal('Rückgängig');
+  assert.equal((await save('knifflig')).state.over, false);
+
   step('Spielende zeigt «Keine Züge mehr»');
   await page.evaluate(async () => {
     const L = await import('/merge/logic.js');
@@ -143,6 +244,7 @@ try {
     localStorage.setItem('spielpause.merge.save.knifflig', JSON.stringify({ kind: 'free', mode: 'knifflig', state: s, hist: [], undos: 0, refill: 3, winSeen: false }));
   });
   await page.goto(BASE + '#spiel/knifflig');
+  await page.reload();
   await page.waitForSelector('.sp-modal h2', { timeout: 3000 });
   assert.equal(await modalTitle(), 'Keine Züge mehr');
   await clickModal('Neues Spiel');
@@ -156,12 +258,16 @@ try {
 
   // ---------- Etappe 1 komplett spielen ----------
   step('Etappe 1 per Wischen bis zum Ziel spielen');
-  await page.locator('.segmented button', { hasText: 'Etappen' }).click();
+  await page.locator('.gm-seg button', { hasText: 'Etappen' }).click();
   await wait(200);
   await shot('06-menu-levels');
-  await page.locator('.btn-pair .big-play').click();
+  await page.locator('.gm-primary').click();
   await page.waitForSelector('.board .tile');
   assert.match(page.url(), /#etappe\/1$/);
+  await wait(600);
+  assert.equal(await page.locator('.board .coach').count(), 1, 'Coach-Mark in Etappe 1');
+  assert.equal(await page.locator('.sp-toast.show').count(), 0, 'kein Toast in Etappe 1');
+  await shot('06b-level1-coach');
   const order = ['down', 'left', 'down', 'left', 'right', 'up'];
   let won = false;
   for (let i = 0; i < 400 && !won; i++) {
@@ -210,7 +316,31 @@ try {
 
   // Unbekannte Route → Menü
   await page.goto(BASE + '#quatsch');
-  await page.waitForSelector('.segmented');
+  await page.waitForSelector('.gm');
+
+  // ---------- Kleines iPhone (375 × 667) ----------
+  step('Menü und 6×6 auf 375 × 667');
+  const small = await browser.newContext({ ...devices['iPhone SE'], viewport: { width: 375, height: 667 }, deviceScaleFactor: 1 });
+  const sp = await small.newPage();
+  sp.on('pageerror', (e) => errors.push('pageerror: ' + e.message));
+  sp.on('console', (m) => { if (m.type() === 'error') errors.push('console: ' + m.text()); });
+  await sp.goto(BASE);
+  await sp.evaluate(() => localStorage.setItem('spielpause.tutorial.merge', 'true'));
+  await sp.reload();
+  await sp.waitForSelector('.gm-sec');
+  await wait(300);
+  await sp.screenshot({ path: path.join(OUT, '11-menu-375.png') });
+  const sec = await sp.locator('.gm-secondary').boundingBox();
+  assert.ok(sec.y + sec.height <= 667, 'Nebenknöpfe ohne Scrollen sichtbar');
+  await sp.evaluate(() => { const k = 'spielpause.merge.progress'; const p = JSON.parse(localStorage.getItem(k) || '{}'); p.skin = 'weltall'; p.moves = 5; localStorage.setItem(k, JSON.stringify(p)); });
+  await sp.goto(BASE + '#spiel/entspannt6');
+  await sp.reload();
+  await sp.waitForSelector('.board .tile');
+  assert.equal(await sp.locator('.app.dark-skin').count(), 1, 'Weltall-Stil aktiv');
+  const valSize = await sp.evaluate(() => parseFloat(getComputedStyle(document.querySelector('.board .tile .val')).fontSize));
+  assert.ok(valSize >= 10, 'Wert auf 6×6-Kacheln lesbar: ' + valSize);
+  await sp.screenshot({ path: path.join(OUT, '12-6x6-375.png') });
+  await small.close();
 
   assert.deepEqual(errors, [], 'keine Konsolenfehler');
   console.log('OK – alle Schritte bestanden');

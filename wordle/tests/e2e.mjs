@@ -80,9 +80,14 @@ try {
   // Unbekanntes Wort → Schütteln + Meldung
   await typeOnScreen('QXQXQ');
   await enter();
-  await page.waitForSelector('.sp-toast, .toast', { timeout: 3000 }).catch(() => {});
-  const toastText = await page.evaluate(() => document.body.innerText);
-  assert.match(toastText, /Nicht in der Wortliste/);
+  await page.waitForSelector('.row-msg', { timeout: 3000 });
+  assert.match(await page.locator('.row-msg').innerText(), /Nicht in der Wortliste/);
+  {
+    // Meldung sitzt unter der aktiven Zeile, nicht über früheren Versuchen
+    const mb = await page.locator('.row-msg').boundingBox();
+    const r0 = await page.locator('.row').first().boundingBox();
+    assert.ok(mb.y >= r0.y + r0.height - 2, 'Meldung verdeckt die erste Zeile nicht');
+  }
   assert.equal(await page.locator('.coach').count(), 0, 'Coach-Mark verschwindet nach dem ersten Tippen');
   for (let i = 0; i < 5; i++) await page.locator('.kbd .key[data-k="DEL"]').tap();
 
@@ -205,6 +210,46 @@ try {
   await tap(page.locator('.gm-primary'));
   await page.waitForSelector('.kbd');
   assert.equal(await page.evaluate(() => window.__wordle.answer), e2, '«Weiter» setzt fort');
+
+  // Gewinnen und während der Auflösung neu laden → zählt trotzdem, Ergebnis erscheint
+  step('Endlos: Neuladen während der Auflösung');
+  const statsE5 = () => page.evaluate(() => (JSON.parse(localStorage.getItem('spielpause.wordle.stats') || '{}').e5) || null);
+  await typeOnScreen(e2);
+  await enter();
+  await wait(600);
+  await page.reload();
+  await page.waitForSelector('.sp-modal-backdrop', { timeout: 5000 });
+  await wait(500);
+  assert.ok((await page.locator('.sp-modal-backdrop').innerText()).replace(/\s+/g, '').includes(e2), 'Ergebnis nach Neuladen');
+  let st = await statsE5();
+  assert.equal(st.played, 2);
+  assert.equal(st.won, 1);
+  // «Zum Menü» → «Spielen» startet sofort ein neues Wort (nicht das alte, gelöste Feld)
+  await tap(page.locator('.sp-modal-backdrop button', { hasText: 'Zum Menü' }));
+  await page.waitForSelector('.gm-primary');
+  assert.match(await page.locator('.gm-primary').innerText(), /Spielen/);
+  await tap(page.locator('.gm-primary'));
+  await page.waitForSelector('.kbd');
+  const e3 = await page.evaluate(() => window.__wordle.answer);
+  assert.notEqual(e3, e2);
+  assert.deepEqual(await page.evaluate(() => window.__wordle.game.guesses), []);
+
+  // Gewinnen und sofort zurück ins Menü → gezählt, kurze Meldung, «Spielen» = neues Wort
+  step('Endlos: Verlassen während der Auflösung');
+  await typeOnScreen(e3);
+  await enter();
+  await wait(200);
+  await page.locator('.topbar a[aria-label="Zurück"]').tap();
+  await page.waitForSelector('.gm-primary');
+  await wait(200);
+  assert.ok((await page.evaluate(() => document.body.innerText)).includes(e3), 'Meldung mit dem Wort');
+  st = await statsE5();
+  assert.equal(st.played, 3);
+  assert.equal(st.won, 2);
+  await wait(2600);
+  await tap(page.locator('.gm-primary'));
+  await page.waitForSelector('.kbd');
+  assert.notEqual(await page.evaluate(() => window.__wordle.answer), e3);
   await tap(page.locator('.topbar a[aria-label="Zurück"]'));
   await page.waitForSelector('.gm-primary');
 
@@ -225,6 +270,29 @@ try {
   const keyBox = await page.locator('.kbd .key[data-k="A"]').boundingBox();
   assert.ok(keyBox.height >= 44, 'Tasten mindestens 44 px hoch');
   await shot('e2e-06-small');
+
+  // 8) Verlorenes Tageswort: Karte ohne Widerspruch
+  step('Verlorenes Tageswort im Menü');
+  await page.setViewportSize({ width: 390, height: 664 });
+  await page.evaluate(() => {
+    const k = 'spielpause.wordle.game.daily';
+    const g = JSON.parse(localStorage.getItem(k));
+    localStorage.setItem(k, JSON.stringify({ ...g, status: 'lost', guesses: ['TISCH', 'BLUME', 'NEBEL', 'STERN', 'WOLKE', 'HAFEN'] }));
+    for (const key of Object.keys(localStorage)) if (key.startsWith('spielpause.daily.wordle.')) localStorage.removeItem(key);
+  });
+  await page.goto(BASE);
+  await page.waitForSelector('.gm-daily');
+  const dtext = await page.locator('.gm-daily').innerText();
+  assert.match(dtext, /Heute nicht erraten/);
+  assert.doesNotMatch(dtext, /noch offen/);
+  assert.equal(await page.locator('.gm-daily.lost').count(), 1);
+  await wait(2600);
+  await shot('e2e-07-daily-lost');
+  // Statistik-Chips gross genug
+  await tap(page.locator('.gm-sec', { hasText: 'Statistik' }));
+  await page.waitForSelector('.tabs .chip');
+  const chip = await page.locator('.tabs .chip').first().boundingBox();
+  assert.ok(chip.height >= 44, 'Statistik-Chips mindestens 44 px');
 
   assert.deepEqual(errors, [], 'keine Konsolenfehler');
   console.log('✓ Alle E2E-Prüfungen bestanden');

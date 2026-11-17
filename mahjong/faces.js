@@ -11,9 +11,10 @@ const GREEN = '#2b8a4b';
 const BLUE = '#2d63b5';
 const GOLD = '#e0a21e';
 
+// Bonus-Gruppen bewusst NICHT gelb/orange: Gold ist der Tipp, Orange die Auswahl.
 export const BONUS_TINT = [
-  { fill: '#ffe4ea', ring: '#e6738f' },   // Gruppe A (Blumen)
-  { fill: '#fff1c9', ring: '#d9a21b' },   // Gruppe B (Jahreszeiten)
+  { fill: '#fdeef2', ring: '#d9607f' },   // Gruppe A (Blumen) – Rosa
+  { fill: '#eaf2fc', ring: '#4f7fc4' },   // Gruppe B (Jahreszeiten) – Himmelblau
 ];
 
 const EMOJI_FONT = '"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji","Segoe UI Symbol",sans-serif';
@@ -44,13 +45,27 @@ export function drawFace(ctx, setId, face, w, h) {
 function drawBonusMark(ctx, g, w, h) {
   const t = BONUS_TINT[g];
   ctx.save();
+  // zarter Hintergrund + dünner Rahmen in der Gruppenfarbe
   rr(ctx, -w * 0.02, -h * 0.02, w * 1.04, h * 1.04, w * 0.1);
   ctx.fillStyle = t.fill;
   ctx.fill();
-  ctx.lineWidth = Math.max(1, w * 0.045);
+  ctx.lineWidth = Math.max(1, w * 0.035);
   ctx.strokeStyle = t.ring;
-  ctx.globalAlpha = 0.85;
+  ctx.globalAlpha = 0.7;
   ctx.stroke();
+  ctx.globalAlpha = 1;
+  // Eck-Band oben links: «Bonus-Stein, passt zu jedem seiner Gruppe»
+  ctx.beginPath();
+  rr(ctx, -w * 0.02, -h * 0.02, w * 1.04, h * 1.04, w * 0.1);
+  ctx.clip();
+  const k = w * 0.3;
+  ctx.beginPath();
+  ctx.moveTo(-w * 0.02, -h * 0.02);
+  ctx.lineTo(-w * 0.02 + k, -h * 0.02);
+  ctx.lineTo(-w * 0.02, -h * 0.02 + k);
+  ctx.closePath();
+  ctx.fillStyle = t.ring;
+  ctx.fill();
   ctx.restore();
 }
 

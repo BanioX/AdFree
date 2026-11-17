@@ -3,7 +3,7 @@
 //   #menu        Startbildschirm
 //   #play/5      Level 5 (Neuladen setzt den Spielstand fort)
 //   #album       Sammlung fertiger Bilder
-//   #photo       Eigenes Foto erstellen + Liste
+//   #photo       Eigenes Foto erstellen + Liste (#photo/list: gleich zur Liste scrollen)
 //   #foto/<id>   eigenes Foto spielen
 
 import { setupPage, h, icon, toast, showModal, soundButton, backButton } from '../shared/ui.js';
@@ -90,7 +90,7 @@ async function route() {
     if (name === 'play') await showLevel(parseInt(arg, 10), token);
     else if (name === 'foto') await showPhotoLevel(arg, token);
     else if (name === 'album') await showAlbum(token);
-    else if (name === 'photo') await showPhoto(token);
+    else if (name === 'photo') await showPhoto(token, arg);
     else await showMenu(token);
   } catch (err) {
     console.warn(err);
@@ -102,6 +102,19 @@ async function route() {
 }
 
 window.addEventListener('hashchange', route);
+
+/** Navigiert zu href – auch wenn der Hash schon stimmt (z. B. nach replaceState beim Gewinn). */
+function go(href) {
+  if (location.hash === href) route();
+  else location.hash = href;
+}
+
+/** Ändert den Hash ohne Neuaufbau: ein Neuladen landet dann gleich am richtigen Ort. */
+function markHash(href) {
+  try { history.replaceState(history.state, '', href); } catch { /* egal */ }
+}
+
+const farben = (k) => `${k} ${k === 1 ? 'Farbe' : 'Farben'}`;
 
 function topbar(backHref, title, ...extra) {
   return h('header.topbar', null, backButton(backHref), h('div.title.center', null, title), ...extra, soundButton());
@@ -169,7 +182,8 @@ async function showMenu(token) {
     art,
     primary: {
       label: `${pct > 0 ? 'Weiter' : 'Spielen'} – Level ${n}`,
-      sub: pct > 0 ? `${L.title} · ${Math.round(pct * 100)} % gelegt` : `${L.title} · ${L.total} Perlen · ${L.K} Farben`,
+      sub: pct > 0 ? `${L.title} · ${Math.round(pct * 100)} % gelegt`
+        : L.title.length > 11 ? `${L.title} · ${farben(L.K)}` : `${L.title} · ${L.total} Perlen · ${farben(L.K)}`,
       onClick: go('#play/' + n),
     },
     secondary: [
@@ -179,7 +193,7 @@ async function showMenu(token) {
     stats: [
       { label: 'Bilder', value: doneCount },
       { label: 'Sterne', value: totalStars(p) },
-      { label: 'Ohne Helfer', value: perfect },
+      { label: 'Perfekt', value: perfect },
       { label: 'Perlen', value: p.beads.toLocaleString('de-CH') },
     ],
     sections,
@@ -205,7 +219,7 @@ async function showLevel(n, token) {
     const round = Math.floor((n - 1) / (await loadLibrary()).length);
     game = Game.create(L, { ...levelConfig(L, n, { round }), seed: `beads:${L.id}:${n}` });
   }
-  current = new PlayScreen(app, {
+  const opts = {
     game,
     title: `Level ${n}`,
     subtitle: L.title,
@@ -222,10 +236,18 @@ async function showLevel(n, token) {
         if (n >= pp.level) pp.level = n + 1;
       });
       report(q);
+      // «Weiter» führt zum aktuellen Level (nach einem Nochmals-Legen aus der Sammlung
+      // also zurück dorthin, wo man stand) – und ein Neuladen auf dem Gewinn-Blatt auch.
+      nextHref = '#play/' + q.level;
+      if (q.level !== n + 1) opts.nextLabel = `Zu Level ${q.level}`;
+      markHash(nextHref);
     },
-    onNext: () => { location.hash = '#play/' + (n + 1); },
-    onAlbum: () => { location.hash = '#album'; },
-  });
+    onNext: () => go(nextHref),
+    onReplay: () => go('#play/' + n),
+    onAlbum: () => go('#album'),
+  };
+  let nextHref = '#play/' + (n + 1);
+  current = new PlayScreen(app, opts);
 }
 
 async function showPhotoLevel(id, token) {
@@ -252,10 +274,12 @@ async function showPhotoLevel(id, token) {
       clearRun(key);
       setPhotos(getPhotos().map((x) => (x.id === id ? { ...x, stars: Math.max(x.stars | 0, stars) } : x)));
       updateProgress((pp) => { pp.beads += L.total; });
+      markHash('#photo/list');
     },
     nextLabel: 'Fertig',
-    onNext: () => { location.hash = '#photo'; },
-    onAlbum: () => { location.hash = '#album'; },
+    onNext: () => go('#photo/list'),
+    onReplay: () => go('#foto/' + id),
+    onAlbum: () => go('#album'),
   });
 }
 
@@ -357,8 +381,8 @@ async function showAlbum(token) {
 
 // ---------------------------------------------------------------- Eigenes Foto
 
-async function showPhoto() {
-  current = new PhotoScreen(app, { topbar });
+async function showPhoto(token, arg) {
+  current = new PhotoScreen(app, { topbar, focusList: arg === 'list' });
 }
 
 route();

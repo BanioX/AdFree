@@ -1,0 +1,126 @@
+/* Vier in einer Reihe */
+
+.c4 {
+  width: min(100%, calc((100dvh - 230px) * 7 / 6.35), 480px);
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 7px;
+  padding: 12px;
+  border-radius: 26px;
+  background: linear-gradient(180deg, #5aa2f6 0%, #1f62c4 100%);
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, .45), inset 0 -6px 12px rgba(10, 40, 100, .25), 0 12px 28px rgba(25, 70, 140, .22);
+  touch-action: none;
+  user-select: none;
+}
+.c4-col {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  position: relative;
+  border-radius: 14px;
+}
+.c4-hole {
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 42%, #f7fbff 0%, #d5e4f5 70%, #c3d4ea 100%);
+  box-shadow: inset 0 3px 5px rgba(20, 50, 100, .28);
+  position: relative;
+}
+.c4-disc {
+  position: absolute;
+  inset: 7%;
+  border-radius: 50%;
+  box-shadow: inset 0 -4px 6px rgba(0, 0, 0, .18), 0 2px 2px rgba(0, 0, 0, .12);
+}
+.c4-disc.me {
+  background: radial-gradient(circle at 34% 30%, #fff4b0, #ffd23a 42%, #f0a400 78%);
+}
+.c4-disc.ai {
+  background: radial-gradient(circle at 34% 30%, #ffd0d4, #ff5a6a 45%, #d4233c 80%);
+}
+.c4-disc.ghost { opacity: .45; }
+.c4-disc.fall { animation: c4-fall .36s cubic-bezier(.15, .7, .25, 1); }
+@keyframes c4-fall {
+  0% { transform: translateY(calc(var(--rows, 5) * -112%)) scale(.92); }
+  72% { transform: translateY(5%) scale(1.03); }
+  100% { transform: none; }
+}
+.c4-hole.win .c4-disc {
+  animation: c4-glow .7s ease-in-out infinite alternate;
+}
+@keyframes c4-glow {
+  from { filter: brightness(1); transform: scale(1); }
+  to { filter: brightness(1.18); transform: scale(1.06); }
+}
+.c4.locked { pointer-events: none; }
+
+.c4-art {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  padding: 8px;
+  width: 168px;
+  border-radius: 22px;
+  background: linear-gradient(180deg, #5aa2f6, #1f62c4);
+}
+.c4-art i {
+  display: block;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: #e7f1fb;
+  box-shadow: inset 0 2px 3px rgba(20, 50, 100, .25);
+}
+.c4-art i.me { background: radial-gradient(circle at 35% 30%, #fff4b0, #ffd23a 45%, #e89a00); }
+.c4-art i.ai { background: radial-gradient(circle at 35% 30%, #ffd0d4, #ff5a6a 50%, #d4233c); }
+
+/* Tutorial */
+.c4-demo {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 6px;
+  width: min(86%, 260px);
+  margin: 28px auto 0;
+  padding: 10px;
+  border-radius: 18px;
+  background: linear-gradient(180deg, #5aa2f6, #1f62c4);
+}
+.c4-demo-col { display: flex; flex-direction: column; gap: 6px; }
+.c4-demo-hole {
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: #e7f1fb;
+  position: relative;
+}
+.c4-demo-disc {
+  position: absolute;
+  inset: 8%;
+  border-radius: 50%;
+}
+.c4-demo-disc.me { background: radial-gradient(circle at 35% 30%, #fff4b0, #ffd23a 50%, #e89a00); }
+.c4-demo-disc.ai { background: radial-gradient(circle at 35% 30%, #ffd0d4, #ff5a6a 50%, #d4233c); }
+.c4-demo-disc.ghost { opacity: .55; }
+.c4-demo-disc.glow { box-shadow: 0 0 0 3px #fff; }
+.c4-demo-bar {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 14px;
+}
+.c4-demo-btn {
+  min-width: 92px;
+  text-align: center;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: #fff;
+  font-weight: 800;
+  box-shadow: var(--shadow);
+}
+.c4-demo-btn.on { outline: 3px solid var(--accent); }
+
+@media (prefers-reduced-motion: reduce) {
+  .c4-disc.fall, .c4-hole.win .c4-disc { animation: none; }
+}

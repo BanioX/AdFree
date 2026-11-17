@@ -2,6 +2,11 @@
 
 Was in Spielpause neu dazukommt. Neueste Einträge oben.
 
+## 17. November 2026 (Nacht)
+
+### Neu (Grok)
+- **Vier in einer Reihe**: gegen den Computer in drei Stärken, mit Tipp, Rückgängig und gespeicherter Partie.
+
 ## 17. November 2026 (Abend)
 
 ### Neu

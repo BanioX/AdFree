@@ -66,6 +66,12 @@ export function solve(msg, timeLimit = 2500) {
 
 // ------------------------------------------------------------ Austeilen
 
+/**
+ * Einstiegspartien: lösbare Nummern, die schon ein einfacher «immer den Tipp nehmen»-Spieler
+ * gewinnt (ermittelt mit dem Tipp-Algorithmus aus logic/hints.js, siehe tests/content.test.mjs).
+ */
+export const FIRST_DEAL = { klondike1: 385, klondike3: 90, spider1: 36, freecell: 144 };
+
 const randomSeed = () => 100000 + Math.floor(Math.random() * 899999);
 
 /**
@@ -76,6 +82,13 @@ export async function nextDeal(modeId, { solvable = true, onWait } = {}) {
   if (!solvable) {
     const seed = randomSeed();
     return { seed, verified: false, label: `Partie ${seed}` };
+  }
+  // Allererste Partie einer Spielart: eine besonders gutmütige Partie (kurzer Erfolg zum Einstieg)
+  const firstKey = `solitaire.first.${modeId}`;
+  if (FIRST_DEAL[modeId] && !store.get(firstKey, false)) {
+    store.set(firstKey, true);
+    const seed = FIRST_DEAL[modeId];
+    return { seed, verified: true, label: `Partie ${seed}` };
   }
   const { SOLVABLE } = await seeds();
   const list = SOLVABLE[modeId];

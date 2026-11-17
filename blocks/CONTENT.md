@@ -7,7 +7,7 @@ sie prüfen Format, Lösbarkeit und Rechtschreibung (kein «ß»).
 | Datei | Inhalt |
 |---|---|
 | `data/shapes.js` | Formen der Spielsteine (Polyominos) mit Häufigkeit und Grösse |
-| `data/skins.js` | Aussehen (Juwelen, Pastell, Holz, Bonbon …) und die fünf Edelsteine |
+| `data/skins.js` | Aussehen (Juwelen, Pastell, Holz, Bonbon, Meeresglas und Sternennacht zum Freischalten) und die fünf Edelsteine |
 | `data/pictures.js` | Versteckte Bilder für die Bild-Level (kommen ins Album) |
 | `data/worlds.js` | Welten im Abenteuer (je 20 Level) |
 | `data/levels.js` | Handgemachte Einstiegs-Level, Ziel-Ablauf und Schwierigkeitskurve |
@@ -36,6 +36,8 @@ In `data/skins.js` einen Eintrag anhängen. `style` wählt den Zeichenstil der S
 `'jewel'` (geschliffen, glänzend), `'soft'` (weich, pastell) oder `'wood'` (Holz mit Maserung).
 Es braucht genau 8 Steinfarben, die Brettfarben (`bg`, `cell`, `edge`, `cover`, `coverMark`) und `gray`
 (Farbe für Teile, die gerade nicht passen). Das neue Aussehen erscheint automatisch im Menü und in der Pause.
+Optional `unlock: 30` – dann wird das Aussehen erst ab 30 Sternen im Abenteuer frei (bis dahin mit Schloss
+und Sterne-Zahl im Menü; beim Freischalten erscheint es im Sieg-Blatt).
 
 ## Neues Bild (Album)
 

@@ -422,8 +422,9 @@ export class Play {
     else if (n === 1) msgs.push([UNIT_NAMES[Math.floor(r.units[0] / 9)] + ' fertig!', '', '']);
     else if (r.digitDone) msgs.push([`Alle ${d} gesetzt!`, '', '']);
     const c = this.game.meta.combo | 0;
-    if (!r.mistake && !viaHint && c >= 5 && c % 5 === 0) {
-      msgs.push([COMBO_WORDS[Math.min(COMBO_WORDS.length - 1, c / 5 - 1)], `${c} richtig in Folge`, 'combo']);
+    // Serien: bei 5, 10, dann alle 10 (nicht zu oft – Sudoku soll ruhig bleiben)
+    if (!r.mistake && !viaHint && (c === 5 || (c >= 10 && c % 10 === 0))) {
+      msgs.push([COMBO_WORDS[Math.min(COMBO_WORDS.length - 1, c === 5 ? 0 : c / 10)], `${c} richtig in Folge`, 'combo']);
     }
     msgs.forEach(([t, sub, kind], k) => setTimeout(() => this._praise(i, t, sub, kind), k * 520));
   }

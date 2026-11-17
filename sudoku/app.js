@@ -85,7 +85,7 @@ function updateSummary() {
   if (g) parts.push(`${difficultyById(g.meta.diff).title} · ${Math.round(g.progress() * 100)} %`);
   else {
     const won = totalWon();
-    parts.push(won ? `${won} ${won === 1 ? 'Rätsel' : 'Rätsel'} gelöst` : 'Bereit für das erste Rätsel');
+    parts.push(won ? `${won} Rätsel gelöst · ${loadStars()} ★` : 'Bereit für das erste Rätsel');
   }
   if (isDailyDone(ID)) parts.push('Tagesrätsel ✓');
   reportSummary(ID, parts.join(' · '));
@@ -175,7 +175,7 @@ function colorSection(onThemeChange) {
     h('span.sd-prog-stars', { html: `${icon('star', { size: 22 })}<b>${stars}</b>` }),
     h('span.sd-prog-txt', null,
       h('b', null, next ? `Noch ${next.unlock - stars} ★ bis «${next.title}»` : 'Alle Farben gesammelt!'),
-      h('small', null, 'Bis 3 ★ pro Rätsel – ohne Fehler und Tipps')));
+      h('small', null, 'Ohne Fehler und Tipps gibt’s 3 ★')));
   const bar = h('div.sd-prog-bar', null, h('i', { style: { width: Math.max(4, pct) + '%' } }));
   const dots = h('div.sd-swatches');
   for (const t of themes) {
@@ -273,12 +273,12 @@ function renderMenu() {
       onChange(id) {
         diff = id;
         store.set(KEYS.lastDiff, id);
-        el.update({ primary: primary(), secondary: secondary(), stats: statTiles() });
+        el.update({ primary: primary(), secondary: secondary(), stats: totalWon() ? statTiles() : null });
         markSecondary();
       },
     },
     secondary: secondary(),
-    stats: statTiles(),
+    stats: totalWon() ? statTiles() : null,   // ganz am Anfang keine Reihe voller Nullen
     sections: [colorSection(() => { el.style.setProperty('--accent', themeById(settings.theme).accent); })],
     onHelp: () => openTutorial(),
     backHref: '../',

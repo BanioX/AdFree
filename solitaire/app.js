@@ -98,7 +98,6 @@ function miniCard(code, { x = 0, y = 0, rot = 0, up = true } = {}) {
 // ================================================================ Router
 
 let game = null;
-let screen = null;
 
 function route() {
   const hash = decodeURIComponent(location.hash.replace(/^#/, ''));
@@ -120,8 +119,6 @@ function go(hash) {
 
 function teardown() {
   if (game) { game.unmount(); game = null; }
-  if (screen && screen.cleanup) screen.cleanup();
-  screen = null;
   document.querySelectorAll('.sp-modal-backdrop').forEach((n) => n.remove());
   app.className = 'app';
   app.replaceChildren();
@@ -247,23 +244,6 @@ function showTutorialNow() {
 function setThemeColor(c) {
   const m = document.querySelector('meta[name="theme-color"]');
   if (m) m.setAttribute('content', c);
-}
-
-async function askAbandon(sess) {
-  if (!sess || !sess.started || sess.won) return true;
-  return (await showModal({
-    title: 'Neue Partie?',
-    text: 'Die laufende Partie wird beendet und zählt als nicht gewonnen.',
-    buttons: [
-      { label: 'Neue Partie', value: true, primary: true, icon: 'refresh' },
-      { label: 'Weiterspielen', value: false, ghost: true },
-    ],
-  })) === true;
-}
-
-function abandonSession(sess) {
-  if (sess && sess.started && !sess.won && !sess.daily) saveStats(Stats.recordLoss(loadStats(), sess.mode));
-  if (sess) store.remove(slotKey(sess.slot));
 }
 
 // ================================================================ Spiel
@@ -739,7 +719,11 @@ class Game {
   async showWin(result, again = false) {
     const s = this.s;
     const art = h('div.win-art');
-    [0, 1, 2, 3].forEach((su, i) => art.append(miniCard(makeCode([0, 1, 2, 3][su], 1), { x: 18 + i * 34, y: 10 + Math.abs(1.5 - i) * 6, rot: -15 + i * 10 })));
+    const suitsUsed = s.st.game === 'spider' ? [0, 1, 2, 3].slice(0, MODES[s.mode].suits) : [0, 1, 2, 3];
+    const winCodes = s.st.game === 'spider'
+      ? [13, 12, 11, 1].map((r, i) => makeCode(suitsUsed[i % suitsUsed.length], r))
+      : [0, 1, 2, 3].map((su) => makeCode(su, 1));
+    winCodes.forEach((code, i) => art.append(miniCard(code, { x: 18 + i * 34, y: 10 + Math.abs(1.5 - i) * 6, rot: -15 + i * 10 })));
     const e = result ? result.entry : null;
     const stat = (v, l) => h('div.stat', null, h('b', null, v), h('small', null, l));
     const third = s.daily

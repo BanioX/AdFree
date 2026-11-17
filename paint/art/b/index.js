@@ -8,4 +8,6 @@ export const pictures = [
   { id: 'b-lebkuchenhaus', title: 'Lebkuchenhaus', category: 'Winter', load: () => import('./lebkuchenhaus.js').then((m) => m.default) },
   { id: 'b-unterwasser', title: 'Unterwasserwelt', category: 'Landschaften', load: () => import('./unterwasser.js').then((m) => m.default) },
   { id: 'b-bergsee', title: 'Bergsee mit Chalet', category: 'Landschaften', load: () => import('./bergsee.js').then((m) => m.default) },
+  { id: 'b-schloss', title: 'Märchenschloss', category: 'Fantasie', load: () => import('./schloss.js').then((m) => m.default) },
+  { id: 'b-winterdorf', title: 'Winterdorf', category: 'Winter', load: () => import('./winterdorf.js').then((m) => m.default) },
 ];

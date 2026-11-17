@@ -6,7 +6,7 @@
 //   emoji  Bild des Themas
 //   group  eine der Gruppen unten
 //   words  Wörter, durch Leerzeichen getrennt (Schweizer Schreibweise, kein «ß»).
-//          Nur Buchstaben inkl. Ä Ö Ü, 3 bis 12 Buchstaben, mindestens 20 Wörter.
+//          Nur Buchstaben inkl. Ä Ö Ü, 3 bis 12 Buchstaben, 20 bis 30 Wörter.
 //          Die Schreibweise hier wird so in der Wortliste angezeigt; im Raster stehen Grossbuchstaben.
 //
 // Anleitung zum Erweitern: siehe ../CONTENT.md
@@ -72,7 +72,7 @@ export const themes = [
   { id: 'obst', title: 'Obst', emoji: '🍎', group: 'essen',
     words: 'Apfel Birne Kirsche Pflaume Zwetschge Aprikose Pfirsich Traube Erdbeere Himbeere Brombeere Heidelbeere Stachelbeere Banane Orange Mandarine Zitrone Limette Ananas Mango Kiwi Melone Feige Dattel Papaya Granatapfel Quitte Nektarine Grapefruit' },
   { id: 'gemuese', title: 'Gemüse', emoji: '🥕', group: 'essen',
-    words: 'Rüebli Kartoffel Tomate Gurke Zucchetti Peperoni Zwiebel Knoblauch Lauch Sellerie Spinat Salat Kohl Blumenkohl Brokkoli Rosenkohl Kohlrabi Erbse Bohne Linse Mais Kürbis Aubergine Fenchel Randen Radieschen Spargel Rettich Artischocke Mangold Pastinake Federkohl' },
+    words: 'Rüebli Kartoffel Tomate Gurke Zucchetti Peperoni Zwiebel Knoblauch Lauch Sellerie Spinat Salat Kohl Blumenkohl Brokkoli Rosenkohl Kohlrabi Erbse Bohne Linse Mais Kürbis Aubergine Fenchel Randen Radieschen Spargel Rettich Artischocke Mangold' },
   { id: 'kueche', title: 'Küche', emoji: '🍳', group: 'essen',
     words: 'Herd Ofen Pfanne Topf Kelle Löffel Gabel Messer Teller Tasse Schüssel Sieb Reibe Schwingbesen Wallholz Waage Mixer Toaster Kühlschrank Spüle Schürze Deckel Wasserkocher Brett Mikrowelle Geschirr Kochbuch Rezept Gewürz Bratschaufel' },
   { id: 'backen', title: 'Backen', emoji: '🧁', group: 'essen',
@@ -110,7 +110,7 @@ export const themes = [
   { id: 'gipfel', title: 'Gipfel & Pässe', emoji: '🏔️', group: 'schweiz',
     words: 'Matterhorn Eiger Mönch Jungfrau Pilatus Rigi Säntis Titlis Niesen Stockhorn Napf Chasseral Weisshorn Tödi Glärnisch Bernina Dom Schilthorn Wetterhorn Dufourspitze Gotthard Furka Grimsel Susten Albula Julier Flüela Brünig Simplon Lukmanier' },
   { id: 'seen', title: 'Seen & Flüsse', emoji: '🏞️', group: 'schweiz',
-    words: 'Genfersee Bodensee Zürichsee Thunersee Brienzersee Walensee Zugersee Sempachersee Bielersee Murtensee Hallwilersee Sihlsee Rhein Rhone Aare Reuss Limmat Inn Ticino Thur Emme Saane Linth Töss Birs Doubs Verzasca Maggia' },
+    words: 'Genfersee Bodensee Zürichsee Thunersee Brienzersee Walensee Zugersee Sempachersee Bielersee Murtensee Hallwilersee Sihlsee Rhein Rhone Aare Reuss Limmat Inn Sitter Thur Emme Saane Linth Töss Birs Doubs Verzasca Maggia' },
   { id: 'schweizer-kueche', title: 'Schweizer Küche', emoji: '🫕', group: 'schweiz',
     words: 'Rösti Fondue Raclette Cervelat Zopf Gipfeli Läckerli Magenbrot Meringue Nusstorte Rüeblitorte Mehlsuppe Gerstensuppe Landjäger Mostbröckli Polenta Risotto Capuns Maluns Birnbrot Tirggel Hörnli Spätzli Knöpfli Wähe Müesli Schabziger Saucisson Chäschüechli' },
   { id: 'bahn', title: 'Bahn & Reisen', emoji: '🚆', group: 'schweiz',
@@ -128,7 +128,7 @@ export const themes = [
   { id: 'winter', title: 'Winter', emoji: '❄️', group: 'feste',
     words: 'Frost Schneemann Schlitten Snowboard Skilift Piste Handschuhe Mütze Schal Stiefel Kamin Decke Punsch Eiszapfen Schneeflocke Schlittschuh Eisbahn Iglu Lawine Kälte Winterjacke Pulverschnee Schneeball Rodeln Langlauf Fondue Heizung Wollsocken' },
   { id: 'weihnachten', title: 'Weihnachten', emoji: '🎄', group: 'feste',
-    words: 'Tannenbaum Christbaum Kerze Engel Geschenk Kugel Lametta Glocke Lebkuchen Guetzli Zimtstern Mailänderli Spitzbuben Adventskranz Christkind Samichlaus Rentier Schlitten Krippenspiel Glühwein Bescherung Heiligabend Mistelzweig Stechpalme Schleife Zuckerstange Tannenzweig Krippe Stern Lied Orange Nüsse' },
+    words: 'Tannenbaum Christbaum Kerze Engel Geschenk Kugel Lametta Glocke Lebkuchen Guetzli Zimtstern Mailänderli Spitzbuben Adventskranz Christkind Samichlaus Rentier Schlitten Krippenspiel Glühwein Bescherung Heiligabend Mistelzweig Stechpalme Schleife Zuckerstange Tannenzweig Krippe Stern Nüsse' },
   { id: 'ostern', title: 'Ostern', emoji: '🐣', group: 'feste',
     words: 'Osterhase Osterei Nest Körbchen Küken Lamm Tulpe Narzisse Frühling Schokolade Pinsel Farbe Osterbrunch Osterzopf Karfreitag Ostermontag Palmsonntag Glocke Eiertütschen Osterkerze Gras Osterstrauss Eierfarbe Lämmchen Ostersonntag Schoggihase Eiersuche' },
   { id: 'geburtstag', title: 'Geburtstag', emoji: '🎂', group: 'feste',
@@ -166,7 +166,7 @@ export const themes = [
   { id: 'zirkus', title: 'Zirkus', emoji: '🎪', group: 'freizeit',
     words: 'Zelt Manege Clown Akrobat Jongleur Zauberer Dompteur Trapez Seiltänzer Artist Löwe Elefant Pferd Pony Kunststück Applaus Popcorn Zuschauer Musik Vorhang Scheinwerfer Einrad Feuerspucker Direktor Zirkuswagen Nummer Pause Glitzer Kostüm Sägemehl' },
   { id: 'camping', title: 'Camping', emoji: '⛺', group: 'freizeit',
-    words: 'Zelt Schlafsack Isomatte Lagerfeuer Taschenlampe Rucksack Kompass Karte Wohnwagen Wohnmobil Hering Plane Klappstuhl Gaskocher Kochtopf Feldflasche Mückenspray Wald See Wanderschuh Stockbrot Hängematte Laterne Grillrost Sackmesser Zeltplatz Sternenzelt Mücke Seil Becher Decke' },
+    words: 'Zelt Schlafsack Isomatte Lagerfeuer Taschenlampe Rucksack Kompass Karte Wohnwagen Wohnmobil Hering Plane Klappstuhl Gaskocher Kochtopf Feldflasche Mückenspray Wald See Wanderschuh Stockbrot Hängematte Laterne Grillrost Sackmesser Zeltplatz Sternenzelt Mücke Seil Becher' },
   { id: 'wandern', title: 'Wandern', emoji: '🥾', group: 'freizeit',
     words: 'Wanderweg Rucksack Wanderschuhe Wanderstock Karte Kompass Gipfel Pfad Wegweiser Proviant Trinkflasche Aussicht Hütte Brücke Bach Wald Wiese Pause Picknick Sonnenhut Regenjacke Blasen Markierung Höhenmeter Etappe Pass Tal Bergsee Alp Gämse' },
   { id: 'fotografie', title: 'Fotografie', emoji: '📷', group: 'freizeit',
@@ -190,7 +190,7 @@ export const themes = [
   { id: 'mode', title: 'Mode & Schmuck', emoji: '👠', group: 'alltag',
     words: 'Handtasche Schmuck Kette Ohrring Armband Brosche Uhr Sonnenbrille Hut Schal Gürtel Absatz Stöckelschuh Pumps Lippenstift Nagellack Parfum Haarband Spange Laufsteg Model Designer Boutique Kollektion Stoff Seide Samt Spitze Anhänger' },
   { id: 'farben', title: 'Farben', emoji: '🌈', group: 'alltag',
-    words: 'Rot Blau Gelb Grün Orange Violett Lila Rosa Pink Türkis Braun Schwarz Weiss Grau Silber Gold Beige Magenta Ocker Oliv Bordeaux Purpur Mint Koralle Lavendel Zinnober Indigo Anthrazit Kupfer Bronze Petrol' },
+    words: 'Rot Blau Gelb Grün Orange Violett Lila Rosa Pink Türkis Braun Schwarz Weiss Grau Silber Gold Beige Magenta Ocker Oliv Bordeaux Purpur Mint Koralle Lavendel Zinnober Indigo Anthrazit Kupfer Bronze' },
   { id: 'schule', title: 'Schule', emoji: '🎒', group: 'alltag',
     words: 'Lehrerin Schüler Klasse Tafel Kreide Heft Buch Füller Bleistift Radiergummi Lineal Spitzer Thek Etui Pause Hausaufgabe Prüfung Zeugnis Note Mathematik Deutsch Turnen Zeichnen Pult Stundenplan Schulhaus Rechnen Lesen Schreiben Znüni' },
   { id: 'buero', title: 'Büro', emoji: '💼', group: 'alltag',
@@ -216,7 +216,7 @@ export const themes = [
   { id: 'gefuehle', title: 'Gefühle', emoji: '💗', group: 'welt',
     words: 'Freude Liebe Glück Trauer Wut Angst Mut Stolz Hoffnung Neugier Sehnsucht Dankbarkeit Geborgenheit Vertrauen Eifersucht Ärger Scham Überraschung Begeisterung Ruhe Gelassenheit Heimweh Fernweh Zuneigung Mitgefühl Langeweile Staunen Sorge Zuversicht Wärme' },
   { id: 'koerper', title: 'Körper', emoji: '🫶', group: 'welt',
-    words: 'Kopf Haare Auge Nase Mund Ohr Zahn Zunge Lippe Hals Schulter Arm Hand Finger Daumen Bauch Rücken Bein Knie Fuss Zehe Ferse Herz Lunge Magen Knochen Muskel Wange Stirn Kinn Ellbogen' },
+    words: 'Kopf Haare Auge Nase Mund Ohr Zahn Zunge Lippe Hals Schulter Arm Hand Finger Daumen Bauch Rücken Bein Knie Fuss Zehe Herz Lunge Magen Knochen Muskel Wange Stirn Kinn Ellbogen' },
   { id: 'liebe', title: 'Liebe & Romantik', emoji: '💕', group: 'welt',
     words: 'Liebe Herz Kuss Rose Umarmung Romantik Kerzenlicht Liebesbrief Valentinstag Ring Hochzeit Verlobung Sehnsucht Zärtlichkeit Treue Partnerin Schatz Liebling Flirt Herzklopfen Gedicht Pralinen Strauss Liebeslied Kosename Mondschein Zweisamkeit Händchen Rendezvous' },
   { id: 'laender', title: 'Länder', emoji: '🌍', group: 'welt',

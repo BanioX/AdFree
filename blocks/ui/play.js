@@ -360,7 +360,7 @@ export function mountPlay(app, opts, nav) {
       parts.push(h('div.win-pic', null, h('img', { src: pictureThumbUrl(pic, 96), alt: pic.title }), h('span', null, rec.newPic ? `Neu im Album: «${pic.title}»` : `«${pic.title}»`)));
     }
     const hint = stars < 3 ? `Für ${stars + 1} Sterne: höchstens ${stars === 2 ? game.par.three : game.par.two} Teile.` : 'Perfekt – alle Sterne!';
-    parts.push(h('p.win-line', null, `${game.moves} Teile · ${fmt(game.score)} Punkte`));
+    parts.push(h('p.win-line', null, `${game.moves} ${game.moves === 1 ? 'Teil' : 'Teile'} · ${fmt(game.score)} Punkte`));
     parts.push(h('p.win-hint', null, hint));
     const v = await showModal({
       title: `Level ${game.level} geschafft!`,

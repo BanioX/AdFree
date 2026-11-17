@@ -196,11 +196,14 @@ function renderMenu() {
     h('p.foot', null, 'Jedes Bild lässt sich ohne Raten lösen.'));
   setScreen(h('div.screen.menu', null, top, h('div.scroll', null, body)), 'menu');
   updateSummary();
-  const st = save.settings.get();
-  if (!st.helpSeen) {
-    save.settings.set({ helpSeen: true });
-    setTimeout(() => { if (current && current.name === 'menu') showHelp(); }, 400);
-  }
+  maybeHelp();
+}
+
+/** «So geht's» beim allerersten Start (egal ob Menü oder direkt ein Rätsel). */
+function maybeHelp() {
+  if (save.settings.get().helpSeen) return;
+  save.settings.set({ helpSeen: true });
+  setTimeout(() => showHelp(), 400);
 }
 
 function progressPct(def, cells) {
@@ -376,6 +379,7 @@ async function openPuzzle(id) {
   });
   setScreen(play.el, 'play', play);
   window.__nono = play;
+  maybeHelp();
 }
 
 // ---------- Router ----------

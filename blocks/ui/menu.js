@@ -109,7 +109,7 @@ export function mountMenu(app, nav) {
         ? { label: 'Weiterspielen', sub: `Level ${n} · ${what}`, onClick: () => nav.level(n) }
         : { label: n > 1 ? `Weiter – Level ${n}` : 'Spielen', sub: `${GOAL_EMOJI[type]} ${what}`, onClick: () => nav.level(n) };
       secondary = [
-        { label: 'Levelkarte', icon: 'grid', onClick: () => nav.map() },
+        { label: 'Karte', icon: 'grid', onClick: () => nav.map() },
         { label: 'Album', icon: 'image', onClick: showAlbum },
         { label: 'Statistik', icon: 'star', onClick: showStats },
       ];

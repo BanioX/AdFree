@@ -73,7 +73,7 @@ export function validateTheme(theme) {
     seen.add(w);
   }
   if (raw.length < 20) problems.push(`nur ${raw.length} Wörter (mindestens 20)`);
-  if (raw.length > 40) problems.push(`${raw.length} Wörter (höchstens 40)`);
+  if (raw.length > 30) problems.push(`${raw.length} Wörter (höchstens 30)`);
   return problems;
 }
 

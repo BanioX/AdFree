@@ -486,6 +486,19 @@ export class BoardView {
         ctx.globalAlpha = a;
         for (const [dr, dc] of this.hint.v.cells) ctx.drawImage(spr, bx + (this.hint.c + dc) * cs, by + (this.hint.r + dr) * cs, cs, cs);
         ctx.globalAlpha = 1;
+        if (this.hint.persist) {
+          // Coach-Mark: pulsierender Ring um das Ziel
+          const k = 0.5 + 0.5 * Math.sin(t * Math.PI * 2);
+          const pad = cs * (0.08 + 0.12 * k);
+          ctx.save();
+          ctx.lineWidth = Math.max(2.5, cs * 0.07);
+          ctx.strokeStyle = `rgba(255, 214, 90, ${0.55 + 0.4 * k})`;
+          ctx.shadowColor = 'rgba(255, 200, 60, .8)';
+          ctx.shadowBlur = cs * 0.3;
+          roundRect(ctx, bx + this.hint.c * cs - pad, by + this.hint.r * cs - pad, this.hint.v.w * cs + 2 * pad, this.hint.v.h * cs + 2 * pad, cs * 0.3);
+          ctx.stroke();
+          ctx.restore();
+        }
       }
     }
 

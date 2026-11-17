@@ -109,6 +109,7 @@ export class BoardView {
       return {
         hex,
         ghost: ghostColor(hex),
+        ghostStrong: ghostColor(hex, 0.4),
         zoneFill: rgba(rgb, lum > 0.85 ? 0.9 : 0.62),
         zoneRing: rgba(lum > 0.85 ? mixRgb(rgb, [90, 90, 110], 0.45) : rgb, 0.55),
         light: lum > 0.85,
@@ -341,7 +342,9 @@ export class BoardView {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, w, h);
     const popping = new Set(this.pops.map((p) => p.cell));
-    // Lochraster + Geister
+    // Lochraster + Geister (bei kleinen Zellen grösser und kräftiger, damit das Motiv lesbar bleibt)
+    const small = g.cs < 14;
+    const gr = g.cs * (g.cs < 11 ? 0.34 : small ? 0.29 : 0.22);
     for (let i = 0; i < L.cells.length; i++) {
       const k = L.cells[i];
       const x = (i % L.W + 0.5) * g.cs;
@@ -352,9 +355,9 @@ export class BoardView {
         ctx.arc(x, y, Math.max(0.6, g.cs * 0.08), 0, TAU);
         ctx.fill();
       } else {
-        ctx.fillStyle = this.colorInfo[k].ghost;
+        ctx.fillStyle = small ? this.colorInfo[k].ghostStrong : this.colorInfo[k].ghost;
         ctx.beginPath();
-        ctx.arc(x, y, g.cs * 0.22, 0, TAU);
+        ctx.arc(x, y, gr, 0, TAU);
         ctx.fill();
       }
     }

@@ -324,3 +324,6 @@
 .over-best { margin: 0; display: inline-flex; align-items: center; gap: 4px; font-weight: 800; color: var(--accent-deep); }
 .over-line { margin: 4px 0 0; font-size: 14px; }
 
+
+.blocks-menu .gm-sec { padding: 8px 6px; gap: 6px; }
+.blocks-menu .gm-sec-text b { font-size: 14.5px; }

@@ -4,7 +4,7 @@
 //   node paint/gen/tests/check.mjs                      # alle Generatoren, Seeds 1-6
 //   node paint/gen/tests/check.mjs --gen mandala --seeds 1-12
 //   node paint/gen/tests/check.mjs --gen none --photos /pfad/zu/bildern --detail grob,mittel,fein
-//   Optionen: --out DIR (Standard: paint/gen/tests/out), --port 8104, --no-png
+//   Optionen: --out DIR (Standard: paint/gen/tests/out), --port 8101, --no-png
 //
 // Prüft je Puzzle: Abdeckung (keine leeren Pixel), keine unsichtbaren Formen, Flächenzahl im
 // Zielbereich, gültige Palettenindizes, jede Farbe benutzt, Determinismus; meldet zerstückelte
@@ -30,7 +30,9 @@ const opt = (name, def) => {
 };
 const flag = (name) => args.includes('--' + name);
 
-const PORT = +opt('port', process.env.PORT || 8104);
+// Port 8101 (Farbenzauber). Läuft dort schon ein statischer Server (python3 -m http.server), wird
+// er mitbenutzt – ausser für --photos (die Bilder liefert nur der eigene Server aus).
+const PORT = +opt('port', process.env.PORT || 8101);
 const OUT = path.resolve(opt('out', path.join(HERE, 'out')));
 const GENS = opt('gen', 'mandala,glas,polygon,muster').split(',').filter((g) => g && g !== 'none');
 const seedArg = opt('seeds', '1-6');
@@ -66,7 +68,13 @@ function serve() {
       res.end(data);
     });
   });
-  return new Promise((resolve) => server.listen(PORT, '127.0.0.1', () => resolve(server)));
+  return new Promise((resolve, reject) => {
+    server.once('error', (e) => {
+      if (e.code === 'EADDRINUSE' && !PHOTOS) resolve({ close() {} });
+      else reject(e);
+    });
+    server.listen(PORT, '127.0.0.1', () => resolve(server));
+  });
 }
 
 function savePng(name, dataUrl) {

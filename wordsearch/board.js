@@ -69,6 +69,9 @@ export class Board {
     this.el.addEventListener('pointerup', (e) => this.onUp(e));
     this.el.addEventListener('pointercancel', () => this.cancelDrag());
     this.el.addEventListener('lostpointercapture', () => { if (this.drag) this.onUp(null); });
+    // Wischgesten nicht an den globalen Doppeltipp-Schutz weiterreichen (touch-action: none genügt hier),
+    // sonst würde ein schneller Tipp auf «Tipp» direkt nach einem Wisch verschluckt.
+    this.el.addEventListener('touchend', (e) => e.stopPropagation());
   }
 
   // ---------- Layout ----------

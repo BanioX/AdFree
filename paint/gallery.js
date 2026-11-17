@@ -121,7 +121,7 @@ export function createGallery(lib, { onOpen }) {
     if (lib.photoEnabled) secondary.push({ label: 'Eigenes Foto', sub: 'Foto ausmalen', icon: 'camera', onClick: openPhoto });
     if (lib.gens.length) secondary.push({ label: 'Zufallsbild', sub: 'Neu erzeugen', icon: 'shuffle', onClick: randomGen });
     const st = statsSummary();
-    const stats = [
+    const stats = !(st.fills || st.done || st.started) ? null : [
       { label: 'Fertig', value: st.done },
       { label: 'Begonnen', value: st.started },
       { label: 'Felder', value: st.fills.toLocaleString('de-CH') },

@@ -14,7 +14,7 @@ const K = {
 export const SIZES = [8, 10];
 
 export function getSettings() {
-  const s = { skin: 'juwelen', size: 8, tab: 'classic', seenHelp: false, ...store.get(K.settings, {}) };
+  const s = { skin: 'juwelen', size: 8, tab: 'classic', ...store.get(K.settings, {}) };
   if (!skins.some((k) => k.id === s.skin)) s.skin = 'juwelen';
   if (!SIZES.includes(s.size)) s.size = 8;
   if (s.tab !== 'classic' && s.tab !== 'adventure') s.tab = 'classic';

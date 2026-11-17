@@ -143,7 +143,7 @@ async function run() {
   await wait(page, 500);
   check((await ev(page, () => location.hash)) === '' || (await ev(page, () => location.hash)) === '#', 'Zurück ins Menü');
   check((await page.locator('.gm-primary-label').textContent()) === 'Weiterspielen', 'Menü bietet «Weiterspielen»');
-  await page.getByRole('button', { name: /Levelkarte/ }).click();
+  await page.getByRole('button', { name: 'Karte', exact: true }).click();
   await wait(page, 600);
   check(await page.locator('.lv.current').count() === 1, 'Karte zeigt aktuelles Level');
   await shot(page, 'e2e-08-map');
@@ -179,9 +179,9 @@ async function run() {
   await ev(page, () => {
     const b = window.__blocks;
     const g = b.game;
-    // Brett fast voll: nur Spalte 7 frei, Teile passen nicht – ausser einem Punkt
+    // Schachbrett: nur einzelne Felder frei – grosse Teile passen nicht, nur der Punkt
     const rows = [];
-    for (let r = 0; r < 8; r++) rows.push(r % 2 ? '1212121.' : '2121212.');
+    for (let r = 0; r < 8; r++) rows.push(r % 2 ? '.1.2.3.4' : '5.6.7.8.');
     g.board = g.board.constructor.fromLayout(8, rows);
     const cat = g.cat;
     g.tray = [cat.find('#'), cat.find('##|##'), cat.find('###|###|###')];
@@ -189,12 +189,11 @@ async function run() {
     b.view.setGame(g);
   });
   await wait(page, 200);
-  const dot = await ev(page, () => window.__blocks.dragPlan(0, 0, 7));
+  const dot = await ev(page, () => window.__blocks.dragPlan(0, 0, 1));
   await touchDrag(page, cdp, dot.from, dot.to);
   await wait(page, 300);
   const st = await ev(page, () => ({ moves: window.__blocks.game.moves, over: window.__blocks.game.over, tray: window.__blocks.game.tray.map((v) => v && v.key) }));
   check(st.over, 'kein Teil passt mehr: ' + JSON.stringify(st));
-  // Spalte 7 ist nun bei Zeile 0 belegt: weitere Punkte gibt es nicht – das Spiel ist vorbei
   await page.locator('.over-score').waitFor({ state: 'visible', timeout: 5000 }).catch(() => {});
   await wait(page, 400);
   check((await dialogTitle(page)) != null && await page.locator('.over-score').isVisible(), 'Ende-Blatt erscheint');

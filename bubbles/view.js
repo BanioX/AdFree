@@ -402,6 +402,14 @@ export class PlayView {
     cb?.();
   }
 
+  /** Animiert ein Ereignis, das nicht aus einem Schuss stammt (z.B. Rettung). */
+  animateExternal(ev) {
+    this.lastEv = ev;
+    this.settledPending = true;
+    this.hudShots = this.game.shotsLeft;
+    this.impact(ev);
+  }
+
   // ---------- Animation ----------
 
   invalidate() {

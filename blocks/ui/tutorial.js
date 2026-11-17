@@ -100,6 +100,7 @@ async function dragPiece(api, sc, pc, r, c, ghostCells) {
   pc.style.transition = 'left .85s cubic-bezier(.45,.05,.3,1), top .85s cubic-bezier(.45,.05,.3,1), width .25s, height .25s';
   at(pc, grabX - (w * CS) / 2, grabY - hh * CS - lift + 4, w * CS, hh * CS);
   const drag = api.finger.drag([from, to], 850);
+  drag.catch(() => {}); // Abbruch beim Schrittwechsel ist normal
   await api.sleep(650);
   at(pc, tx, ty - lift);
   await api.sleep(500);

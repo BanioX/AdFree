@@ -422,9 +422,9 @@
   font-weight: 800;
   font-size: 14.5px;
   box-shadow: 0 6px 18px rgba(0, 0, 0, .22);
-  animation: sol-bob 1.6s ease-in-out infinite;
+  animation: sol-coach-bob 1.6s ease-in-out infinite;
 }
-@keyframes sol-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+@keyframes sol-coach-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
 
 /* ================================================================ Tutorial-Demos */
 

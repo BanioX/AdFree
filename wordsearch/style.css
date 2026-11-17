@@ -38,24 +38,6 @@
 @keyframes draw { to { stroke-dashoffset: 0; } }
 @keyframes logo-in { from { opacity: 0; transform: translateY(6px) scale(.8); } }
 
-/* ---------- Hero ---------- */
-
-.hero { padding: 16px 16px 12px; display: flex; flex-direction: column; gap: 12px; }
-.hero-top { display: flex; align-items: center; gap: 14px; }
-.hero-emoji {
-  width: 64px; height: 64px; flex: 0 0 auto; border-radius: 20px; display: grid; place-items: center; font-size: 36px;
-  background: color-mix(in srgb, var(--g, var(--accent)) 18%, #fff);
-  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--g, var(--accent)) 30%, transparent);
-}
-.hero-emoji.dice { background: linear-gradient(145deg, #eaf5e2, #fff3c4); box-shadow: inset 0 0 0 1.5px #d7ebc8; }
-.hero-text { min-width: 0; }
-.hero-kicker { font-size: 12.5px; font-weight: 800; color: var(--accent); text-transform: uppercase; letter-spacing: .06em; }
-.hero-title { font-size: 23px; font-weight: 850; letter-spacing: -.01em; line-height: 1.15; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.hero-sub { font-size: 14.5px; color: var(--text-2); font-weight: 650; }
-.progress { height: 8px; border-radius: 99px; background: var(--surface-2); overflow: hidden; }
-.progress i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--accent-2), var(--accent)); transition: width .4s var(--ease-out); }
-.btn.big { min-height: 56px; font-size: 19px; font-weight: 800; box-shadow: 0 8px 18px rgba(63, 122, 39, .28); }
-.btn.big svg { width: 22px; height: 22px; }
 .btn.small { min-height: 38px; font-size: 15px; align-self: center; padding: 0 14px; }
 
 /* ---------- Segment (Schwierigkeit) ---------- */
@@ -75,49 +57,11 @@
 .seg-btn.active { background: var(--surface); color: var(--accent-dark); box-shadow: 0 2px 8px rgba(70, 45, 20, .12); }
 .seg-btn .dot { position: absolute; top: 7px; right: 9px; width: 8px; height: 8px; border-radius: 50%; background: var(--warn); }
 .seg.small .seg-btn { padding: 8px 4px; }
-.seg-info { margin: 8px 6px 0; font-size: 13.5px; color: var(--text-2); font-weight: 650; text-align: center; }
-
-/* ---------- Zeilen-Karten ---------- */
-
-.card.row {
-  width: 100%; border: 0; text-align: left; display: flex; align-items: center; gap: 14px;
-  padding: 12px 14px; margin-top: 12px; transition: transform .15s var(--ease-out);
-}
-.card.row:active, .stats-mini:active { transform: scale(.98); }
-.row-ic {
-  width: 48px; height: 48px; flex: 0 0 auto; border-radius: 15px; display: grid; place-items: center; font-size: 26px;
-  background: color-mix(in srgb, var(--g) 16%, #fff);
-}
-.row-text { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; }
-.row-text b { font-size: 17px; font-weight: 800; }
-.row-text small { font-size: 14px; color: var(--text-2); font-weight: 650; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.row-text small.streak { color: #d9822b; }
-.emoji-strip { font-size: 15px; margin-top: 3px; letter-spacing: 1px; opacity: .9; white-space: nowrap; overflow: hidden; }
-.chev { color: var(--text-3); width: 22px; height: 22px; flex: 0 0 auto; }
-.chev svg { width: 22px; height: 22px; }
-.daily .check {
-  width: 34px; height: 34px; border-radius: 50%; background: var(--good); color: #fff; display: grid; place-items: center; flex: 0 0 auto;
-  box-shadow: 0 4px 10px rgba(52, 168, 106, .35);
-}
-.daily.done .row-text small:first-of-type { color: var(--good); }
-
-/* ---------- Statistik-Karte ---------- */
-
-.stats-mini { width: 100%; border: 0; text-align: left; padding: 12px 14px 14px; margin-top: 12px; display: block; transition: transform .15s var(--ease-out); }
-.sm-head, .set-head { display: flex; align-items: center; gap: 8px; color: var(--text-2); }
-.sm-head svg, .set-head svg { width: 20px; height: 20px; }
-.sm-head b, .set-head b { flex: 1 1 auto; font-size: 15px; font-weight: 800; color: var(--text); }
-.sm-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 10px; }
-.sm { background: var(--surface-2); border-radius: 14px; padding: 8px 4px; text-align: center; }
-.sm b { display: block; font-size: 20px; font-weight: 850; }
-.sm .suf { font-size: 15px; color: #e8a317; }
-.sm small { font-size: 12px; font-weight: 700; color: var(--text-2); }
 
 /* ---------- Einstellungen ---------- */
 
 .settings { padding: 12px 14px 6px; margin-top: 12px; }
 .toggle-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 50px; font-weight: 700; font-size: 16px; border-top: 1px solid var(--line); }
-.set-head + .toggle-row { margin-top: 8px; }
 .settings { margin-top: 0; padding: 4px 16px; }
 .settings .toggle-row:first-child { border-top: 0; }
 .gm-art.custom .logo { margin: 14px 18px; }

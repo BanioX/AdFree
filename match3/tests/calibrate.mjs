@@ -2,7 +2,13 @@
 //   node match3/tests/calibrate.mjs [von] [bis] [läufe]
 import { getLevel, levelDef } from '../levels.js';
 import { Game } from '../engine.js';
-import { playLevel } from './bot.js';
+import { autoplay } from '../solver.js';
+
+function playLevel(g, { seed }) {
+  const won = autoplay(g, { seed });
+  if (won && !g.finaleDone) g.finale();
+  return { won, movesUsed: g.movesUsed, score: g.score, stars: g.stars() };
+}
 import { hashString } from '../../shared/rng.js';
 
 const from = +(process.argv[2] || 1), to = +(process.argv[3] || 40), runs = +(process.argv[4] || 4);

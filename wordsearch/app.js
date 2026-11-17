@@ -34,11 +34,9 @@ const themeColor = (t) => (t && t.color) || groupById(t && t.group).color;
 // ---------- Lokale Icons ----------
 const IC = {
   help: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.3 9.4a2.8 2.8 0 0 1 5.4 1c0 1.9-2.7 2.3-2.7 4"/><circle cx="12" cy="17.6" r=".4" fill="currentColor"/></svg>',
-  chevron: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>',
   chevronDown: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>',
   clock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2M10 2.5h4"/></svg>',
   bulb: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2V16h5v-.1c0-.8.4-1.5 1-2A6 6 0 0 0 12 3z"/></svg>',
-  chart: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 20V11M12 20V5M19 20v-6"/></svg>',
 };
 const starSvg = (on, size = 30) => `<svg class="st ${on ? 'on' : ''}" viewBox="0 0 24 24" width="${size}" height="${size}" aria-hidden="true"><path d="M12 2.8l2.8 5.8 6.3.9-4.6 4.4 1.1 6.3L12 17.2l-5.6 3 1.1-6.3-4.6-4.4 6.3-.9z" stroke-linejoin="round" stroke-width="1.6"/></svg>`;
 
@@ -67,7 +65,7 @@ function validState(st) {
 }
 
 function newState(puzzle, extra = {}) {
-  return { puzzle, found: [], elapsed: 0, hints: 0, done: false, stars: 0, created: Date.now(), ...extra };
+  return { puzzle, found: [], elapsed: 0, hints: 0, done: false, stars: 0, created: Date.now() + Math.random(), ...extra };
 }
 
 /** Nächstes Thema aus einer gemischten Reihenfolge (alle Themen kommen dran, bevor sich eines wiederholt). */
@@ -208,7 +206,7 @@ function primaryFor(modeId) {
     const f = st.found.length, n = st.puzzle.words.length;
     return {
       label: f || st.elapsed > 3000 ? 'Weiterspielen' : 'Spielen',
-      sub: `${t.emoji} ${t.title} · ${mode.title} · ${f} von ${n} Wörtern`,
+      sub: `${t.emoji} ${t.title} · ${mode.title} · ${f}/${n} Wörter`,
       onClick: () => go('play/' + modeId),
     };
   }
@@ -234,7 +232,7 @@ function secondaryFor(modeId) {
   return [
     { label: 'Themen', icon: 'grid', onClick: () => go('themen') },
     {
-      label: 'Neues Spiel', icon: 'refresh',
+      label: 'Neu', icon: 'refresh',
       onClick: async () => {
         const st = runningGame(modeId);
         if (st && st.found.length && !(await confirmLeave())) return;
@@ -424,7 +422,12 @@ function showGame(kind, modeId) {
   const total = pz.words.length;
   const foundSet = new Set(st.found);
   const storeKey = kind === 'daily' ? K.daily : K.game(modeId);
-  const save = () => store.set(storeKey, st);
+  const save = () => {
+    // Nicht über ein inzwischen neu erzeugtes Rätsel derselben Stufe schreiben (z.B. «Nächstes Rätsel»).
+    const cur = store.get(storeKey, null);
+    if (cur && cur.created && st.created && cur.created !== st.created) return;
+    store.set(storeKey, st);
+  };
 
   // --- DOM ---
   const back = backButton('#', () => { sfx.play('tap'); go(''); });

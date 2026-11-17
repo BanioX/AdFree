@@ -154,8 +154,13 @@ export function createPaintView(lib, { onBack, onChanged, debug = false } = {}) 
   // ---------- Start einer Sitzung ----------
   function start(id, item, pz, M, hash) {
     const n = M.n;
-    const rec = loadProgress(id);
+    let rec = loadProgress(id);
+    // Bild wurde seit dem letzten Malen überarbeitet (anderer Inhalts-Hash): alte Füll-Bits passen
+    // nicht mehr. Fertige Bilder bleiben fertig, begonnene starten neu.
+    const changed = !!(rec && rec.h && hash && rec.h !== hash);
+    if (changed) rec = rec.done ? { ...rec, f: null, o: null, all: true } : null;
     const filled = rec && rec.f ? decodeBits(rec.f, n) : new Uint8Array(n);
+    if (rec && rec.all) filled.fill(1);
     for (let i = 0; i < n; i++) if (M.auto[i]) filled[i] = 1;
     const seen = new Set();
     const order = [];
@@ -204,7 +209,8 @@ export function createPaintView(lib, { onBack, onChanged, debug = false } = {}) 
     }
     S.ready = true;
     if (!rec && !S.done && loadStats().fills === 0) showCoach();
-    if (rec && !rec.h && hash) scheduleSave();
+    if ((rec && !rec.h && hash) || changed) scheduleSave();
+    if (changed && !rec) setTimeout(() => toast('Dieses Bild wurde überarbeitet und beginnt neu.', 3000), 300);
     if (debug) exposeDebug();
   }
 
@@ -338,6 +344,7 @@ export function createPaintView(lib, { onBack, onChanged, debug = false } = {}) 
   }
 
   function showTip() {
+    if (S.left <= 5) return; // kurz vor dem Ziel nicht mehr stören
     for (const t of TIPS) {
       if (S.fills !== t.after) continue;
       const key = 'paint.tip.' + t.id;

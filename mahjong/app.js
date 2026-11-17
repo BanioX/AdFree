@@ -6,9 +6,12 @@ import { sfx } from '../shared/sfx.js';
 import { icon, h, toast, showModal, confirmDialog, celebrate, setupPage, soundButton, backButton, sleep } from '../shared/ui.js';
 import { layouts } from './data/layouts.js';
 import { tilesets, tilesetById } from './data/tilesets.js';
-import { parseLayout, generateLayoutDef, sizeClass, solve } from './engine.js';
+import { parseLayout, generateLayoutDef, sizeClass, solve, TILE } from './engine.js';
 import { Session } from './game.js';
 import { BoardView, drawMiniLayout } from './board.js';
+import { gameMenu, menuSection } from '../shared/gamemenu.js';
+import { showTutorial, maybeShowTutorial, tutorialSeen } from '../shared/tutorial.js';
+import { tutorialSteps } from './tutorial.js';
 
 setupPage();
 
@@ -19,7 +22,7 @@ const K = {
   stats: 'mahjong.stats',
   cur: 'mahjong.cur',
   daily: 'mahjong.daily',
-  seen: 'mahjong.seenHelp',
+  coached: 'mahjong.coached',
   hints: 'mahjong.tips',
 };
 const app = document.getElementById('app');
@@ -104,6 +107,7 @@ function dailyDef(date = todayKey()) {
 let screen = null;
 let currentRoute = null;
 let pendingFresh = false;
+let tutorialPending = false;
 
 function mount(el, api = {}) {
   if (screen && screen.destroy) screen.destroy();
@@ -137,9 +141,9 @@ function route(force = false) {
   } else if (r === 'daily') openDaily();
   else showMenu();
   pendingFresh = false;
-  if (!store.get(K.seen, false)) {
-    store.set(K.seen, true);
-    setTimeout(() => showHelp(), 350);
+  if (!tutorialSeen(ID) && !tutorialPending) {
+    tutorialPending = true;
+    setTimeout(() => maybeShowTutorial({ id: ID, steps: tutorialSteps(settings.tileset), accent: '#c0573e' }), 250);
   }
 }
 
@@ -156,15 +160,18 @@ function iconBtn(name, onClick, label) {
   return b;
 }
 
+function helpBtn() {
+  const b = h('button.icon-btn', { type: 'button', 'aria-label': 'So geht’s', html: '<span class="gm-q">?</span>' });
+  b.addEventListener('click', () => { sfx.play('click'); showHelp(); });
+  return b;
+}
+
 // ------------------------------------------------------------ Menü
 
 function tileCanvas(setId, face, w) { return BoardView.tileImage(setId, face, w); }
 
-function showMenu() {
-  const progress = getProgress();
-  const cur = loadCur();
-  const set = tilesetById(settings.tileset);
-
+function menuArt(setId) {
+  const set = tilesetById(setId);
   const fan = h('div.fan');
   const fanFaces = set.kind === 'drawn' ? [0, 31, 35, 9] : [0, 7, 35, 39];
   const angles = [-16, -5, 6, 17];
@@ -175,84 +182,131 @@ function showMenu() {
     c.style.transform = `translate(${xs[k] - 25 - m}px, ${-40 - m + Math.abs(angles[k]) * 0.9}px) rotate(${angles[k]}deg)`;
     fan.append(c);
   });
+  return fan;
+}
+
+function levelCard(def, idx, progress, nextIdx, minis) {
+  const st = levelState(progress, def.id);
+  const unlocked = isUnlocked(progress, idx);
+  const L = parsedLayout(def);
+  const cv = h('canvas');
+  const starsEl = h('div.stars');
+  for (let k = 0; k < 3; k++) starsEl.append(h('span', { class: k < (st?.stars || 0) ? 'on' : '', html: icon('star', { size: 15 }) }));
+  const btn = h('button.lv', { type: 'button', class: 'lv' + (unlocked ? '' : ' locked') + (idx === nextIdx ? ' current' : ''), 'data-idx': idx },
+    h('span.num', null, String(idx + 1)),
+    cv,
+    unlocked ? null : h('span.lock', { html: icon('lock', { size: 22 }) }),
+    h('b', null, def.name),
+    h('small', null, st?.best ? `${L.tiles.length} Steine · ${fmtTime(st.best)}` : `${L.tiles.length} Steine`),
+    starsEl);
+  btn.addEventListener('click', () => {
+    if (!unlocked) {
+      sfx.play('error');
+      btn.classList.remove('sp-shake'); void btn.offsetWidth; btn.classList.add('sp-shake');
+      toast('Schliesse zuerst ein anderes Layout ab');
+      return;
+    }
+    sfx.play('tap');
+    startLevel(idx);
+  });
+  minis.push([cv, L, st?.wins > 0, unlocked]);
+  return btn;
+}
+
+function paintMinis(minis) {
+  for (const [cv, L, won, unlocked] of minis) drawMiniLayout(cv, L.tiles, { color: won ? '#2f8a73' : unlocked ? '#c0573e' : '#a89c90', done: won });
+}
+
+async function chooseEndless() {
+  const v = await showModal({
+    title: 'Zufallsspiel',
+    text: 'Neue Form, neue Steine – so oft du magst. Wie gross soll das Brett sein?',
+    buttons: [
+      { label: 'Klein · bis 72 Steine', value: 'klein', primary: true },
+      { label: 'Mittel · bis 110 Steine', value: 'mittel', primary: true },
+      { label: 'Gross · bis 144 Steine', value: 'gross', primary: true },
+      { label: 'Abbrechen', value: null, ghost: true },
+    ],
+  });
+  if (v) startEndless(v);
+}
+
+function showMenu() {
+  const progress = getProgress();
+  const cur = loadCur();
+  const stats = getStats();
 
   const nextIdx = nextLevelIndex(progress);
-  let playLabel, playSub;
-  if (cur) {
-    playLabel = 'Weiter';
-    playSub = `${cur.layout.name || 'Spiel'} · ${Math.round(cur.progress * 100)} % abgeräumt`;
-  } else {
-    playLabel = 'Spielen';
-    playSub = `Level ${nextIdx + 1}: ${layouts[nextIdx].name}`;
-  }
-  const playBtn = h('button.play-btn', { type: 'button' },
-    h('b', { html: icon('play', { size: 22 }) + playLabel }),
-    h('small', null, playSub));
-  playBtn.addEventListener('click', () => {
-    sfx.play('tap');
-    if (cur) go('spiel');
-    else startLevel(nextIdx);
-  });
+  const primary = cur
+    ? { label: 'Weiter', sub: `${cur.meta.kind === 'daily' ? 'Tagesrätsel' : (cur.layout.name || 'Spiel')} · ${Math.round(cur.progress * 100)} % abgeräumt`, onClick: () => go('spiel') }
+    : { label: 'Spielen', sub: `Level ${nextIdx + 1}: ${layouts[nextIdx].name}`, onClick: () => startLevel(nextIdx) };
 
-  const hero = h('div.hero', null, fan, playBtn);
+  const dDef = dailyDef();
+  const daily = {
+    done: isDailyDone(ID),
+    sub: `${dDef.name} · ${parseLayout(dDef).tiles.length} Steine`,
+    streak: dailyStreak(ID),
+    onClick: () => go('daily'),
+  };
 
   const done = completedCount(progress);
   const stars = totalStars(progress);
-  const journeyCard = h('button.mcard', { type: 'button' },
-    h('div.ic', { style: { background: '#fde9e1' } }, '🗺️'),
-    h('div.tx', null, h('b', null, 'Reise'), h('span', null, `${done} von ${layouts.length} Layouts · ★ ${stars}/${layouts.length * 3}`)),
-    h('div.chev', { html: icon('back', { size: 20 }).replace('<svg', '<svg style="transform:scaleX(-1)"') }));
-  journeyCard.addEventListener('click', () => { sfx.play('tap'); go('reise'); });
+  const minis = [];
+  const strip = h('div.jstrip', null, layouts.map((def, idx) => levelCard(def, idx, progress, nextIdx, minis)));
+  const allBtn = h('button.jall', { type: 'button' }, `Alle ${layouts.length} Layouts`, h('span', { html: icon('back', { size: 16 }) }));
+  allBtn.addEventListener('click', () => { sfx.play('click'); go('reise'); });
+  const journeyHead = h('div.journey-head', null,
+    h('span', null, `${done}/${layouts.length}`),
+    h('div.bar', null, h('i', { style: { width: Math.round((done / layouts.length) * 100) + '%' } })),
+    h('span', null, `★ ${stars}`));
 
-  const dDone = isDailyDone(ID);
-  const streak = dailyStreak(ID);
-  const dDef = dailyDef();
-  const dailyCard = h('button.mcard', { type: 'button' },
-    calendarIcon(),
-    h('div.tx', null,
-      h('b', null, 'Tagesrätsel', dDone ? h('span.done-badge', { html: icon('check', { size: 14, stroke: 3 }) }) : null),
-      h('span', null, dDone
-        ? `Heute gelöst${streak > 1 ? ` · ${streak} Tage in Folge` : ''}`
-        : `Heute: ${dDef.name} · ${parseLayout(dDef).tiles.length} Steine${streak > 0 ? ` · Serie ${streak}` : ''}`)),
-    h('div.chev', { html: icon('back', { size: 20 }).replace('<svg', '<svg style="transform:scaleX(-1)"') }));
-  dailyCard.addEventListener('click', () => { sfx.play('tap'); go('daily'); });
-
-  const chips = h('div.size-chips');
-  for (const [size, label] of [['klein', 'Klein'], ['mittel', 'Mittel'], ['gross', 'Gross']]) {
-    const c = h('button.chip', { type: 'button' }, label);
-    c.addEventListener('click', (e) => { e.stopPropagation(); sfx.play('tap'); startEndless(size); });
-    chips.append(c);
-  }
-  const endlessCard = h('div.mcard.endless', null,
-    h('div.ic', { style: { background: '#e3f3ee' } }, '🎲'),
-    h('div.tx', null, h('b', null, 'Zufallsspiel'), h('span', null, 'Neue Form, neue Steine – endlos')),
-    chips);
-
-  const statsBtn = h('button.btn', { type: 'button', html: icon('star', { size: 20 }) + 'Statistik' });
-  statsBtn.addEventListener('click', () => { sfx.play('click'); showStats(); });
-  const helpBtn = h('button.btn', { type: 'button', html: icon('hint', { size: 20 }) + 'So geht’s' });
-  helpBtn.addEventListener('click', () => { sfx.play('click'); showHelp(); });
-
-  const el = h('div.screen.menu-screen', null,
-    h('div.topbar', null,
-      backButton('../'),
-      h('div.title', null, 'Mahjong'),
-      h('div.right', null, iconBtn('settings', () => showSettings(() => showMenuRefresh()), 'Einstellungen'), soundButton())),
-    h('div.scroll', null,
-      h('div.menu', null, hero,
-        h('div.cards', null, journeyCard, dailyCard, endlessCard),
-        h('div.menu-row', null, statsBtn, helpBtn))));
-  mount(el, {});
+  const best = stats.best || {};
+  const bestAny = [best.klein, best.mittel, best.gross].filter(Boolean);
+  const menu = gameMenu({
+    id: ID,
+    title: 'Mahjong',
+    tagline: 'Gleiche Steine paarweise abräumen',
+    accent: '#c0573e',
+    art: menuArt(settings.tileset),
+    primary,
+    daily,
+    modes: {
+      label: 'Steine',
+      value: settings.tileset,
+      options: tilesets.map((t) => ({ id: t.id, label: t.name })),
+      onChange(id) {
+        settings.tileset = id;
+        saveSettings();
+        const art = menu.querySelector('.gm-art');
+        if (art) art.replaceChildren(menuArt(id));
+      },
+    },
+    secondary: [
+      { label: 'Reise', sub: `${done}/${layouts.length} · ★ ${stars}`, icon: 'grid', onClick: () => go('reise') },
+      { label: 'Zufall', sub: 'Endlos', icon: 'shuffle', onClick: () => chooseEndless() },
+      { label: 'Statistik', icon: 'star', onClick: () => showStats() },
+    ],
+    stats: [
+      { label: 'Gewonnen', value: stats.won },
+      { label: 'Sterne', value: `${stars}★` },
+      { label: 'Bestzeit', value: bestAny.length ? fmtTime(Math.min(...bestAny)) : '–' },
+      { label: 'Tage-Serie', value: dailyStreak(ID) },
+    ],
+    sections: [menuSection('Reise', journeyHead, strip, allBtn)],
+    onHelp: () => showHelp(),
+    backHref: '../',
+  });
+  menu.classList.add('screen', 'menu-screen');
+  mount(menu, {});
+  requestAnimationFrame(() => {
+    paintMinis(minis);
+    const c = strip.querySelector('.lv.current');
+    if (c) strip.scrollLeft = Math.max(0, c.offsetLeft - (strip.clientWidth - c.offsetWidth) / 2);
+  });
   updateSummary();
 }
 
 function showMenuRefresh() { if (currentRoute === '') showMenu(); }
-
-function calendarIcon() {
-  const d = new Date();
-  const months = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'];
-  return h('div.ic.cal', null, h('i', null, months[d.getMonth()]), h('b', null, String(d.getDate())));
-}
 
 // ------------------------------------------------------------ Reise
 
@@ -261,48 +315,21 @@ function showJourney() {
   const done = completedCount(progress);
   const stars = totalStars(progress);
   const nextIdx = nextLevelIndex(progress);
-  const grid = h('div.levels');
   const minis = [];
-  layouts.forEach((def, idx) => {
-    const st = levelState(progress, def.id);
-    const unlocked = isUnlocked(progress, idx);
-    const L = parsedLayout(def);
-    const cv = h('canvas');
-    const starsEl = h('div.stars');
-    for (let k = 0; k < 3; k++) starsEl.append(h('span', { class: k < (st?.stars || 0) ? 'on' : '', html: icon('star', { size: 15 }) }));
-    const btn = h('button.lv', { type: 'button', class: 'lv' + (unlocked ? '' : ' locked') + (idx === nextIdx ? ' current' : ''), 'data-idx': idx },
-      h('span.num', null, String(idx + 1)),
-      cv,
-      unlocked ? null : h('span.lock', { html: icon('lock', { size: 22 }) }),
-      h('b', null, def.name),
-      h('small', null, st?.best ? `${L.tiles.length} Steine · ${fmtTime(st.best)}` : `${L.tiles.length} Steine`),
-      starsEl);
-    btn.addEventListener('click', () => {
-      if (!unlocked) {
-        sfx.play('error');
-        btn.classList.remove('sp-shake'); void btn.offsetWidth; btn.classList.add('sp-shake');
-        toast('Schliesse zuerst ein anderes Layout ab');
-        return;
-      }
-      sfx.play('tap');
-      startLevel(idx);
-    });
-    minis.push([cv, L, st?.wins > 0, unlocked]);
-    grid.append(btn);
-  });
+  const grid = h('div.levels', null, layouts.map((def, idx) => levelCard(def, idx, progress, nextIdx, minis)));
   const pct = Math.round((done / layouts.length) * 100);
   const el = h('div.screen', null,
     h('div.topbar', null,
       backButton('./', () => { sfx.play('click'); goBackToMenu(); }),
       h('div.title', null, 'Reise'),
-      h('span.chip', { html: icon('star', { size: 16 }) + `<span>${stars}/${layouts.length * 3}</span>`, style: { color: '#b77905' } })),
+      h('span.chip.star-chip', { html: icon('star', { size: 16 }) + `<span>${stars}/${layouts.length * 3}</span>` })),
     h('div.scroll', null,
       h('div.journey', null,
         h('div.journey-head', null, h('span', null, `${done}/${layouts.length}`), h('div.bar', null, h('i', { style: { width: pct + '%' } })), h('span', null, `${pct} %`)),
         grid)));
   mount(el, {});
   requestAnimationFrame(() => {
-    for (const [cv, L, won, unlocked] of minis) drawMiniLayout(cv, L.tiles, { color: won ? '#2f8a73' : unlocked ? '#c0573e' : '#a89c90', done: won });
+    paintMinis(minis);
     const cur = grid.querySelector('.lv.current');
     if (cur) cur.scrollIntoView({ block: 'center' });
   });
@@ -396,6 +423,7 @@ function showGame(session, slot, { fresh = false } = {}) {
   let lastMatch = 0;
   let combo = 0;
   let deadWarned = false;
+  let coachEl = null;
   let tipCount = store.get(K.hints, 0);
 
   const persist = () => {
@@ -425,7 +453,9 @@ function showGame(session, slot, { fresh = false } = {}) {
     h('div.topbar', null,
       backButton('./', () => { sfx.play('click'); leave(); }),
       h('div.title', null, nameEl, subEl),
-      iconBtn('settings', () => showSettings(() => { view.setOptions(settings); }), 'Einstellungen')),
+      h('div.right', null,
+        helpBtn(),
+        iconBtn('settings', () => showSettings(() => { view.setOptions(settings); }), 'Einstellungen'))),
     h('div.progress', null, progI),
     wrap,
     h('div.toolbar', null, undoBtn, hintBtn, shuffleBtn, moreBtn));
@@ -454,7 +484,7 @@ function showGame(session, slot, { fresh = false } = {}) {
 
   const view = new BoardView(wrap, {
     onTap,
-    onZoomChange: (z) => fitBtn.classList.toggle('show', z),
+    onZoomChange: (z) => { fitBtn.classList.toggle('show', z); if (z) hideCoach(); },
     onBurst: () => sfx.play('sparkle'),
   });
   fitBtn.addEventListener('click', () => { sfx.play('click'); view.fit(true); });
@@ -476,7 +506,36 @@ function showGame(session, slot, { fresh = false } = {}) {
   if (fresh) {
     sfx.play('whoosh');
     busy = true;
-    view.animateEntry().then(() => { busy = false; });
+    view.animateEntry().then(() => { busy = false; showCoach(); });
+  } else setTimeout(showCoach, 300);
+
+  // Coach-Mark beim allerersten Layout: Ring um das erste sinnvolle Paar
+  function showCoach() {
+    if (coachEl || session.won || session.history.length || store.get(K.coached, false)) return;
+    if (session.meta.kind !== 'level' || session.meta.ref !== layouts[0].id || !view.board) return;
+    const r = session.hint();
+    if (!r) return;
+    const W = view.cam.w, H = W * TILE.ratio;
+    coachEl = h('div.coach');
+    let top = Infinity, bottom = 0, cx = 0;
+    for (const i of r.pair) {
+      const c = view.tileCenter(i);
+      coachEl.append(h('div.coach-ring', { style: { left: c.x + 'px', top: c.y + 'px', width: W + 10 + 'px', height: H + 10 + 'px' } }));
+      top = Math.min(top, c.y - H / 2); bottom = Math.max(bottom, c.y + H / 2); cx += c.x / 2;
+    }
+    const below = bottom + 60 < view.viewH;
+    const bubble = h('div.coach-bubble', { class: 'coach-bubble ' + (below ? 'below' : 'above') }, 'Tippe die zwei gleichen Steine an');
+    bubble.style.left = Math.max(110, Math.min(view.viewW - 110, cx)) + 'px';
+    bubble.style.top = (below ? bottom + 12 : top - 12) + 'px';
+    coachEl.append(bubble);
+    wrap.append(coachEl);
+  }
+  function hideCoach() {
+    if (!coachEl) return;
+    const el = coachEl;
+    coachEl = null;
+    el.classList.add('out');
+    setTimeout(() => el.remove(), 260);
   }
   if (!session.won && !session.hasMoves()) setTimeout(() => showNoMoves(), 500);
 
@@ -517,6 +576,8 @@ function showGame(session, slot, { fresh = false } = {}) {
   async function doMatch(a, b) {
     const fa = session.faces[a], fb = session.faces[b];
     session.match(a, b);
+    if (!store.get(K.coached, false)) store.set(K.coached, true);
+    hideCoach();
     select(-1);
     view.update();
     sfx.play('pop');
@@ -781,31 +842,7 @@ async function showWinSheet(session, res) {
 // ------------------------------------------------------------ Blätter
 
 function showHelp() {
-  const set = tilesetById(settings.tileset);
-  const demo = h('div.demo');
-  const faces = set.kind === 'drawn' ? [4, 13, 4] : [3, 12, 3];
-  faces.forEach((f, k) => {
-    const c = tileCanvas(set.id, f, 44);
-    if (k === 1) c.style.filter = 'brightness(.78)';
-    demo.append(c);
-  });
-  const groups = h('div.groups');
-  set.bonusNames.forEach((name, g) => {
-    const row = h('div.row');
-    for (let k = 0; k < 4; k++) row.append(tileCanvas(set.id, 34 + g * 4 + k, 26));
-    groups.append(h('div', null, row, name));
-  });
-  const content = h('div.help', null,
-    h('p', null, 'Tippe zwei gleiche Steine an – sie verschwinden. Räume so das ganze Brett ab.'),
-    demo,
-    h('div.demo-cap', null, 'Aussen frei · in der Mitte blockiert'),
-    h('ul', null,
-      h('li', null, h('b', null, 'Frei'), ' ist ein Stein, wenn nichts auf ihm liegt und links ', h('i', null, 'oder'), ' rechts Platz ist.'),
-      h('li', null, 'Die Steine mit farbigem Rand bilden Gruppen: Jeder passt zu jedem aus seiner Gruppe.'),
-      h('li', null, 'Hilfe ist gratis: ', h('b', null, 'Tipp'), ', ', h('b', null, 'Mischen'), ' und ', h('b', null, 'Zurück'), '. Grosse Bretter mit zwei Fingern zoomen.'),
-      h('li', null, '★★★ gibt es ohne Tipp und Mischen.')),
-    groups);
-  return showModal({ title: 'So geht’s', content, buttons: [{ label: 'Los geht’s', value: true, primary: true }] });
+  return showTutorial({ id: ID, steps: tutorialSteps(settings.tileset), accent: '#c0573e' });
 }
 
 function showSettings(onChange) {

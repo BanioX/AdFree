@@ -5,7 +5,8 @@
 // Startet bei Bedarf einen statischen Server auf Port 8101 (und beendet ihn am Schluss),
 // testet Galerie, Malen per Tippen, falsches Tippen, Pinsel, Pinch-Zoom (CDP mit zwei
 // Touch-Punkten), Verschieben, Tipp, Abschluss mit Zeitraffer, Speichern/Neuladen und misst
-// die Bildrate beim Verschieben des 1000-Formen-Testbilds.
+// die Bildrate beim Verschieben der Testbilder mit 1000 und 1400 Formen. Dazu Startbildschirm,
+// «So geht's», «Neues erzeugen», «Eigenes Foto» (Umwandlung, Speichern, Löschen) und Konsolenfehler.
 
 import { createRequire } from 'node:module';
 import { spawn } from 'node:child_process';
@@ -376,6 +377,28 @@ try {
   await wait(2200);
   check('Vorlage: verschwindet wieder', !(await page.isVisible('.pv-badge')));
 
+  // ------------------------------------------------------------ Leistung mit ~1400 Formen
+  await page.evaluate(() => { location.hash = '#paint/fx-blobs'; });
+  await waitReady('fx-blobs');
+  {
+    const cb = await stageCenter();
+    await pinch(cb.x, cb.y, 80, 260, 12);
+    await wait(400);
+    await P(() => {
+      window.__frames = [];
+      const loop = (t) => { window.__frames.push(t); if (window.__frames.length < 400) requestAnimationFrame(loop); };
+      requestAnimationFrame(loop);
+    });
+    await drag(cb.x + 120, cb.y + 80, cb.x - 120, cb.y - 120, 40);
+    await drag(cb.x - 100, cb.y - 100, cb.x + 140, cb.y + 60, 40);
+    await wait(500);
+    const fr = await P(() => { const f = window.__frames; const d = []; for (let k = 1; k < f.length; k++) d.push(f[k] - f[k - 1]); return d; });
+    const sb = fr.slice(0, 160).sort((a, b) => a - b);
+    const avgB = sb.reduce((a, b) => a + b, 0) / sb.length;
+    const stb = await state();
+    check('Bildrate beim Verschieben (' + stb.n + ' Formen)', stb.n >= 1300 && avgB < 25, `Ø ${avgB.toFixed(1)} ms, p95 ${sb[Math.floor(sb.length * 0.95)].toFixed(1)} ms, Vollbild-Render ${stb.renderMs.toFixed(1)} ms`);
+  }
+
   // ------------------------------------------------------------ Analyse: Splitter
   await page.evaluate(() => { location.hash = '#paint/fx-slivers'; });
   await waitReady('fx-slivers');
@@ -474,7 +497,7 @@ try {
   await wait(700);
   check('Meine Fotos: nach Neuladen gespeichert', (await page.$$('.gv-card[data-id^="foto-"]')).length === 1);
   await page.locator('.gv-edit').tap();
-  await wait(300);
+  await wait(600);
   await page.locator('.gv-card[data-id^="foto-"]').tap({ force: true }); // wackelt im Bearbeiten-Modus
   await page.locator('.sp-modal .btn', { hasText: 'Löschen' }).tap();
   await wait(900);

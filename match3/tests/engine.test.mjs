@@ -165,7 +165,7 @@ test('Fünf in einer Reihe ergeben ein Regenbogen-Juwel', () => {
 test('Blitz-Juwel räumt die ganze Reihe ab', () => {
   const g = make(full(6, 6));
   const rows = filler(6, 6);
-  rows[5] = 'h0 0 1 0 3 4';
+  rows[5] = 'h0 0 1 3 3 4';   // Tausch ergibt einen Dreier inkl. Blitz-Juwel (kein neues Spezial)
   rows[4] = '5 4 0 3 4 5';
   setBoard(g, rows);
   const res = g.swap(I(g, 4, 2), I(g, 5, 2));
@@ -264,8 +264,8 @@ test('Steine: Nachbar-Treffer, harte Steine brauchen zwei', () => {
 test('Eicheln fallen durch Löcher und werden unten eingesammelt', () => {
   const g = new Game(parseLevel({ map: ['...', '...', '-.-', '...', '...'], colors: 6, moves: 9, goals: [{ type: 'item', n: 1 }], seed: 3 }, 1));
   setBoard(g, [
-    '3 A 5',
-    '4 3 4',
+    '3 4 5',
+    '4 A 4',
     'x 5 x',
     '1 0 3',
     '1 4 1',

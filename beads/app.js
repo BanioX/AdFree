@@ -138,7 +138,7 @@ async function showMenu(token) {
   drawPicture(cv, L, {
     filled: filled || new Uint8Array(L.W * L.H),
     size: L.H > L.W ? box * L.W / L.H : box, pad: 0.02,
-    ghostMix: 0.5, ghostR: 0.34,
+    ghostMix: Math.max(L.W, L.H) > 20 ? 0.36 : 0.5, ghostR: Math.max(L.W, L.H) > 20 ? 0.4 : 0.34,
   });
 
   const go = (href) => () => { location.hash = href; };

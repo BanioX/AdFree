@@ -119,9 +119,10 @@ export function createPlay(o) {
   // ---------- Zeit & Speichern ----------
   let tLast = performance.now();
   let running = false;
+  let paused = false;
   function tick() {
     const now = performance.now();
-    if (running && !game.solved && document.visibilityState === 'visible') game.elapsed += Math.min(now - tLast, 5000);
+    if (running && !paused && !game.solved && document.visibilityState === 'visible') game.elapsed += Math.min(now - tLast, 5000);
     tLast = now;
     if (settings.timer) timeEl.textContent = ` · ${save.formatTime(game.elapsed)}`;
   }
@@ -489,6 +490,8 @@ export function createPlay(o) {
 
   async function more() {
     sfx.play('click');
+    tick();
+    paused = true;
     const v = await showModal({
       title: game.solved ? puzzle.title : o.label,
       text: `${puzzle.w} × ${puzzle.h} Felder${game.hints ? ` · ${game.hints} Tipp${game.hints === 1 ? '' : 's'}` : ''}`,
@@ -501,6 +504,8 @@ export function createPlay(o) {
         { label: 'Weiterspielen', value: null, primary: true },
       ],
     });
+    tick();
+    paused = false;
     if (v === 'restart') restart();
     else if (v === 'settings') { await openSettings(); settings = save.settings.get(); updateTools(); }
     else if (v === 'help') showHelp();

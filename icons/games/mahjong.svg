@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <linearGradient id="b" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fde3d6"/><stop offset="1" stop-color="#f0a98f"/></linearGradient>
+    <linearGradient id="f" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fffdf6"/><stop offset="1" stop-color="#f1e6cf"/></linearGradient>
+  </defs>
+  <rect width="100" height="100" fill="url(#b)"/>
+  <ellipse cx="50" cy="86" rx="34" ry="5" fill="#c0573e" opacity=".22"/>
+  <g stroke="#3a2a2a" stroke-width="2" stroke-linejoin="round">
+    <!-- hinterer Stein links (Bambus) -->
+    <rect x="17" y="34" width="30" height="40" rx="5" fill="#2f8a73"/>
+    <rect x="13" y="30" width="30" height="40" rx="5" fill="url(#f)"/>
+    <g stroke="none">
+      <rect x="20.5" y="38" width="4.5" height="10" rx="2" fill="#2b8a4b"/>
+      <rect x="30.5" y="38" width="4.5" height="10" rx="2" fill="#2b8a4b"/>
+      <rect x="20.5" y="52" width="4.5" height="10" rx="2" fill="#2d63b5"/>
+      <rect x="30.5" y="52" width="4.5" height="10" rx="2" fill="#2d63b5"/>
+    </g>
+    <!-- hinterer Stein rechts (Punkte) -->
+    <rect x="61" y="34" width="30" height="40" rx="5" fill="#2f8a73"/>
+    <rect x="57" y="30" width="30" height="40" rx="5" fill="url(#f)"/>
+    <circle cx="65" cy="40" r="4" fill="#2d63b5" stroke-width="1.6"/>
+    <circle cx="72" cy="50" r="4" fill="#c8372d" stroke-width="1.6"/>
+    <circle cx="79" cy="60" r="4" fill="#2b8a4b" stroke-width="1.6"/>
+    <!-- vorderer Stein Mitte (Blüte), liegt höher -->
+    <rect x="38" y="25" width="30" height="42" rx="5" fill="#2f8a73"/>
+    <rect x="33" y="20" width="30" height="42" rx="5" fill="url(#f)"/>
+    <g stroke-width="1.6">
+      <circle cx="48" cy="34" r="5" fill="#f48fb1"/>
+      <circle cx="56" cy="38" r="5" fill="#f48fb1"/>
+      <circle cx="53" cy="47" r="5" fill="#f48fb1"/>
+      <circle cx="43" cy="47" r="5" fill="#f48fb1"/>
+      <circle cx="40" cy="38" r="5" fill="#f48fb1"/>
+      <circle cx="48" cy="41" r="4" fill="#ffd54f"/>
+    </g>
+  </g>
+  <path d="M37 25q5-2 11-1" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" opacity=".95"/>
+  <path d="M17 35q4-1.5 8-1" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" opacity=".9"/>
+</svg>

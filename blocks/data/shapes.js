@@ -24,7 +24,7 @@ export const shapes = [
 
   { id: 'fuenf', rows: ['#####'], weight: 2.2, tier: 2, rotate: true, color: 0 },
   { id: 'rechteck', rows: ['###', '###'], weight: 2.4, tier: 2, rotate: true, color: 4 },
-  { id: 'grosse-ecke', rows: ['###', '#..', '#..'], weight: 2.6, tier: 2, rotate: true, color: 2 },
+  { id: 'grosse-ecke', rows: ['###', '#..', '#..'], weight: 2.6, tier: 2, rotate: true, color: 7 },
   { id: 'langes-l', rows: ['#...', '####'], weight: 1, tier: 2, rotate: true, mirror: true, color: 6 },
 
   { id: 'block', rows: ['###', '###', '###'], weight: 1.8, tier: 3, color: 5 },

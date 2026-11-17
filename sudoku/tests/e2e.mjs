@@ -1,18 +1,18 @@
 // End-to-End-Test für Sudoku (Playwright, iPhone-13-Emulation).
 //   1. Server im Repo-Wurzelverzeichnis starten: python3 -m http.server 8204 --bind 127.0.0.1
-//   2. node sudoku/tests/e2e.mjs            (Screenshots landen in $SHOTS oder im Temp-Ordner)
+//   2. node sudoku/tests/e2e.mjs            (Screenshots landen in sudoku/tests/out/)
 // Prüft: Start über die Kachel der Startseite, «So geht's», Menü, ganze Runde per Tippen bis zum
 // Sieg-Blatt, Neuladen mitten im Spiel, Notizen, Rückgängig, Tipp, Pause, Einstellungen, Statistik,
 // Tagesrätsel, «3 Fehler»-Modus, Worker, kleines iPhone (375 px) ohne Scrollen, keine Konsolenfehler.
 import { createRequire } from 'node:module';
 import assert from 'node:assert/strict';
 import { mkdirSync } from 'node:fs';
-import os from 'node:os';
+import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 
 const { chromium, devices } = createRequire(import.meta.url)('playwright');
 const BASE = process.env.BASE || 'http://127.0.0.1:8204/';
-const OUT = process.env.SHOTS || path.join(os.tmpdir(), 'sudoku-e2e');
+const OUT = process.env.SHOTS || fileURLToPath(new URL('./out/', import.meta.url));
 mkdirSync(OUT, { recursive: true });
 
 const errors = [];
@@ -76,7 +76,7 @@ async function closeModal(page, label) {
 
 async function main() {
   const browser = await chromium.launch();
-  const ctx = await browser.newContext({ ...devices['iPhone 13'] });
+  const ctx = await browser.newContext({ ...devices['iPhone 13'], deviceScaleFactor: 1 });
   const page = await ctx.newPage();
   watch(page);
 
@@ -271,7 +271,7 @@ async function main() {
   const dg = await game(page);
   assert.equal(dg.meta.mode, 'daily');
   // Gleiches Rätsel wie in einem frischen Browser (für alle gleich)
-  const ctx2 = await browser.newContext({ ...devices['iPhone 13'] });
+  const ctx2 = await browser.newContext({ ...devices['iPhone 13'], deviceScaleFactor: 1 });
   const p2 = await ctx2.newPage();
   watch(p2);
   await p2.goto(BASE + 'sudoku/#daily');
@@ -311,7 +311,7 @@ async function main() {
   log('Worker:', fresh.givens, 'Vorgaben, Stufe', fresh.tier);
 
   // ---------- Kleines iPhone (375 × 667) ----------
-  const ctx3 = await browser.newContext({ ...devices['iPhone SE'] });
+  const ctx3 = await browser.newContext({ ...devices['iPhone SE'], deviceScaleFactor: 1 });
   const p3 = await ctx3.newPage();
   watch(p3);
   await p3.goto(BASE + 'sudoku/');

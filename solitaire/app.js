@@ -497,7 +497,7 @@ class Game {
     const runDone = ops.some((o) => o.o === 'mv' && o.n === 13 && kindOf(st, o.t) === 'found' && st.game === 'spider');
     sfx.play(tk === 'found' ? 'pop' : 'place');
     if (ops.some((o) => o.o === 'flip')) setTimeout(() => sfx.play('click'), 160);
-    const moving = st.piles[t].slice(-(st.piles[p].length + 0 >= 0 ? ops[0].n : 1));
+    const moving = st.piles[t].slice(-ops[0].n);
     this.board.update({ ids: moving, stagger: how === 'drag' ? 0 : 22, dur: how === 'drag' ? 190 : undefined });
     if (runDone) this.celebrateRun();
     this.autoMoves(turn);

@@ -18,7 +18,7 @@ test('topRun zählt gleiche Farben oben', () => {
 });
 
 test('giessen nur auf gleiche Farbe oder ins leere Glas', () => {
-  const s = S('abba', 'baab', 'ab', '');
+  const s = S('abba', 'aabb', 'ab', '');
   assert.equal(pourAmount(s, 0, 3), 1); // ins leere Glas
   assert.equal(pourAmount(s, 0, 2), 0); // a auf b: nein
   assert.equal(pourProblem(s, 0, 2), 'color');

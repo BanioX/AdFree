@@ -76,8 +76,14 @@ function stripedCane(p, pts, w, stripe, cols, slant = 0.6) {
     const q = at(s);
     return [q.x + q.nx * (w / 2) * k, q.y + q.ny * (w / 2) * k];
   };
+  // Grundform in der zweiten Farbe, darauf die Streifen der ersten (verdeckte Streifen fallen weg)
+  const base = [];
+  const m = Math.ceil(total / 6);
+  for (let k = 0; k <= m; k++) base.push(side((k * total) / m, 1));
+  for (let k = m; k >= 0; k--) base.push(side((k * total) / m, -1));
+  p.add(poly(base), cols[1]);
   const n = Math.ceil(total / stripe);
-  for (let i = 0; i < n; i++) {
+  for (let i = 0; i < n; i += 2) {
     const s0 = (i * total) / n;
     const s1 = ((i + 1) * total) / n;
     const d = stripe * slant;
@@ -85,10 +91,7 @@ function stripedCane(p, pts, w, stripe, cols, slant = 0.6) {
     const steps = 3;
     for (let k = 0; k <= steps; k++) out.push(side(lerp(s0 + d, s1 + d, k / steps), 1));
     for (let k = steps; k >= 0; k--) out.push(side(lerp(s0 - d, s1 - d, k / steps), -1));
-    // Enden abrunden
-    if (i === 0 || i === n - 1) {
-      p.add(poly(out), cols[i % cols.length]);
-    } else p.add(poly(out), cols[i % cols.length]);
+    p.add(poly(out), cols[0], { prune: true });
   }
 }
 
@@ -128,8 +131,8 @@ export default function build() {
       const ty = yb - h + k * h * 0.27;
       const by = ty + h * 0.42;
       const ww = w * (0.55 + k * 0.22);
-      p.add(smooth([[x, ty, 1], [x + ww * 0.55, by - h * 0.12], [x + ww, by, 1], [x + ww * 0.5, by + 8], [x, by + 2], [x - ww * 0.5, by + 8], [x - ww, by, 1], [x - ww * 0.55, by - h * 0.12]]), k % 2 ? 'greenDark' : 'green');
-      p.add(smooth([[x, ty, 1], [x + ww * 0.36, ty + h * 0.15], [x + ww * 0.2, ty + h * 0.2], [x, ty + h * 0.16], [x - ww * 0.2, ty + h * 0.21], [x - ww * 0.38, ty + h * 0.15]]), 'white');
+      p.add(smooth([[x, ty, 1], [x + ww * 0.55, by - h * 0.12], [x + ww, by, 1], [x + ww * 0.5, by + 8], [x, by + 2], [x - ww * 0.5, by + 8], [x - ww, by, 1], [x - ww * 0.55, by - h * 0.12]]), k % 2 ? 'greenDark' : 'green', { prune: true });
+      p.add(smooth([[x, ty, 1], [x + ww * 0.36, ty + h * 0.15], [x + ww * 0.2, ty + h * 0.2], [x, ty + h * 0.16], [x - ww * 0.2, ty + h * 0.21], [x - ww * 0.38, ty + h * 0.15]]), 'white', { prune: true });
     }
   };
   fir(80, 800, 330, 90);
@@ -226,8 +229,8 @@ export default function build() {
   p.tag('zuckerstange');
   const cane = [];
   for (let y = 880; y >= 560; y -= 20) cane.push([842, y]);
-  for (const [x, y] of arcPts(800, 560, 42, 42, 0, -180, 10).slice(1)) cane.push([x, y]);
-  cane.push([758, 596]);
+  for (const [x, y] of arcPts(796, 560, 46, 46, 0, -180, 14).slice(1)) cane.push([x, y]);
+  cane.push([750, 600]);
   stripedCane(p, cane, 36, 34, ['red', 'white'], 0.5);
 
   // Schnee am Boden
@@ -260,7 +263,7 @@ export default function build() {
     [gx - 22, gy - 78], [gx - 38, gy - 96], [gx - 34, gy - 128],
   ]);
   p.add(man, 'ginger');
-  for (const [dy, c] of [[-56, 'red'], [-30, 'mint'], [-4, 'red']]) p.add(circle(gx, gy + dy, 9), c);
+  for (const [dy, c] of [[-56, 'red'], [-30, 'mint'], [-4, 'red']]) p.add(circle(gx, gy + dy, 11), c);
   p.line(new Path([['M', gx - 14, gy - 100], ['Q', gx, gy - 88, gx + 14, gy - 100]]), 3, '#5d3320');
   p.line(new Path([['M', gx - 12, gy - 118], ['L', gx - 11, gy - 117]]), 7, '#5d3320');
   p.line(new Path([['M', gx + 12, gy - 118], ['L', gx + 13, gy - 117]]), 7, '#5d3320');

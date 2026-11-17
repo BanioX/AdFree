@@ -27,18 +27,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - name: Offline-Cache-Liste aktualisieren
-        run: node tools/build-sw.mjs
-      - name: Nur die App-Dateien einpacken
-        run: |
-          mkdir -p _site
-          rsync -a --exclude '.git' --exclude '.github' --exclude 'tools' \
-            --exclude 'tests' --exclude 'src' --exclude '*.test.mjs' \
-            --exclude 'DEV.md' ./ _site/
-          touch _site/.nojekyll
+      - name: Website bauen (nur Laufzeit-Dateien, Offline-Cache-Liste)
+        run: node tools/build-site.mjs
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: _site
+          path: dist
       - id: deployment
         uses: actions/deploy-pages@v4

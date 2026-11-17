@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="de-CH"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="stylesheet" href="../shared/style.css"><title>Demo</title>
+<style>.demo-tube{position:absolute;bottom:30%;width:38px;height:120px;border-radius:0 0 19px 19px;border:3px solid #9ab;background:linear-gradient(#fff0,#fff8);display:flex;flex-direction:column-reverse;overflow:hidden;transition:transform .4s}
+.demo-tube i{display:block;height:25%}.demo-tube.up{transform:translateY(-14px)}</style>
+</head><body><div class="app" id="app"></div>
+<script type="module">
+import { gameMenu, menuSection } from '../shared/gamemenu.js';
+import { showTutorial } from '../shared/tutorial.js';
+import { h, setupPage } from '../shared/ui.js';
+setupPage();
+const steps = [
+  { title: 'Glas antippen', text: 'Tippe ein Glas an, dann ein zweites – die oberste Farbe fliesst hinüber.',
+    demo(stage, api) {
+      const mk = (x, cols) => { const t = h('div.demo-tube', { style: { left: x + '%' } }); cols.forEach(c => t.append(h('i', { style: { background: c } }))); stage.append(t); return t; };
+      const a = mk(30, ['#e5484d', '#3f8ef0', '#e5484d']), b = mk(58, ['#3f8ef0']);
+      return api.loop(async () => { await api.finger.tap(a); a.classList.add('up'); await api.sleep(300); await api.finger.tap(b); a.classList.remove('up'); await api.sleep(800); });
+    } },
+  { title: 'Ziel', text: 'Sortiere, bis jedes Glas nur noch eine Farbe enthält.', art: '<svg viewBox="0 0 100 60" width="220"><rect x="10" y="10" width="15" height="45" rx="7" fill="#e5484d"/><rect x="42" y="10" width="15" height="45" rx="7" fill="#3f8ef0"/><rect x="74" y="10" width="15" height="45" rx="7" fill="#34a86a"/></svg>' },
+  { title: 'Hilfen sind gratis', text: 'Rückgängig, Tipp und Neustart – so oft du willst.' },
+];
+const menu = gameMenu({ id: 'sort', title: 'Farbfluss', tagline: 'Farben in Gläser sortieren', accent: '#2bb3c0',
+  primary: { label: 'Weiterspielen', sub: 'Level 12 · Morgentau', onClick() {} },
+  daily: { done: false, streak: 2, sub: 'Level des Tages', onClick() {} },
+  modes: { label: 'Schwierigkeit', value: 'b', options: [{ id: 'a', label: 'Leicht' }, { id: 'b', label: 'Mittel' }, { id: 'c', label: 'Schwer' }] },
+  secondary: [{ label: 'Levels', icon: 'grid', sub: '12 von ∞' }, { label: 'Statistik', icon: 'star' }],
+  stats: [{ label: 'Gelöst', value: 11 }, { label: 'Sterne', value: 29 }, { label: 'Serie', value: 2 }],
+  sections: [menuSection('Kapitel', h('div.card', { style: { height: '120px' } }))],
+  onHelp: () => showTutorial({ id: 'sort', steps, accent: '#2bb3c0' }) });
+document.getElementById('app').append(menu);
+if (location.hash === '#tut') showTutorial({ id: 'sort', steps, accent: '#2bb3c0' });
+</script></body></html>

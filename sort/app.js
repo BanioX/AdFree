@@ -500,7 +500,7 @@ function gameScreen({ mode, n }) {
   function updateHud() {
     if (!run) return;
     const target = parTarget(run.par);
-    titleSub.textContent = `Züge ${run.moves} · Ziel ${target}`;
+    titleSub.textContent = `${run.mode === 'replay' ? 'Wiederholung · ' : ''}Züge ${run.moves} · Ziel ${target}`;
     bUndo.disabled = !run.history.length || run.won;
     bExtra.disabled = run.extraUsed || run.won;
     bExtra.classList.toggle('used', run.extraUsed);
@@ -510,9 +510,8 @@ function gameScreen({ mode, n }) {
 
   function setChips() {
     chips.replaceChildren();
-    if (run.geheimnis) chips.append(h('span.fchip.secret', null, '? Geheimnis'));
-    if (run.gross) chips.append(h('span.fchip.tall', null, 'Grosse Gläser'));
-    if (run.mode === 'replay') chips.append(h('span.fchip', null, 'Wiederholung'));
+    if (run.geheimnis) chips.append(h('span.fchip.secret', { title: 'Geheimnis-Level' }, run.gross ? '?' : '? Geheimnis'));
+    if (run.gross) chips.append(h('span.fchip.tall', { title: 'Grosse Gläser' }, run.geheimnis ? 'Gross' : 'Grosse Gläser'));
   }
 
   // --- Coach (Anleitung im ersten Level) ---

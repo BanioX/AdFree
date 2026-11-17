@@ -66,6 +66,26 @@ import { icon, h, toast, showModal, confirmDialog, celebrate, setupPage,
   `.scroll`, `.sp-shake`, `.sp-pop`, Variablen `--accent`, `--surface`, `--text-2`, … (siehe `shared/style.css`).
   Jedes Spiel darf `--accent` für sich überschreiben: Farbenzauber `#ff6f7d`, Pfeilwürfel `#f29a1f`, Perlenbild `#3f8ef0`.
 
+## Startbildschirm & Tutorial (Pflicht, einheitlich für alle Spiele)
+
+Alle Spiele verwenden dieselben Bausteine, damit sich die App wie aus einem Guss anfühlt:
+
+- **Startbildschirm:** `gameMenu({...})` aus `/shared/gamemenu.js` (Beispiel: `/tools/demo-menu.html`).
+  Aufbau von oben nach unten: Topbar (Zurück zur Startseite, «?», Ton) → Titelbild (Icon oder
+  Live-Vorschau des aktuellen Spielstands) mit Name und Untertitel → **ein** grosser Hauptknopf
+  («Weiterspielen – Level 12» / «Spielen») → Tagesrätsel-Karte (falls `daily`) → Modus/Schwierigkeit
+  (Segment-Schalter) → 1–3 Nebenknöpfe (z.B. Levels, Neues Spiel, Statistik) → bis zu 4 Kennzahlen →
+  spielspezifische Abschnitte (`menuSection('Levels', …)`: Levelkarte, Galerie, Packs) → Link «So geht's».
+  Der Hauptknopf führt immer mit **einem** Tipp ins Spiel (zuletzt gespielter Stand oder nächstes Level).
+- **Tutorial:** `showTutorial` / `maybeShowTutorial` aus `/shared/tutorial.js`. **3–4 Schritte**, jeder mit
+  Titel (2–4 Wörter), **einem** kurzen Satz und einer **animierten Mini-Demo** der echten Spielmechanik
+  (kleine DOM/SVG/Canvas-Szene im Spielstil + animierter Finger `api.finger.tap/drag`, in `api.loop`).
+  Schritt 1 = die Kernaktion, Schritt 2 = das Ziel, Schritt 3 = Hilfen/Besonderheiten (optional 4 = Modi).
+  Beim allerersten Start automatisch (`maybeShowTutorial`, **bevor** das erste Spiel startet), danach
+  über «?» im Startbildschirm **und** im laufenden Spiel erreichbar. Keine Textwüsten.
+- Im laufenden Spiel bei Level 1 zusätzlich ein dezenter Hinweis direkt am Spielfeld (Coach-Mark,
+  z.B. pulsierender Ring um das erste sinnvolle Ziel), der nach der ersten Aktion verschwindet.
+
 ## Kachel-Icon (`/icons/games/<id>.svg`)
 
 - `viewBox="0 0 100 100"`, vollflächiger Hintergrund (sanfter Verlauf in der Spielfarbe, hell),

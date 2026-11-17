@@ -214,8 +214,12 @@ export class Board {
           T[id] = { x: an.x + dx, y: an.y, z: zb + k, up: false };
         });
       } else {
-        a.forEach((id, k) => { T[id] = { x: an.x, y: an.y, z: zb + k, up: !!st.up[id] }; });
+        // Gestapelt (Talon, Ablage, Zellen): nur die obersten Karten werfen Schatten – sonst addieren
+        // sich die Schatten zu einem dunklen Hof, und verdeckte Karten muss niemand zeichnen.
+        a.forEach((id, k) => { T[id] = { x: an.x, y: an.y, z: zb + k, up: !!st.up[id], b: k < a.length - 2 }; });
       }
+      if (kind === 'waste') a.forEach((id, k) => { T[id].b = k < a.length - 4; });
+      if (kind === 'stock' && st.game === 'spider') a.forEach((id, k) => { T[id].b = (k % 10) < 8; });
     });
     return T;
   }
@@ -230,8 +234,13 @@ export class Board {
       c.el.style.zIndex = t.z;
       c.el.style.opacity = '';
       c.el.classList.remove('lifted', 'gone');
+      this.setBuried(c, !!t.b);
       this.apply(c);
     });
+  }
+
+  setBuried(c, b) {
+    if (c.b !== b) { c.b = b; c.el.classList.toggle('buried', b); }
   }
 
   apply(c) {
@@ -262,15 +271,15 @@ export class Board {
       const dist = Math.hypot(t.x - c.x, t.y - c.y);
       const flip = c.up !== t.up;
       if (dist < 0.5 && !flip) {
-        if (!this.anims.has(id)) { c.z = t.z; c.el.style.zIndex = t.z; if (c.sx !== 1 || c.sy !== 1 || c.rot) { c.sx = c.sy = 1; c.rot = 0; this.apply(c); } }
-        else this.anims.get(id).z1 = t.z;
+        if (!this.anims.has(id)) { c.z = t.z; c.el.style.zIndex = t.z; this.setBuried(c, !!t.b); if (c.sx !== 1 || c.sy !== 1 || c.rot) { c.sx = c.sy = 1; c.rot = 0; this.apply(c); } }
+        else { const an = this.anims.get(id); an.z1 = t.z; an.b1 = !!t.b; }
         continue;
       }
       const dur = opts.dur || Math.max(170, Math.min(380, 150 + dist * 0.45));
       const delay = (opts.delay || 0) + (dist >= 0.5 ? k++ * (opts.stagger || 0) : (opts.flipDelay || 0));
       this.anims.set(id, {
         x0: c.x, y0: c.y, x1: t.x, y1: t.y, t0: now + delay, dur: dist < 0.5 ? 200 : dur,
-        flip, up1: t.up, flipped: false, z1: t.z, zFly: 5000 + (dist >= 0.5 ? k : 0), started: false,
+        flip, up1: t.up, flipped: false, z1: t.z, b1: !!t.b, zFly: 5000 + (dist >= 0.5 ? k : 0), started: false,
         lift: dist < 0.5 ? 0 : (opts.lift ?? 0.06), ease: dist > 250 ? easeInOut : easeOut, sx0: c.sx, rot0: c.rot,
       });
     }
@@ -292,7 +301,7 @@ export class Board {
       if (a.fn) { if (a.fn(now, c) === false) this.anims.delete(id); continue; }
       const p = (now - a.t0) / a.dur;
       if (p < 0) continue;
-      if (!a.started) { a.started = true; c.el.style.zIndex = a.zFly; }
+      if (!a.started) { a.started = true; c.el.style.zIndex = a.zFly; this.setBuried(c, false); }
       const q = Math.min(1, p);
       const e = a.ease(q);
       c.x = a.x0 + (a.x1 - a.x0) * e;
@@ -310,6 +319,7 @@ export class Board {
         c.sx = 1; c.sy = 1; c.rot = 0;
         if (a.flip && !a.flipped) { c.up = a.up1; c.el.classList.toggle('up', c.up); }
         c.z = a.z1; c.el.style.zIndex = a.z1;
+        if (a.b1 != null) this.setBuried(c, a.b1);
         this.apply(c);
         this.anims.delete(id);
       }
@@ -600,7 +610,7 @@ export class Board {
           fn: (t, card) => {
             if (finished) return false;
             if (t < s.t0) return true;
-            if (!s.started) { s.started = true; s.last = t; card.el.style.zIndex = 7000 + i; card.up = true; card.el.classList.add('up'); }
+            if (!s.started) { s.started = true; s.last = t; card.el.style.zIndex = 7000 + i; card.up = true; card.el.classList.add('up'); this.setBuried(card, false); }
             const dt = Math.min(0.05, (t - s.last) / 1000);
             s.last = t;
             s.vy += 1700 * dt;

@@ -117,7 +117,7 @@
 
 .game-top { gap: 8px; }
 .title-block { flex: 1 1 auto; min-width: 0; text-align: center; }
-.tb-row { display: flex; align-items: center; justify-content: center; gap: 6px; }
+.tb-row { display: flex; align-items: center; justify-content: center; gap: 6px; min-width: 0; overflow: hidden; }
 .title-block b { font-size: 19px; font-weight: 850; letter-spacing: -.01em; white-space: nowrap; }
 .title-block small { display: block; margin-top: 1px; font-size: 13px; font-weight: 700; color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .feat { display: inline-flex; gap: 4px; }

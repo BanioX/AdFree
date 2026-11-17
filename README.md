@@ -12,7 +12,7 @@ Home-Bildschirm legen. Funktioniert danach auch offline.
 
 ## Auf dem iPhone installieren
 
-1. In **Safari** die Adresse öffnen: **https://baniox.github.io/AdFree/**
+1. In **Safari** die Adresse der App öffnen (z.B. `https://<projektname>.pages.dev`).
 2. Unten auf das Teilen-Symbol (Quadrat mit Pfeil nach oben) tippen.
 3. **«Zum Home-Bildschirm»** wählen → **Hinzufügen**.
 
@@ -22,14 +22,27 @@ automatisch auf dem Gerät gespeichert.
 > Wichtig: Spielstände liegen nur auf dem jeweiligen Gerät. Wer die Website-Daten von
 > Safari löscht, löscht auch die Spielstände.
 
-## Veröffentlichen (einmalig einrichten)
+## Veröffentlichen
 
-Die App wird automatisch über **GitHub Pages** veröffentlicht, sobald Änderungen auf `main` landen.
-Einmalig muss Pages eingeschaltet werden:
+Die App ist eine reine statische Website – sie läuft auf **Cloudflare Pages** oder **GitHub Pages**.
+
+### Cloudflare Pages (empfohlen)
+
+1. Cloudflare Dashboard → **Workers & Pages** → **Create** → **Pages** → **Connect to Git**.
+2. Repository **AdFree** wählen.
+3. Einstellungen:
+   - **Production branch:** `main` (oder der Branch, den du veröffentlichen willst)
+   - **Framework preset:** *None*
+   - **Build command:** `node tools/build-site.mjs`
+   - **Build output directory:** `dist`
+4. **Save and Deploy** – nach ca. einer Minute ist die App unter `https://<projektname>.pages.dev` erreichbar.
+   Jeder Push auf den Branch veröffentlicht automatisch eine neue Version (Updates kommen beim
+   nächsten Öffnen der App an).
+
+### GitHub Pages (Alternative)
 
 GitHub → Repository **AdFree** → **Settings** → **Pages** → bei *Source* **«GitHub Actions»** wählen.
-
-Danach baut der Workflow `.github/workflows/pages.yml` bei jedem Push auf `main` die Seite neu.
+Der Workflow `.github/workflows/pages.yml` veröffentlicht dann jeden Push auf `main`.
 
 ## Für Entwickler
 
@@ -42,4 +55,4 @@ python3 -m http.server 8000
 ```
 
 Aufbau, Regeln und Datenformate stehen in [`DEV.md`](DEV.md).
-Werkzeuge: `node tools/make-icons.mjs` (App-Icons), `node tools/build-sw.mjs` (Offline-Cache-Liste).
+Werkzeuge: `node tools/build-site.mjs` (baut `dist/` zum Veröffentlichen), `node tools/make-icons.mjs` (App-Icons).

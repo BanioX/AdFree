@@ -49,6 +49,7 @@
 
 .card:not(.up) .face, .mini-card:not(.up) .face { visibility: hidden; }
 .card.up .back, .mini-card.up .back { visibility: hidden; }
+.card.buried .face, .card.buried .back { box-shadow: none; }
 
 .face .rk {
   position: absolute;

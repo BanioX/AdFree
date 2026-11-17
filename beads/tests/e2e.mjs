@@ -1,6 +1,6 @@
 // Perlenbild – End-to-End-Test mit Playwright (Chromium, iPhone 13).
 //
-//   node beads/tests/e2e.mjs            (Screenshots nach $BEADS_SHOTS oder /tmp/beads-e2e)
+//   node beads/tests/e2e.mjs            (Screenshots nach $BEADS_SHOTS oder beads/tests/out/)
 //
 // Startet bei Bedarf selbst einen statischen Server auf Port 8106 und beendet ihn am Schluss.
 
@@ -17,7 +17,7 @@ const { chromium, devices } = require('playwright');
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const PORT = 8106;
 const BASE = `http://127.0.0.1:${PORT}/beads/`;
-const OUT = process.env.BEADS_SHOTS || path.join(os.tmpdir(), 'beads-e2e');
+const OUT = process.env.BEADS_SHOTS || path.join(ROOT, 'beads/tests/out');
 mkdirSync(OUT, { recursive: true });
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));

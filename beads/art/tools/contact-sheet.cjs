@@ -5,7 +5,7 @@
 //   node beads/art/tools/contact-sheet.cjs --flat          # flache Pixel statt Perlen
 //   OUT=/pfad node beads/art/tools/contact-sheet.cjs       # Ausgabeordner (Standard: tools/out)
 //
-// Startet selbst einen statischen Server (Port 8107) im Repo-Wurzelverzeichnis und beendet ihn wieder.
+// Nutzt einen laufenden statischen Server auf Port 8106 oder startet selbst einen und beendet ihn wieder.
 
 const { chromium } = require('playwright');
 const { spawn } = require('child_process');
@@ -13,7 +13,7 @@ const path = require('path');
 const fs = require('fs');
 const http = require('http');
 
-const PORT = 8107;
+const PORT = 8106;
 const root = path.resolve(__dirname, '../../..');
 const out = process.env.OUT || path.join(__dirname, 'out');
 const args = process.argv.slice(2);
@@ -38,7 +38,8 @@ function waitForServer(url, tries = 50) {
 
 (async () => {
   fs.mkdirSync(out, { recursive: true });
-  const server = spawn('python3', ['-m', 'http.server', String(PORT), '--bind', '127.0.0.1'], { cwd: root, stdio: 'ignore' });
+  const running = await waitForServer(`http://127.0.0.1:${PORT}/`, 0).then(() => true, () => false);
+  const server = running ? null : spawn('python3', ['-m', 'http.server', String(PORT), '--bind', '127.0.0.1'], { cwd: root, stdio: 'ignore' });
   let browser;
   const errors = [];
   try {
@@ -71,7 +72,7 @@ function waitForServer(url, tries = 50) {
     }
   } finally {
     if (browser) await browser.close();
-    server.kill();
+    if (server) server.kill();
   }
   if (errors.length) { console.error('Fehler:\n' + errors.join('\n')); process.exit(1); }
 })().catch((e) => { console.error(e); process.exit(1); });

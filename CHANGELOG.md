@@ -6,6 +6,7 @@ Was in Spielpause neu dazukommt. Neueste Einträge oben.
 
 ### Neu (Grok)
 - **Riesenjagd** (Retro-Ecke): senkrechter Boss-Rush. Vier riesige Mechs, Strahlen mit Vorwarnung, Kanonen, Lenkschüsse und Kugelmuster. Ziehen zum Ausweichen, Schüsse von selbst, Bluetooth-Controller. Deutsch und Englisch.
+- **Ausweichen** (Retro-Ecke): kein Schiessen. Drei Riesen (Lupe, Böller, Wirbel) feuern Strahlen, Kanonen und Kugelmuster, bis sie müde werden. Ziehen, Bluetooth-Controller. Deutsch und Englisch.
 
 ## 17. November 2026 (Nacht)
 

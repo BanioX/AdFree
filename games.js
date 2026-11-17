@@ -84,6 +84,7 @@ export const games = [
   { id: 'inseln', title: 'Inseln', title_en: 'Islands', tile: 'Inseln', tile_en: 'Islands', subtitle: 'Die Zahl ist eine Insel dieser Grösse', subtitle_en: 'The number is an island of that size', category: 'logik', color: '#1f8f86', added: '2026-11-17' },
   { id: 'rundweg', title: 'Rundweg', title_en: 'Loop', tile: 'Rundweg', tile_en: 'Loop', subtitle: 'Eine Schlaufe, die Zahlen zählen die Kanten', subtitle_en: 'One loop, the numbers count the edges', category: 'logik', color: '#7b5ea7', added: '2026-11-17' },
   { id: 'riesen', title: 'Riesenjagd', title_en: 'Giant Hunt', tile: 'Riesen\u00ADjagd', tile_en: 'Giant Hunt', subtitle: 'Schiff gegen riesige Mechs', subtitle_en: 'A ship against giant mechs', category: 'retro', color: '#e23d8a', added: '2026-11-17' },
+  { id: 'ausweichen', title: 'Ausweichen', title_en: 'Dodge', tile: 'Aus\u00ADweichen', tile_en: 'Dodge', subtitle: 'Halt durch, bis der Riese müde ist', subtitle_en: 'Last until the giant tires', category: 'retro', color: '#14b8c7', added: '2026-11-17' },
 ];
 
 /** Titel/Untertitel/Kachelname in der aktuellen Sprache */

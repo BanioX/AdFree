@@ -1,12 +1,46 @@
-// Startbildschirm des Pfeilwürfels: grosser Spielen-Knopf, drehender Vorschau-Würfel, Levelauswahl.
+// Startbildschirm des Pfeilwürfels (shared/gamemenu.js): drehender Vorschau-Würfel, grosser
+// Spielen-Knopf, Modus, Statistik und Levelkarte nach Kapiteln (Papier-Themen aus data/levels.js).
 
 import { sfx } from '../shared/sfx.js';
-import { icon, h, toast, soundButton, backButton } from '../shared/ui.js';
-import { generateLevel } from './generator.js';
+import { icon, h, toast, showModal } from '../shared/ui.js';
+import { gameMenu, menuSection } from '../shared/gamemenu.js';
+import { generateLevel, specialFor, themeFor } from './generator.js';
 import { makeCube } from './geometry.js';
 import { CubeRenderer } from './render.js';
 import { qMul, qAxisAngle, qNorm } from './math.js';
-import { loadProgress, loadAnyCurrent, totalStars, solvedCount, ensureSummary } from './progress.js';
+import { CHAPTER_SIZE } from './data/levels.js';
+import {
+  loadProgress, loadAnyCurrent, totalStars, solvedCount, perfectCount, ensureSummary,
+  loadStats, loadSettings, saveSettings,
+} from './progress.js';
+import { showHowto } from './howto.js';
+
+const ACCENT = '#f29a1f';
+
+function fmtTime(ms) {
+  const min = Math.round(ms / 60000);
+  if (min < 60) return `${min} Min.`;
+  const hrs = Math.floor(min / 60);
+  return `${hrs} Std. ${min % 60} Min.`;
+}
+
+export function showStats() {
+  const p = loadProgress();
+  const s = loadStats();
+  const rows = [
+    ['Höchstes Level', String(p.unlocked)],
+    ['Level gelöst', String(solvedCount(p))],
+    ['Sterne gesamt', String(totalStars(p))],
+    ['Perfekt (3 Sterne)', String(perfectCount(p))],
+    ['Beste Serie ohne Fehler', `${s.bestStreak} Level`],
+    ['Pfeile befreit', s.arrows.toLocaleString('de-CH')],
+    ['Anstösser', String(s.mistakes)],
+    ['Tipps genutzt', String(s.hints)],
+    ['Spielzeit', fmtTime(s.playMs)],
+  ];
+  const list = h('div.cube-statlist', null, rows.map(([k, v]) => h('div.cube-statrow', null, h('span', null, k), h('b', null, v))));
+  return showModal({ title: 'Statistik', content: list, buttons: [{ label: 'Schliessen', value: 'ok', primary: true }] });
+}
 
 export function mountMenu(root, nav) {
   const prog = loadProgress();
@@ -15,85 +49,111 @@ export function mountMenu(root, nav) {
   const cur = loadAnyCurrent();
   const resume = cur && cur.level === next && Array.isArray(cur.removed) && cur.removed.length > 0;
   const nextLevel = generateLevel(next);
+  const sp = specialFor(next);
+  const settings = loadSettings();
 
   root.className = 'app cube-menu';
   root.innerHTML = '';
 
-  const top = h('header.topbar', null,
-    backButton('../'),
-    h('div.title', null, 'Pfeilwürfel'),
-    soundButton());
-
-  // ---------- Hero ----------
+  // ---------- Titelbild: drehender Würfel des nächsten Levels ----------
   const heroCanvas = h('canvas.hero-cube', { 'aria-hidden': 'true' });
-  const playBtn = h('button.btn.primary.block.play-btn', { type: 'button' });
-  playBtn.innerHTML = icon('play', { size: 22 });
-  playBtn.append(document.createTextNode(resume ? `Weiterspielen – Level ${next}` : `Spielen – Level ${next}`));
-  playBtn.addEventListener('click', () => { sfx.play('click'); nav.play(next); });
+  const art = h('div.hero-stage', null, heroCanvas,
+    sp ? h('span.hero-badge', { html: `${icon('sparkle', { size: 14 })}${sp.title}` }) : null);
+
+  // ---------- Levelkarte ----------
+  const curChapter = Math.ceil(next / CHAPTER_SIZE);
+  const map = h('div.level-map');
+  let currentTile = null;
+  for (let ch = 1; ch <= curChapter + 1; ch++) {
+    const th = themeFor((ch - 1) * CHAPTER_SIZE + 1);
+    let chStars = 0;
+    const grid = h('div.level-grid');
+    for (let L = (ch - 1) * CHAPTER_SIZE + 1; L <= ch * CHAPTER_SIZE; L++) {
+      const st = prog.stars[L] | 0;
+      chStars += st;
+      const locked = L > next;
+      const current = L === next;
+      const lsp = specialFor(L);
+      const cls = ['level-tile'];
+      if (locked) cls.push('locked');
+      if (current) cls.push('current');
+      if (st > 0) cls.push('done');
+      if (lsp) cls.push('special');
+      const tile = h('button', { class: cls.join(' '), type: 'button', 'data-level': L,
+        'aria-label': `Level ${L}${lsp ? ` (Spezial: ${lsp.title})` : ''}${locked ? ' (gesperrt)' : ''}` });
+      if (lsp) tile.append(h('span.tile-badge', { html: icon('sparkle', { size: 12 }) }));
+      if (locked) {
+        tile.append(h('span.num', null, String(L)), h('span.tile-lock', { html: icon('lock', { size: 13 }) }));
+      } else {
+        const row = h('span.tile-stars');
+        for (let i = 0; i < 3; i++) row.append(h('span' + (i < st ? '.on' : ''), { html: icon('star', { size: 12 }) }));
+        tile.append(h('span.num', null, String(L)), row);
+      }
+      tile.addEventListener('click', () => {
+        if (locked) { sfx.play('tap'); toast(`Löse zuerst Level ${next}`); return; }
+        nav.play(L);
+      });
+      if (current) currentTile = tile;
+      grid.append(tile);
+    }
+    const sw = h('span.ch-swatch', { style: { '--l': th.light, '--d': th.dark, '--i': th.ink } });
+    const head = h('div.ch-head', null, sw,
+      h('span.ch-name', null, h('b', null, `Kapitel ${ch}`), h('small', null, th.name)),
+      h('span.ch-stars', { html: `${icon('star', { size: 14 })}<span>${chStars}/${CHAPTER_SIZE * 3}</span>` }));
+    map.append(h('div.chapter' + (ch > curChapter ? '.locked' : ''), { style: { '--ch': th.dark } }, head, grid));
+  }
+  const legend = h('p.map-legend', { html: `<span class="legend-badge">${icon('sparkle', { size: 11 })}</span>Jedes 10. Level ist ein Spezial-Level. Neues Kapitel = neues Papier.` });
+
+  const scrollToMap = () => {
+    if (!currentTile) return;
+    currentTile.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  };
 
   const solved = solvedCount(prog);
-  const stars = totalStars(prog);
-  const stats = solved === 0 ? h('div.hero-stats', null, 'Würfel drehen, freie Pfeile antippen') : h('div.hero-stats', null,
-    h('span.stat', null, h('b', null, String(solved)), ' gelöst'),
-    h('span.dot', null, '·'),
-    h('span.stat.stars', { html: `${icon('star', { size: 16 })}<span><b>${stars}</b> ${stars === 1 ? 'Stern' : 'Sterne'}</span>` }));
+  const stats = loadStats();
+  const subParts = [`Level ${next}`];
+  if (sp) subParts.push(`Spezial: ${sp.title}`);
+  if (resume) subParts.push(`noch ${nextLevel.arrows.length - cur.removed.length} Pfeile`);
 
-  const hero = h('section.hero.card', null,
-    h('div.hero-stage', null, heroCanvas,
-      nextLevel.special ? h('span.hero-badge', { html: `${icon('sparkle', { size: 14 })}Spezial` }) : null),
-    h('div.hero-text', null,
-      h('p.hero-kicker', null, resume ? 'Angefangen' : solved === 0 ? 'Willkommen!' : 'Als Nächstes'),
-      h('h1.hero-title', null, `Level ${next}`),
-      stats),
-    playBtn);
-
-  // ---------- Levelraster ----------
-  const maxShow = Math.ceil((next + 30) / 5) * 5;
-  const grid = h('div.level-grid');
-  for (let L = 1; L <= maxShow; L++) {
-    const st = prog.stars[L] | 0;
-    const locked = L > next;
-    const current = L === next;
-    const special = L % 10 === 0;
-    const cls = ['level-tile'];
-    if (locked) cls.push('locked');
-    if (current) cls.push('current');
-    if (st > 0) cls.push('done');
-    if (special) cls.push('special');
-    const tile = h('button', { class: cls.join(' '), type: 'button', 'aria-label': `Level ${L}${locked ? ' (gesperrt)' : ''}` });
-    if (special) tile.append(h('span.tile-badge', { html: icon('sparkle', { size: 12 }) }));
-    if (locked) {
-      tile.append(h('span.num', null, String(L)), h('span.tile-lock', { html: icon('lock', { size: 13 }) }));
-    } else {
-      const row = h('span.tile-stars');
-      for (let i = 0; i < 3; i++) row.append(h('span' + (i < st ? '.on' : ''), { html: icon('star', { size: 12 }) }));
-      tile.append(h('span.num', null, String(L)), row);
-    }
-    tile.addEventListener('click', () => {
-      if (locked) { sfx.play('tap'); toast(`Löse zuerst Level ${next}`); return; }
-      sfx.play('click');
-      nav.play(L);
-    });
-    grid.append(tile);
-  }
-
-  const main = h('main.menu', null,
-    hero,
-    h('div.sec-head', null, h('h2', null, 'Levelauswahl'),
-      h('span.sec-meta', { html: `<span class="legend-badge">${icon('sparkle', { size: 11 })}</span>Spezial` })),
-    grid,
-    h('p.menu-foot', null, 'Dreh den Würfel, finde Pfeile mit freiem Weg und tippe sie an. Unendlich viele Level – ganz ohne Werbung.'));
-  const scroll = h('div.scroll', null, main);
-  root.append(top, scroll);
+  const menu = gameMenu({
+    id: 'cube',
+    title: 'Pfeilwürfel',
+    tagline: 'Dreh den Würfel, befreie die Pfeile',
+    accent: ACCENT,
+    art,
+    primary: { label: resume ? 'Weiterspielen' : 'Spielen', sub: subParts.join(' · '), onClick: () => nav.play(next) },
+    modes: {
+      label: 'Modus',
+      value: settings.mode,
+      options: [
+        { id: 'classic', label: 'Klassisch', sub: 'mit Herzen' },
+        { id: 'relax', label: 'Entspannt', sub: 'ohne Herzen' },
+      ],
+      onChange(id) { saveSettings({ mode: id }); toast(id === 'relax' ? 'Entspannt: Anstossen kostet nichts' : 'Klassisch: mit Herzen'); },
+    },
+    secondary: [
+      { label: 'Levelkarte', icon: 'grid', onClick: scrollToMap },
+      { label: 'Statistik', icon: 'star', onClick: () => showStats() },
+    ],
+    stats: [
+      { label: 'Gelöst', value: solved },
+      { label: 'Sterne', value: totalStars(prog) },
+      { label: 'Perfekt', value: perfectCount(prog) },
+      { label: 'Pfeile', value: stats.arrows.toLocaleString('de-CH') },
+    ],
+    sections: [menuSection('Levelkarte', map, legend)],
+    onHelp: () => showHowto(),
+    backHref: '../',
+  });
+  root.append(menu);
 
   // ---------- Drehender Vorschau-Würfel ----------
   const renderer = new CubeRenderer(heroCanvas, { mini: true });
   const geo = makeCube(nextLevel.N);
   renderer.setLevel(geo, nextLevel.arrows);
+  renderer.setTheme(themeFor(next));
   const removed = new Uint8Array(nextLevel.arrows.length);
-  if (cur && cur.level === next && Array.isArray(cur.removed)) {
-    for (const id of cur.removed) if (id >= 0 && id < removed.length) removed[id] = 1;
-  }
+  if (resume) for (const id of cur.removed) if (id >= 0 && id < removed.length) removed[id] = 1;
   let raf = 0;
   let destroyed = false;
   const t0 = performance.now();
@@ -108,8 +168,8 @@ export function mountMenu(root, nav) {
   }
   const resize = () => {
     const r = heroCanvas.getBoundingClientRect();
-    renderer.resize(r.width, r.height, Math.min(3, window.devicePixelRatio || 1));
-    if (!raf) raf = requestAnimationFrame(frame);
+    renderer.resize(r.width, r.height, Math.min(2.5, window.devicePixelRatio || 1));
+    if (!raf && !destroyed) raf = requestAnimationFrame(frame);
   };
   const ro = new ResizeObserver(resize);
   ro.observe(heroCanvas);

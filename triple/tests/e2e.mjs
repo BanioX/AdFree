@@ -1,7 +1,7 @@
 // End-to-End-Test für Dreierlei (Playwright, iPhone-13-Emulation).
 //
 //   python3 -m http.server 8203 --bind 127.0.0.1     (im Repo-Wurzelverzeichnis)
-//   node triple/tests/e2e.mjs                         (Screenshots: $SHOTS oder <tmp>/triple-e2e)
+//   node triple/tests/e2e.mjs                         (Screenshots: triple/tests/out/)
 //
 // Ablauf: Startseite → Kachel «Dreierlei» → Anleitung → Menü → Level 1 mit echten Taps
 // bis zum Gewinn-Blatt (Löser liefert nur die Reihenfolge), Neuladen mitten im Spiel,
@@ -10,7 +10,7 @@
 
 import { createRequire } from 'node:module';
 import { mkdirSync } from 'node:fs';
-import os from 'node:os';
+import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import assert from 'node:assert/strict';
 
@@ -20,11 +20,11 @@ try { pw = require('playwright'); } catch { pw = createRequire('/opt/node22/lib/
 const { chromium, devices } = pw;
 
 const BASE = process.env.BASE || 'http://127.0.0.1:8203/';
-const SHOTS = process.env.SHOTS || path.join(os.tmpdir(), 'triple-e2e');
+const SHOTS = process.env.SHOTS || path.join(path.dirname(fileURLToPath(import.meta.url)), 'out');
 mkdirSync(SHOTS, { recursive: true });
 
 const browser = await chromium.launch();
-const context = await browser.newContext({ ...devices['iPhone 13'] });
+const context = await browser.newContext({ ...devices['iPhone 13'], deviceScaleFactor: 1 });
 const page = await context.newPage();
 
 const problems = [];
@@ -96,25 +96,31 @@ try {
 
   // ---------- Anleitung beim ersten Start ----------
   step('Anleitung erscheint automatisch');
-  await page.locator('.sp-modal h2', { hasText: 'So geht' }).waitFor();
-  await wait(400);
+  await page.locator('.tut-backdrop .tut-title').waitFor();
+  await wait(1800);
   await shot('02-anleitung');
-  await page.locator('.sp-modal .btn.primary').tap();
-  await page.locator('.sp-modal-backdrop').waitFor({ state: 'detached' });
+  for (let k = 0; k < 2; k++) { await page.locator('.tut-next').tap(); await wait(1300); }
+  await shot('02b-anleitung-hilfen');
+  await page.locator('.tut-next').tap();
+  await wait(900);
+  assert.match(await page.locator('.tut-next').textContent(), /Los geht/);
+  await page.locator('.tut-next').tap();
+  await page.locator('.tut-backdrop').waitFor({ state: 'detached' });
 
   step('Menü');
-  await page.locator('.tr-play-btn').waitFor();
+  await page.locator('.gm-primary').waitFor();
   await shot('03-menu');
   const sum = await page.evaluate(() => JSON.parse(localStorage.getItem('spielpause.summary.triple')));
   assert.ok(sum && /Level 1/.test(sum.text), 'reportSummary fehlt');
 
   // ---------- Level 1 ----------
   step('Level 1 starten');
-  await page.locator('.tr-play-btn').tap();
+  await page.locator('.gm-primary').tap();
   await page.waitForFunction(() => location.hash === '#play' && window.__triple);
   await wait(250);
   await shot('04-level1-deal');
   await waitIdle(5000);
+  await page.locator('.tr-coach').waitFor({ state: 'attached' });
   await shot('05-level1-start');
   let s = await state();
   assert.equal(s.status, 'play');
@@ -218,17 +224,20 @@ try {
 
   step('Zurück ins Menü (Spiel bleibt gespeichert)');
   await page.locator('.tr-top .icon-btn').first().tap();
-  await page.locator('.tr-play-btn').waitFor();
-  const label = await page.locator('.tr-play-btn').textContent();
-  assert.match(label, /Weiter – Level 2/);
+  await page.locator('.gm-primary').waitFor();
+  assert.ok(page.url().includes('/triple/'), 'Zurück darf nicht zur Startseite durchtippen');
+  const label = await page.locator('.gm-primary').textContent();
+  assert.match(label, /Weiterspielen – Level 2/);
   await shot('13-menu-weiter');
 
   // ---------- Verlieren ----------
   step('Freies Spiel: Auswahl');
-  await page.locator('.tr-card-btn', { hasText: 'Freies Spiel' }).tap();
+  await page.locator('.gm-sec', { hasText: 'Freies Spiel' }).tap();
   await page.locator('.tr-theme-grid').waitFor();
+  await wait(400); // Doppeltipp-Sperre von setupPage()
   await page.locator('.tr-size[data-size="riesig"]').tap();
   await shot('14-freies-spiel');
+  await wait(400);
   await page.locator('.tr-theme[data-theme="meer"]').tap();
   await page.waitForFunction(() => /^#free\/meer\/riesig\//.test(location.hash) && window.__triple);
   await waitIdle(6000);
@@ -267,7 +276,7 @@ try {
   // ---------- Übersichten ----------
   step('Levelübersicht und Statistik');
   await page.locator('.tr-top .icon-btn').first().tap();
-  await page.locator('.tr-card-btn', { hasText: 'Levels' }).tap();
+  await page.locator('.gm-sec', { hasText: 'Levels' }).tap();
   await page.locator('.tr-level-grid').waitFor();
   await wait(200);
   await shot('18-levels');
@@ -275,7 +284,7 @@ try {
   await page.waitForFunction(() => location.hash === '#level/1' && window.__triple);
   await waitIdle(5000);
   await page.locator('.tr-top .icon-btn').first().tap();
-  await page.locator('.tr-link', { hasText: 'Alle anzeigen' }).tap();
+  await page.locator('.tr-stat-link').tap();
   await page.locator('.sp-modal h2', { hasText: 'Statistik' }).waitFor();
   await wait(300);
   await shot('19-statistik');
@@ -287,6 +296,12 @@ try {
   await page.waitForFunction(() => location.hash === '#play' && window.__triple);
   await waitIdle(5000);
 
+  step('«?» im Spiel zeigt die Anleitung');
+  await page.locator('.tr-top .icon-btn[aria-label="So geht’s"]').tap();
+  await page.locator('.tut-backdrop .tut-title').waitFor();
+  await page.locator('.tut-skip').tap();
+  await page.locator('.tut-backdrop').waitFor({ state: 'detached' });
+
   step('Zurück zur Startseite');
   await page.locator('.tr-top .icon-btn').first().tap();
   await page.locator('.topbar a.icon-btn[href="../"]').tap();
@@ -296,7 +311,7 @@ try {
 
   // ---------- kleiner Bildschirm ----------
   step('Kleiner Bildschirm (iPhone SE) ohne Scrollen');
-  const small = await browser.newContext({ ...devices['iPhone SE'] });
+  const small = await browser.newContext({ ...devices['iPhone SE'], deviceScaleFactor: 1 });
   const p2 = await small.newPage();
   p2.on('pageerror', (e) => problems.push('SE pageerror: ' + e.message));
   await p2.goto(BASE + 'triple/');

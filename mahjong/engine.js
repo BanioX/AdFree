@@ -312,7 +312,13 @@ export function verifySolution(board, faces, present0, order) {
  * Gibt ein neues faces-Array zurück oder null, wenn die Stellung grundsätzlich
  * nicht mehr abräumbar ist (z.B. nur noch ein Turm aus zwei Steinen).
  */
-export function reshuffle(board, faces, present, seed, { attempts = 300 } = {}) {
+export function reshuffle(board, faces, present, seed, opts) {
+  const r = reshuffleWithOrder(board, faces, present, seed, opts);
+  return r ? r.faces : null;
+}
+
+/** Wie reshuffle, liefert aber zusätzlich eine Lösungsfolge: { faces, order } oder null. */
+export function reshuffleWithOrder(board, faces, present, seed, { attempts = 300 } = {}) {
   const rng = makeRng(typeof seed === 'number' ? seed : String(seed));
   const idx = [];
   for (let i = 0; i < board.n; i++) if (present[i]) idx.push(i);
@@ -342,10 +348,39 @@ export function reshuffle(board, faces, present, seed, { attempts = 300 } = {}) 
     // Möglichst eine sichtbar andere Verteilung liefern
     let changed = 0;
     for (const i of idx) if (next[i] !== faces[i]) changed++;
-    if (changed > 0 || idx.length <= 2) return next;
-    best = best || next;
+    if (changed > 0 || idx.length <= 2) return { faces: next, order };
+    best = best || { faces: next, order };
   }
   return best;
+}
+
+/**
+ * Führt eine bekannte Lösung nach, nachdem der Spieler das Paar (a, b) genommen hat.
+ * present = Stellung NACH dem Zug. Gibt eine weiterhin gültige Lösungsfolge zurück oder null.
+ * Idee: Steine wegnehmen macht andere nur freier – ein Paar aus der Lösung darf man also
+ * jederzeit vorziehen. Bei «über Kreuz» genommenen Gleichen wird das Restpaar neu eingefügt.
+ */
+export function advanceSolution(board, faces, present, cert, a, b) {
+  if (!cert) return null;
+  const has = (pr, x) => pr[0] === x || pr[1] === x;
+  const same = cert.findIndex((pr) => has(pr, a) && has(pr, b));
+  if (same >= 0) return cert.filter((_, k) => k !== same);
+  const i = cert.findIndex((pr) => has(pr, a));
+  const j = cert.findIndex((pr) => has(pr, b));
+  if (i < 0 || j < 0) return null;
+  const c = cert[i][0] === a ? cert[i][1] : cert[i][0];
+  const d = cert[j][0] === b ? cert[j][1] : cert[j][0];
+  if (!facesMatch(faces[c], faces[d])) return null;
+  const rest = cert.filter((_, k) => k !== i && k !== j);
+  const start = Math.min(rest.length, Math.max(i, j) - 1);
+  // zuerst nahe der ursprünglichen Stelle probieren, dann alle anderen
+  const order = [start];
+  for (let k = 1; k <= rest.length; k++) { if (start + k <= rest.length) order.push(start + k); if (start - k >= 0) order.push(start - k); }
+  for (const pos of order) {
+    const next = [...rest.slice(0, pos), [c, d], ...rest.slice(pos)];
+    if (verifySolution(board, faces, present, next)) return next;
+  }
+  return null;
 }
 
 // ---------------------------------------------------------------- Löser

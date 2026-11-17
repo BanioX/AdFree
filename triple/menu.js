@@ -2,9 +2,13 @@
 
 import { sfx } from '../shared/sfx.js';
 import { icon, h, toast, showModal, soundButton, backButton } from '../shared/ui.js';
+import { gameMenu, menuSection } from '../shared/gamemenu.js';
+import { showHelp, ACCENT } from './howto.js';
 import { themes, themeById } from './data/themes.js';
-import { generateLevel, levelParams, SIZES } from './logic/generator.js';
+import { generateLevel, levelParams, themeForLevel, SIZES } from './logic/generator.js';
 import { loadProgress, loadStats, loadSave, totalStars, formatTime, getPref, setPref, updateSummary } from './progress.js';
+
+export { showHelp };
 
 /** Ein dekorativer Stein (wie im Spiel), z.B. für Vorschauen. */
 export function miniTile(emoji, cls = '') {
@@ -25,7 +29,7 @@ export function tagLabel(tag) {
   return '';
 }
 
-// ---------- Startseite ----------
+// ---------- Startseite (gemeinsamer Startbildschirm shared/gamemenu.js) ----------
 
 export function mountMenu(root, nav) {
   const prog = loadProgress();
@@ -44,77 +48,83 @@ export function mountMenu(root, nav) {
   root.style.setProperty('--t-bg', theme.bg);
   root.innerHTML = '';
 
-  const helpBtn = h('button.icon-btn', { type: 'button', 'aria-label': 'So geht\'s' });
-  helpBtn.innerHTML = '<span class="tr-q">?</span>';
-  helpBtn.addEventListener('click', () => { sfx.play('click'); showHelp(); });
-
-  const top = h('header.topbar', null,
-    backButton('../'),
-    h('div.title', null, 'Dreierlei'),
-    helpBtn,
-    soundButton());
-
-  // Hero mit drei gefächerten Steinen des nächsten Levels
+  // Titelbild: drei gefächerte Steine des nächsten Levels
   const art = h('div.tr-hero-art', { 'aria-hidden': 'true' },
     miniTile(level.symbols[1] || level.symbols[0], 'f1'),
     miniTile(level.symbols[0], 'f2'),
     miniTile(level.symbols[2] || level.symbols[0], 'f3'),
     h('span.tr-hero-spark.s1', { html: icon('sparkle', { size: 22 }) }),
     h('span.tr-hero-spark.s2', { html: icon('sparkle', { size: 16 }) }));
-  const playBtn = h('button.btn.primary.block.tr-play-btn', { type: 'button' });
-  playBtn.innerHTML = icon('play', { size: 22 });
-  playBtn.append(document.createTextNode(resume ? `Weiter – Level ${L}` : `Spielen – Level ${L}`));
-  playBtn.addEventListener('click', () => { sfx.play('tap'); nav.go('#play'); });
+
   const tag = tagLabel(level.tag);
-  const hero = h('section.tr-hero.card', null,
-    art,
-    h('p.tr-kicker', null, resume ? `Angefangen · ${pct} % geschafft` : L === 1 ? 'Willkommen!' : 'Als Nächstes'),
-    h('h1.tr-hero-title', null, `Level ${L}`),
-    h('p.tr-hero-sub', null,
-      h('span', null, theme.title),
-      h('span.dot', null, '·'),
-      h('span', null, `${level.tiles.length} Steine`),
-      tag ? h('span.tr-tag', null, tag) : null),
-    playBtn);
-
-  // Zwei Karten: Freies Spiel, Levels
   const freeSave = loadSave('free');
-  const freeCard = h('button.tr-card-btn.card', { type: 'button' },
-    h('span.tr-card-ic.free', { 'aria-hidden': 'true' }, '🎲'),
-    h('b', null, 'Freies Spiel'),
-    h('small', null, freeSave && freeSave.game && freeSave.game.moves > 0 ? 'Angefangen – weiter' : 'Thema & Grösse wählen'));
-  freeCard.addEventListener('click', () => { sfx.play('tap'); nav.go('#free'); });
-  const levelsCard = h('button.tr-card-btn.card', { type: 'button' },
-    h('span.tr-card-ic.levels', { 'aria-hidden': 'true' }, '🏅'),
-    h('b', null, 'Levels'),
-    h('small', null, `${L - 1} geschafft · ${stars} ★`));
-  levelsCard.addEventListener('click', () => { sfx.play('tap'); nav.go('#levels'); });
+  const freeResume = freeSave && freeSave.game && freeSave.game.moves > 0 && themeById(freeSave.theme) && SIZES[freeSave.size];
 
-  // Statistik kompakt
-  const statBox = (value, label) => h('div.tr-stat', null, h('b', null, String(value)), h('small', null, label));
-  const statsCard = h('section.card.tr-stats', null,
-    h('div.tr-stats-head', null, h('h2', null, 'Statistik'),
-      h('button.tr-link', { type: 'button', onclick: () => { sfx.play('click'); showStats(); } }, 'Alle anzeigen')),
-    h('div.tr-stats-grid', null,
-      statBox(stats.won + stats.freeWon, 'Gewonnen'),
-      statBox(stars, 'Sterne'),
-      statBox(stats.streak, 'Serie'),
-      statBox(stats.triples, 'Drillinge')));
-
-  const howBtn = h('button.btn.ghost.block.tr-how', { type: 'button', html: icon('hint', { size: 20 }) + 'So geht\'s' });
-  howBtn.addEventListener('click', () => { sfx.play('click'); showHelp(); });
-
-  const main = h('main.tr-menu-main', null,
-    hero,
-    h('div.tr-cards', null, freeCard, levelsCard),
-    statsCard,
-    howBtn);
-  root.append(top, h('div.scroll', null, main));
-
-  if (!getPref('helpSeen', false)) {
-    setTimeout(() => { if (root.contains(main)) showHelp(); }, 350);
-  }
+  const menu = gameMenu({
+    id: 'triple',
+    title: 'Dreierlei',
+    tagline: 'Drei Gleiche sammeln',
+    accent: ACCENT,
+    art,
+    primary: {
+      label: resume ? `Weiterspielen – Level ${L}` : `Spielen – Level ${L}`,
+      sub: resume ? `${theme.title} · ${pct > 0 ? pct + " % geschafft" : "angefangen"}` : `${theme.title} · ${level.tiles.length} Steine${tag ? ' · ' + tag : ''}`,
+      onClick: () => nav.go('#play'),
+    },
+    secondary: [
+      {
+        label: 'Freies Spiel', icon: 'shuffle',
+        sub: freeResume ? 'Angefangen – weiter' : 'Thema & Grösse',
+        onClick: () => nav.go('#free'),
+      },
+      { label: 'Levels', icon: 'grid', sub: `${L - 1} geschafft · ${stars} ★`, onClick: () => nav.go('#levels') },
+    ],
+    stats: [
+      { label: 'Level', value: L },
+      { label: 'Sterne', value: stars },
+      { label: 'Serie', value: stats.streak },
+      { label: 'Drillinge', value: stats.triples },
+    ],
+    sections: [
+      menuSection('Als Nächstes', upcoming(L, prog, nav)),
+      h('button.tr-stat-link', { type: 'button', onclick: () => { sfx.play('click'); showStats(); } },
+        h('span', { html: icon('star', { size: 18 }) }), 'Alle Statistiken'),
+    ],
+    onHelp: () => showHelp(),
+    backHref: '../',
+  });
+  menu.classList.add('tr-gm');
+  root.append(menu);
   return { destroy() { root.style.removeProperty('--t-color'); root.style.removeProperty('--t-bg'); } };
+}
+
+/** Kleine Levelkarte: die nächsten Level mit Thema und Besonderheit. */
+function upcoming(cur, prog, nav) {
+  const row = h('div.tr-next-row');
+  const from = Math.max(1, cur - 1);
+  for (let L = from; L < from + 5; L++) {
+    const p = levelParams(L);
+    const th = themeForLevel(L);
+    const done = L < cur;
+    const cls = ['tr-next'];
+    if (L === cur) cls.push('current');
+    if (L > cur) cls.push('locked');
+    if (p.tag === 'gross') cls.push('big');
+    const st = prog.stars[L] | 0;
+    const b = h('button', { class: cls.join(' '), type: 'button', 'aria-label': `Level ${L}` },
+      h('span.tr-next-emo', { style: { background: th.bg } }, th.emoji[0]),
+      h('b', null, String(L)),
+      done ? h('small.tr-next-st', null, '★'.repeat(st) || '–')
+        : h('small', null, L === cur ? 'Jetzt' : p.tag === 'gross' ? 'Gross' : p.tag === 'pause' ? 'Pause' : th.title));
+    b.addEventListener('click', () => {
+      sfx.play('tap');
+      if (L === cur) nav.go('#play');
+      else if (done) nav.go(`#level/${L}`);
+      else toast(`Zuerst Level ${cur} schaffen`);
+    });
+    row.append(b);
+  }
+  return row;
 }
 
 // ---------- Freies Spiel ----------
@@ -253,23 +263,4 @@ export function showStats() {
     row('Spielzeit gesamt', formatTime(s.totalTime || 0)),
     ...bestTimes);
   return showModal({ title: 'Statistik', content, buttons: [{ label: 'Schliessen', value: true, primary: true }] });
-}
-
-// ---------- Anleitung ----------
-
-export function showHelp() {
-  setPref('helpSeen', true);
-  const step = (art, title, text) => h('div.tr-step', null,
-    h('div.tr-step-art', { 'aria-hidden': 'true' }, ...art),
-    h('div', null, h('b', null, title), h('p', null, text)));
-  const content = h('div.tr-help', null,
-    step([miniTile('🍓'), miniTile('🍒', 'dim')], 'Freie Steine antippen',
-      'Nur helle Steine lassen sich nehmen. Dunkle liegen noch unter anderen.'),
-    step([miniTile('🍓', 'sm'), miniTile('🍓', 'sm'), miniTile('🍓', 'sm')], 'Drei gleiche verschwinden',
-      'Angetippte Steine wandern in die Ablage. Drei gleiche lösen sich auf.'),
-    step([h('div.tr-help-tray', null, ...Array.from({ length: 7 }, () => h('i')))], 'Ablage hat 7 Plätze',
-      'Ist sie voll ohne Dreier, ist die Runde vorbei – einfach nochmal!'),
-    step([h('span.tr-help-ic', { html: icon('undo', { size: 20 }) }), h('span.tr-help-ic', { html: icon('shuffle', { size: 20 }) }), h('span.tr-help-ic', { html: icon('hint', { size: 20 }) })],
-      'Hilfen gratis', 'Zurück, Auslagern, Mischen und Tipp: je einmal pro Level. Ohne Hilfe gibt es 3 Sterne.'));
-  return showModal({ title: 'So geht\'s', content, buttons: [{ label: 'Los geht\'s', value: true, primary: true }] });
 }

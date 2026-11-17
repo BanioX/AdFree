@@ -32,7 +32,7 @@ export const levels = [
       '.......',
     ],
     colors: 4, moves: 15,
-    goals: [{ type: 'color', color: 0, n: 20 }],
+    goals: [{ type: 'color', color: 0, n: 35 }],
     tip: 'Wische ein Juwel auf ein Nachbarfeld. Drei gleiche in einer Reihe verschwinden!',
   },
   { // 2
@@ -47,7 +47,7 @@ export const levels = [
       '........',
     ],
     colors: 4, moves: 12,
-    goals: [{ type: 'score', n: 6000 }],
+    goals: [{ type: 'score', n: 14000 }],
     tip: 'Fallen neue Juwelen in eine Reihe, gibt es eine Kettenreaktion – und mehr Punkte.',
   },
   { // 3

@@ -98,6 +98,9 @@ Die App ist darauf ausgelegt, stetig zu wachsen:
   Inhalte hinzufügt, z.B. [Sudoku](sudoku/CONTENT.md), [Solitär](solitaire/CONTENT.md),
   [Farbfluss](sort/CONTENT.md), [Bilderrätsel](nonogram/CONTENT.md), [Verdoppeln](merge/CONTENT.md).
 - Die meisten Spiele **erzeugen ihre Level selbst** (deterministisch und garantiert lösbar) – der Inhalt geht nie aus.
+- **Nächtliche Erweiterung:** Jede Nacht um Mitternacht (Schweizer Zeit) baut eine automatische Aufgabe
+  neue Spiele aus dem [Fahrplan](ROADMAP.md) und neue Inhalte für bestehende Spiele, prüft alles und
+  veröffentlicht es auf `main`. Was dazukam, steht danach im [Versionsverlauf](CHANGELOG.md).
 
 ## Aufbau des Projekts
 

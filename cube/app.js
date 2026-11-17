@@ -6,6 +6,7 @@ import { setupPage } from '../shared/ui.js';
 import { mountMenu } from './menu.js';
 import { mountPlay } from './play.js';
 import { loadProgress } from './progress.js';
+import { maybeShowHowto } from './howto.js';
 
 setupPage();
 
@@ -46,7 +47,10 @@ function route(force = true) {
   screen = t.kind === 'play' ? mountPlay(root, t.level, nav) : mountMenu(root, nav);
   screen.kind = t.kind;
   screen.key = t.key;
+  // Allererster Start: kurze Anleitung zeigen (danach über «?» erreichbar)
+  if (!tutorialShown) { tutorialShown = true; maybeShowHowto(); }
 }
+let tutorialShown = false;
 
 // Zurück-Geste / manuell geänderter Hash
 window.addEventListener('popstate', () => route(false));

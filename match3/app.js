@@ -103,7 +103,7 @@ function heroArt() {
   const row = h('div.m3-hero');
   [0, 1, 2, 3, 4, 5].forEach((c, k) => row.append(h('img', {
     src: spriteURL(String(c), 96), alt: '', draggable: 'false',
-    style: { animationDelay: k * 0.12 + 's', '--rot': ((k - 2.5) * 7) + 'deg', '--lift': (Math.abs(k - 2.5) * 7) + 'px' },
+    style: css({ animationDelay: k * 0.12 + 's', '--rot': ((k - 2.5) * 7) + 'deg', '--lift': (Math.abs(k - 2.5) * 7) + 'px' }),
   })));
   return row;
 }
@@ -138,7 +138,7 @@ function worldCard() {
   const w = worldInfo(worldIndex(n));
   let done = 0, stars = 0;
   for (let k = w.first; k <= w.last; k++) { if (p.stars[k]) { done++; stars += p.stars[k]; } }
-  const card = h('button.m3-worldcard', { type: 'button', style: { '--wacc': w.accent, background: `linear-gradient(135deg, ${w.sky[0]}, ${w.sky[1]})` } },
+  const card = h('button.m3-worldcard', { type: 'button', style: css({ '--wacc': w.accent, background: `linear-gradient(135deg, ${w.sky[0]}, ${w.sky[1]})` }) },
     h('span.m3-wc-emoji', null, w.emoji),
     h('span.m3-wc-text', null,
       h('b', null, w.title),
@@ -208,6 +208,10 @@ function showStatsSheet() {
 }
 
 const fmt = (n) => Math.round(n).toLocaleString('de-CH');
+/** Style-Objekt → CSS-Text (h() übernimmt CSS-Variablen wie --wacc sonst nicht). */
+function css(o) {
+  return Object.entries(o).map(([k, v]) => `${k.startsWith('--') ? k : k.replace(/[A-Z]/g, (m) => '-' + m.toLowerCase())}:${v}`).join(';');
+}
 
 // ---------- Levelkarte ----------
 
@@ -255,7 +259,7 @@ function showMap() {
     path.prepend(h('span.m3-pathsvg', {
       html: `<svg viewBox="0 0 100 ${H}" preserveAspectRatio="none" width="100%" height="${H}"><path d="${d}" fill="none" stroke="rgba(255,255,255,.9)" stroke-width="16" stroke-linecap="round" vector-effect="non-scaling-stroke"/><path d="${d}" fill="none" stroke="${w.accent}" stroke-opacity=".45" stroke-width="4" stroke-dasharray="2 10" stroke-linecap="round" vector-effect="non-scaling-stroke"/></svg>`,
     }));
-    scroll.append(h('section.m3-world', { style: { '--wacc': w.accent, background: `linear-gradient(180deg, ${w.sky[0]}, ${w.sky[1]})` } },
+    scroll.append(h('section.m3-world', { style: css({ '--wacc': w.accent, background: `linear-gradient(180deg, ${w.sky[0]}, ${w.sky[1]})` }) },
       h('header.m3-world-head', null, h('span.m3-world-emoji', null, w.emoji),
         h('span', null, h('b', null, w.title), h('small', null, `Level ${w.first}–${w.last}`)),
         h('span.m3-world-stars', null, `★ ${stars}/${PER_WORLD * 3}`)),
@@ -309,7 +313,7 @@ function playScreen({ title, sub, theme, zen }) {
   const tHammer = tool('🔨', 'Hammer'), tShuffle = tool('🔀', 'Mischen'), tHint = tool('💡', 'Tipp');
   const tools = h('div.m3-tools', null, tHammer, tShuffle, tHint);
   const banner = h('div.m3-hammerbar', null, 'Tippe auf ein Juwel oder einen Stein');
-  const el = h('div.screen.m3-play', { style: { '--sky1': theme.sky[0], '--sky2': theme.sky[1], '--wacc': theme.accent } },
+  const el = h('div.screen.m3-play', { style: css({ '--sky1': theme.sky[0], '--sky2': theme.sky[1], '--wacc': theme.accent }) },
     bar, hud, wrap, banner, tools);
   app.replaceChildren(el);
   return { el, wrap, movesEl, movesBox, goalsEl, scoreEl, fill, starMarks, tHammer, tShuffle, tHint, banner, back };

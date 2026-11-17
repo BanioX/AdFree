@@ -35,17 +35,19 @@ const DIRS = [
   { step: COLS - 1, dc: -1, kind: 'diag' },  // ↙
 ];
 
-/** Sind i und j (beide offen) ein erlaubtes Paar? Gibt die Art zurück oder null. */
-export function pairKind(cells, i, j) {
+/** Sind i und j (beide offen) ein erlaubtes Paar? → { kind, step, gap } oder null. */
+export function pairInfo(cells, i, j) {
   if (i === j || i < 0 || j < 0 || i >= cells.length || j >= cells.length) return null;
   if (i > j) [i, j] = [j, i];
   const a = cells[i], b = cells[j];
   if (a.x || b.x || !fits(a.v, b.v)) return null;
   for (const d of DIRS) {
-    if (nextOpen(cells, i, d.step, d.dc) === j) return d.kind;
+    if (nextOpen(cells, i, d.step, d.dc) === j) return { kind: d.kind, step: d.step, gap: (j - i) / d.step - 1 };
   }
   return null;
 }
+
+export const pairKind = (cells, i, j) => (pairInfo(cells, i, j) || {}).kind || null;
 
 /** Alle erlaubten Paare [i, j, kind, gap] mit i < j. gap = Anzahl gestrichener Felder dazwischen. */
 export function findPairs(cells) {

@@ -8,6 +8,7 @@ import { COLORS } from './data/colors.js';
 import { SpriteCache, rgba, mix, EMOJI_FONT, paintSpecial } from './sprites.js';
 import { sfx } from '../shared/sfx.js';
 
+const TOP_PAD = 0.75;          // Wolkenrand über der obersten Reihe (Einheiten)
 const FLY_SPEED = 64;          // Einheiten pro Sekunde
 const POP_STEP = 0.055;        // Verzögerung pro Ring beim Platzen
 const GRAVITY = 70;
@@ -32,6 +33,12 @@ function colorOf(v) {
   const k = v & 15;
   if (k === 9) return '#a59cb0';
   return (COLORS[k] || COLORS[1]).base;
+}
+
+/** Lage des Spielfelds in einer Fläche w×h (CSS-px): Massstab s und Ursprung (ox, oy). Oben bleibt Platz für die Wolken. */
+export function fieldLayout(w, h) {
+  const s = Math.min(w / WIDTH, h / (FIELD_H + TOP_PAD));
+  return { s, ox: (w - WIDTH * s) / 2, oy: h - FIELD_H * s };
 }
 
 export class PlayView {
@@ -122,10 +129,11 @@ export class PlayView {
     this.canvas.height = Math.round(h * dpr);
     this.canvas.style.width = w + 'px';
     this.canvas.style.height = h + 'px';
-    const s = Math.min(w / WIDTH, h / FIELD_H);
+    const L = fieldLayout(w, h);
+    const s = L.s;
     this.s = s;
-    this.ox = (w - WIDTH * s) / 2;
-    this.oy = h - FIELD_H * s;
+    this.ox = L.ox;
+    this.oy = L.oy;
     this.sprites.setSize(s * dpr, this.symbols);
     this.cloudCache = null;
     this.invalidate();
@@ -154,8 +162,11 @@ export class PlayView {
     const d = (x, y) => Math.hypot(p.x - x, p.y - y);
     if (d(LAUNCH_X, LAUNCH_Y) < 1.55) return { type: 'shooter' };
     if (d(NEXT_X, NEXT_Y) < 1.7) return { type: 'next' };
-    for (let i = 0; i < MAX_SPECIALS; i++) if (d(SLOT_X[i], SLOT_Y) < 1.2) return { type: 'slot', i };
-    return null;
+    let best = -1;
+    for (let i = 0; i < MAX_SPECIALS; i++) {
+      if (d(SLOT_X[i], SLOT_Y) < 1.4 && (best < 0 || d(SLOT_X[i], SLOT_Y) < d(SLOT_X[best], SLOT_Y))) best = i;
+    }
+    return best >= 0 ? { type: 'slot', i: best } : null;
   }
 
   down(e) {
@@ -882,7 +893,7 @@ export class PlayView {
   drawCeiling() {
     const ctx = this.ctx;
     const s = this.s;
-    const top = 0, bottom = this.Y(0.2);
+    const top = 0, bottom = this.Y(-0.25);
     if (!this.cloudCache || this.cloudCache.h !== bottom) {
       const cv = document.createElement('canvas');
       const hgt = Math.ceil(bottom + s * 1.2);

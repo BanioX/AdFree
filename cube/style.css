@@ -16,63 +16,75 @@
     radial-gradient(120% 60% at 50% 0%, #fff6e6 0%, rgba(255, 246, 230, 0) 70%),
     var(--bg);
 }
-.cube-menu .topbar .title { text-align: center; }
 
-.menu {
-  max-width: 560px;
-  margin: 0 auto;
-  padding: 4px 18px calc(30px + var(--safe-bottom));
-}
-
-.hero {
-  position: relative;
-  border-radius: 28px;
-  padding: 10px 16px 16px;
-  overflow: hidden;
-  background:
-    radial-gradient(90% 70% at 50% 34%, #fffdf8 0%, #fbf1e1 62%, #f6e6cd 100%);
-}
-.hero-stage { position: relative; height: 250px; margin: 0 -16px; }
+/* Titelbild im gemeinsamen Startbildschirm: Live-Würfel statt Icon */
+.cube-menu .gm-art.custom { width: 100%; animation: none; border-radius: 0; }
+.hero-stage { position: relative; width: 100%; height: 230px; }
 .hero-cube { position: absolute; inset: 0; width: 100%; height: 100%; }
 .hero-badge {
-  position: absolute; top: 6px; right: 16px;
+  position: absolute; top: 4px; right: 6px;
   display: inline-flex; align-items: center; gap: 4px;
   padding: 4px 10px 4px 8px; border-radius: 999px;
   background: var(--accent); color: #fff; font-size: 13px; font-weight: 800;
   box-shadow: 0 3px 10px rgba(242, 154, 31, .35);
 }
 .hero-badge svg { width: 14px; height: 14px; }
-.hero-text { text-align: center; margin: 0 0 14px; }
-.hero-kicker {
-  margin: 0; color: var(--accent); font-weight: 800; font-size: 13px;
-  letter-spacing: .06em; text-transform: uppercase;
-}
-.hero-title { margin: 2px 0 6px; font-size: 34px; font-weight: 900; letter-spacing: -.02em; }
-.hero-stats {
-  display: inline-flex; align-items: center; gap: 8px;
-  color: var(--text-2); font-weight: 650; font-size: 15px;
-}
-.hero-stats b { color: var(--text); font-weight: 800; }
-.hero-stats .dot { color: var(--text-3); }
-.hero-stats .stars { display: inline-flex; align-items: center; gap: 4px; }
-.hero-stats .stars svg { color: var(--gold); width: 16px; height: 16px; }
-.play-btn {
-  min-height: 56px; font-size: 19px; font-weight: 800;
-  box-shadow: 0 8px 22px rgba(242, 154, 31, .38), 0 2px 4px rgba(150, 90, 10, .18);
-}
-.play-btn svg { width: 22px; height: 22px; }
-
-.sec-head {
-  display: flex; align-items: baseline; justify-content: space-between;
-  margin: 26px 4px 12px;
-}
-.sec-head h2 { margin: 0; font-size: 21px; font-weight: 850; letter-spacing: -.01em; }
-.sec-meta { display: inline-flex; align-items: center; gap: 6px; color: var(--text-3); font-weight: 700; font-size: 14px; }
+.cube-menu .gm-title { margin-top: 4px; }
 .legend-badge {
-  width: 18px; height: 18px; border-radius: 50%; display: grid; place-items: center;
+  width: 18px; height: 18px; border-radius: 50%; display: inline-grid; place-items: center; flex: 0 0 auto;
   background: var(--accent); color: #fff;
 }
 .legend-badge svg { width: 11px; height: 11px; }
+
+/* Levelkarte nach Kapiteln */
+.level-map { display: flex; flex-direction: column; gap: 18px; }
+.chapter { display: flex; flex-direction: column; gap: 10px; }
+.ch-head { display: flex; align-items: center; gap: 10px; padding: 0 2px; }
+.ch-swatch {
+  width: 30px; height: 30px; border-radius: 9px; flex: 0 0 auto; position: relative;
+  background: linear-gradient(145deg, var(--l) 0 48%, var(--d) 52% 100%);
+  box-shadow: 0 0 0 1.5px color-mix(in srgb, var(--d) 70%, #000 8%) inset, 0 2px 5px rgba(70, 45, 20, .12);
+}
+.ch-swatch::after {
+  content: ''; position: absolute; left: 7px; right: 7px; top: 13px; height: 4px; border-radius: 2px; background: var(--i);
+}
+.ch-name { display: flex; flex-direction: column; line-height: 1.15; flex: 1 1 auto; min-width: 0; }
+.ch-name b { font-size: 16px; font-weight: 850; }
+.ch-name small { font-size: 13px; font-weight: 700; color: var(--text-2); }
+.ch-stars { display: inline-flex; align-items: center; gap: 4px; color: var(--text-2); font-weight: 800; font-size: 14px; }
+.ch-stars svg { color: var(--gold); width: 14px; height: 14px; }
+.chapter.locked .ch-head { opacity: .55; }
+.map-legend {
+  display: flex; align-items: center; gap: 8px; margin: 14px 4px 0;
+  color: var(--text-3); font-size: 13.5px; font-weight: 650; line-height: 1.4;
+}
+
+/* Statistik-Blatt */
+.cube-statlist { display: flex; flex-direction: column; margin: 2px 0 4px; }
+.cube-statrow {
+  display: flex; justify-content: space-between; align-items: baseline; gap: 12px;
+  padding: 10px 2px; border-bottom: 1px solid var(--line, rgba(70, 45, 20, .08));
+  font-size: 15.5px; font-weight: 650; color: var(--text-2);
+}
+.cube-statrow:last-child { border-bottom: 0; }
+.cube-statrow b { color: var(--text); font-weight: 850; font-variant-numeric: tabular-nums; }
+
+/* Anleitung: Mini-Würfel */
+.tut-cube { position: absolute; inset: 0; width: 100%; height: 100%; }
+.tut-hearts { position: absolute; top: 10px; right: 12px; display: flex; gap: 2px; color: var(--heart); }
+.tut-hearts span { display: grid; color: #e7d9c8; }
+.tut-hearts span.full { color: var(--heart); }
+.tut-hearts span.lost { animation: heart-lost .6s var(--ease-out) both; }
+.tut-stars {
+  position: absolute; left: 0; right: 0; top: 50%; display: flex; justify-content: center; gap: 4px;
+  transform: translateY(-50%); pointer-events: none; color: var(--gold);
+}
+.tut-stars span {
+  display: grid; opacity: 0; transform: scale(.3);
+  filter: drop-shadow(0 3px 6px rgba(160, 100, 0, .35));
+}
+.tut-stars.on span { animation: tut-star .5s var(--ease-spring) calc(var(--i) * .15s) both; }
+@keyframes tut-star { from { opacity: 0; transform: scale(.3) rotate(-30deg); } to { opacity: 1; transform: scale(1) rotate(0); } }
 
 /* Toasts dieser Seite nicht auf die halbe Breite zwängen */
 .sp-toast { width: max-content; }
@@ -126,10 +138,7 @@
   0%, 100% { box-shadow: 0 8px 20px rgba(242, 154, 31, .42), 0 0 0 3px #fff inset; }
   50% { box-shadow: 0 10px 28px rgba(242, 154, 31, .6), 0 0 0 3px #fff inset; }
 }
-.menu-foot {
-  margin: 26px 8px 0; text-align: center; color: var(--text-3);
-  font-size: 14px; font-weight: 600; line-height: 1.45;
-}
+
 
 /* ============ Spielansicht ============ */
 
@@ -142,8 +151,19 @@
 .lvl-title b { font-size: 20px; font-weight: 850; letter-spacing: -.01em; white-space: nowrap; }
 .lvl-title .special {
   display: inline-flex; align-items: center; gap: 3px; margin-top: 2px;
-  color: var(--accent); font-size: 12px; font-weight: 800; letter-spacing: .02em;
+  color: var(--accent); font-size: 12px; font-weight: 800; letter-spacing: .02em; white-space: nowrap;
 }
+.lvl-title .chapter-name {
+  margin-top: 2px; color: var(--text-3); font-size: 12px; font-weight: 750; white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis;
+}
+.help-btn .gm-q { font-weight: 900; font-size: 20px; line-height: 1; }
+.hearts.relax { color: var(--heart); }
+.relax-chip {
+  display: inline-flex; align-items: center; gap: 4px; padding: 5px 10px 5px 8px; border-radius: 999px;
+  background: var(--surface); box-shadow: var(--shadow); color: var(--text-2); font-size: 13px; font-weight: 800;
+}
+.relax-chip svg { color: var(--heart); }
 .lvl-title .special svg { width: 13px; height: 13px; }
 
 .hearts { display: flex; align-items: center; gap: 1px; color: var(--heart); }
@@ -267,6 +287,10 @@
 }
 .win-msg { margin: 0 0 4px; color: var(--text); font-weight: 750; font-size: 17px; }
 .win-best { margin: 0; color: var(--text-3); font-size: 14px; font-weight: 650; }
+.win-next {
+  display: inline-block; margin: 10px 0 0; padding: 6px 12px; border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 14%, var(--surface)); color: #a35f05; font-size: 14px; font-weight: 800;
+}
 
 @media (max-width: 360px) {
   .tools { gap: 24px; }

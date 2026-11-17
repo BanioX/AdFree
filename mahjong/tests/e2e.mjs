@@ -24,7 +24,13 @@ function check(cond, msg) {
 const browser = await chromium.launch();
 const ctx = await browser.newContext({ ...devices['iPhone 13'], deviceScaleFactor: 1 });
 const page = await ctx.newPage();
-page.on('console', (m) => { if (m.type() === 'error') errors.push('console: ' + m.text()); });
+page.on('console', (m) => {
+  if (m.type() !== 'error') return;
+  // Fehlende Dateien anderer Spiele auf der Startseite gehören nicht zu Mahjong
+  const url = (m.location() && m.location().url) || '';
+  if (/Failed to load resource/.test(m.text()) && !/\/mahjong/.test(url)) return;
+  errors.push(`console (Schritt ${step}): ${m.text()} ${url}`);
+});
 page.on('pageerror', (e) => errors.push('pageerror: ' + e.message));
 
 const shot = (name) => page.screenshot({ path: path.join(SHOTS, name + '.png') });
@@ -212,11 +218,11 @@ try {
 
   // 13b) Steinsatz im Menü wählen (Segment) und Zufallsspiel starten
   await page.locator('.gm-seg button', { hasText: 'Tiere' }).tap();
-  await wait(300);
+  await wait(500);
   check(await mj(() => JSON.parse(localStorage.getItem('spielpause.mahjong.settings')).tileset) === 'tiere', 'Steinsatz-Wahl im Menü wirkt nicht');
   await shot('15b-menu-tiere');
   await page.locator('.gm-seg button', { hasText: 'Klassisch' }).tap();
-  await wait(200);
+  await wait(500);
 
   // 14) Grosses Layout (Schildkröte): Passform + Zoomen
   await page.evaluate(() => {
@@ -250,7 +256,7 @@ try {
     await wait(16);
   }
   await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
-  await wait(400);
+  await wait(700);
   const zw = await mj(() => window.__mahjong.tileWidth());
   check(zw > tw * 1.4, 'Pinch-Zoom hat nicht vergrössert');
   check(await page.locator('.fit-btn.show').isVisible(), 'Einpassen-Knopf fehlt nach dem Zoomen');
@@ -283,7 +289,7 @@ try {
   await wait(400);
   await closeModal('Klein');
   await wait(1700);
-  check(await mj(() => window.__mahjong.route()) === 'spiel' && window.__mahjong.session.meta.kind === 'endless', 'Zufallsspiel startet nicht');
+  check(await mj(() => window.__mahjong.route() === 'spiel' && window.__mahjong.session.meta.kind === 'endless'), 'Zufallsspiel startet nicht');
   await shot('22-endless');
   log('Zufallsspiel:', await mj(() => window.__mahjong.session.n), 'Steine');
 

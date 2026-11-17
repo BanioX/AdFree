@@ -168,12 +168,12 @@ function menuScreen() {
       { label: 'Statistik', icon: 'star', onClick: showStats },
     ],
     stats: [
-      { label: 'Level', value: String(p.top) },
+      { label: 'Geschafft', value: String(p.top) },
       { label: 'Sterne', value: String(totalStars(p)) },
       { label: 'Rekord', value: fmt(st.endlessBest) },
     ],
     sections: [
-      menuSection(worldOfLevel(lv).name, worldStrip(lv, p)),
+      menuSection(`${worldOfLevel(lv).name} · Level ${Math.floor((lv - 1) / 10) * 10 + 1}–${Math.floor((lv - 1) / 10) * 10 + 10}`, worldStrip(lv, p)),
       menuSection('Einstellungen', symToggle),
     ],
     onHelp: help,
@@ -185,13 +185,14 @@ function menuScreen() {
   return { destroy() {} };
 }
 
-/** Die 20 Level der aktuellen Welt als kleine Blasen. */
+/** Zehn Level rund um das aktuelle Level als Blasen (Rest auf der Levelkarte). */
 function worldStrip(lv, p) {
-  const wi = Math.floor((lv - 1) / LEVELS_PER_WORLD);
-  const w = worldInfo(wi);
-  const box = h('div.bz-world-strip');
+  const first = Math.floor((lv - 1) / 10) * 10 + 1;
+  const w = worldOfLevel(first);
+  const grid = h('div.bz-grid');
+  for (let n = first; n < first + 10; n++) grid.append(levelButton(n, p, w));
+  const box = h('div.bz-world-strip', null, grid);
   setSky(box, w.sky);
-  for (let i = 0; i < LEVELS_PER_WORLD; i++) box.append(levelButton(wi * LEVELS_PER_WORLD + i + 1, p, w));
   return box;
 }
 
@@ -294,7 +295,7 @@ function playScreen(game) {
   // Topbar
   const titleEl = h('div.bz-title', null,
     h('b', null, isLevel ? `Level ${game.levelNo}` : 'Entspannt'),
-    h('small', null, isLevel ? (def.handmade ? def.name : world.name) : 'Die Decke sinkt bei Fehlschüssen'));
+    h('small', null, isLevel ? (def.handmade ? def.name : world.name) : 'Ohne Schusslimit'));
   const hintBtn = h('button.icon-btn', { type: 'button', 'aria-label': 'Tipp', html: icon('hint') });
   const helpBtn = h('button.icon-btn', { type: 'button', 'aria-label': 'So geht’s', html: '<span class="gm-q">?</span>' });
   const top = h('header.topbar', null, backButton('#', () => go('')), titleEl, hintBtn, helpBtn, soundButton());
@@ -304,7 +305,8 @@ function playScreen(game) {
   const goalTx = h('span');
   const goal = h('div.bz-pill', { 'aria-label': 'Ziel' }, goalIc, goalTx);
   const scoreNum = h('span', null, '0');
-  const scoreEl = h('div.bz-score', null, scoreNum, h('small', null, isLevel ? 'Punkte' : `Rekord ${fmt(stats().endlessBest)}`));
+  const scoreSub = h('small', null, 'Punkte');
+  const scoreEl = h('div.bz-score', null, scoreNum, scoreSub);
   const restartBtn = h('button.icon-btn', { type: 'button', 'aria-label': 'Neu starten', html: icon('refresh') });
   const hud = h('div.bz-hud', null, goal, scoreEl, h('div.bz-hud-r', null, restartBtn));
 
@@ -337,7 +339,7 @@ function playScreen(game) {
       goal.setAttribute('aria-label', 'Tierchen befreit');
     } else if (isLevel) {
       goalIc.replaceChildren(h('i.bz-dot'));
-      goalTx.replaceChildren(String(game.board.colorsPresent().length ? game.board.count() : 0));
+      goalTx.replaceChildren(String(game.board.colorCounts().reduce((a, b) => a + b, 0)));
       goal.setAttribute('aria-label', 'Blasen übrig');
     } else {
       goalIc.textContent = '☁️';
@@ -351,6 +353,7 @@ function playScreen(game) {
     }
     lastGoal = gtxt;
     setScore(game.score, instant);
+    if (!isLevel) scoreSub.textContent = `Rekord ${fmt(Math.max(stats().endlessBest, game.score))}`;
   }
 
   // Coach-Mark beim allerersten Level
@@ -394,7 +397,7 @@ function playScreen(game) {
   if (game.status === 'won') setTimeout(() => !destroyed && showWin(), 400);
   else if (game.status === 'lost') setTimeout(() => !destroyed && showLose(), 400);
   else if (coach) setTimeout(() => { if (!destroyed && coach && view.canShoot()) view.showHint(bestMove(game)); }, 1400);
-  if (!isLevel || game.levelNo === 1) maybeShowTutorial({ id: ID, steps: STEPS, accent: ACCENT });
+  maybeShowTutorial({ id: ID, steps: STEPS, accent: ACCENT });
 
   // ----- Knöpfe -----
   hintBtn.addEventListener('click', () => {
@@ -426,8 +429,9 @@ function playScreen(game) {
   }
 
   // ----- Ergebnis speichern -----
-  let winRecorded = false;
-  let earnedStars = 0;
+  let winRecorded = game.status === 'won'; // nach Neuladen nicht doppelt zählen
+  let earnedStars = game.starsEarned();
+  let lossCounted = game.status === 'lost';
   let newBest = false;
   function recordWin() {
     if (winRecorded) return;
@@ -494,8 +498,9 @@ function playScreen(game) {
     sfx.play('thud');
     let v;
     if (!isLevel) {
-      const best = stats().endlessBest;
-      bumpStats((s) => { s.endlessRounds++; });
+      const best = Math.max(stats().endlessBest, game.score);
+      if (!lossCounted) bumpStats((s) => { s.endlessRounds++; });
+      lossCounted = true;
       v = await showModal({
         title: 'Runde vorbei',
         content: h('div.bz-sheet', null,
@@ -546,6 +551,7 @@ function playScreen(game) {
       sfx.play('sparkle');
     } else if (v === 'rescue') {
       const ev = game.rescue();
+      lossCounted = false;
       saveGame(game);
       sfx.play('whoosh');
       if (ev) view.animateExternal(ev);

@@ -127,11 +127,8 @@
 .bz-toggle.on .bz-switch { background: var(--accent); }
 .bz-toggle.on .bz-switch::after { transform: translateX(20px); }
 
-.bz-world-strip { display: grid; grid-template-columns: repeat(10, 1fr); gap: 5px; padding: 12px; border-radius: var(--radius); box-shadow: var(--shadow);
-  background: linear-gradient(180deg, var(--sky1, #cfe9ff), var(--sky3, #fff6e2)); }
-.bz-world-strip .bz-lv { min-height: 0; font-size: 12px; }
-.bz-world-strip .bz-lv .bz-lv-stars svg { width: 9px; height: 9px; }
-.bz-world-strip .bz-lv .bz-lv-stars { bottom: -4px; }
+.bz-world-strip { padding: 14px 12px 16px; border-radius: 22px; box-shadow: var(--shadow);
+  background: linear-gradient(180deg, var(--sky1, #cfe9ff), var(--sky2, #e6f4ff) 55%, var(--sky3, #fff6e2)); }
 
 .bz-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; text-align: center; }
 .bz-stats div { background: var(--surface-2); border-radius: 14px; padding: 10px 6px; }

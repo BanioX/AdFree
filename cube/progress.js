@@ -64,3 +64,51 @@ export function saveCurrent(data) {
 export function clearCurrent() {
   store.remove(CUR);
 }
+
+// ---------- Statistik ----------
+//   cube.stats = { arrows, mistakes, hints, wins, playMs, bestStreak, streak }
+const STATS = 'cube.stats';
+
+export function loadStats() {
+  const s = store.get(STATS, null) || {};
+  const n = (v) => (Number.isFinite(v) && v > 0 ? Math.floor(v) : 0);
+  return {
+    arrows: n(s.arrows), mistakes: n(s.mistakes), hints: n(s.hints), wins: n(s.wins),
+    playMs: n(s.playMs), streak: n(s.streak), bestStreak: n(s.bestStreak),
+  };
+}
+
+/** Zählt Werte hoch, z.B. bumpStats({ arrows: 1 }). */
+export function bumpStats(delta) {
+  const s = loadStats();
+  for (const k of Object.keys(delta)) if (k in s) s[k] = Math.max(0, s[k] + (delta[k] | 0));
+  store.set(STATS, s);
+  return s;
+}
+
+/** Nach einem gelösten Level: Siege und Serie perfekter Level (3 Sterne) nachführen. */
+export function recordWin(stars) {
+  const s = loadStats();
+  s.wins++;
+  s.streak = stars === 3 ? s.streak + 1 : 0;
+  s.bestStreak = Math.max(s.bestStreak, s.streak);
+  store.set(STATS, s);
+  return s;
+}
+
+export function perfectCount(p = loadProgress()) {
+  return Object.keys(p.stars).filter((k) => (p.stars[k] | 0) >= 3).length;
+}
+
+// ---------- Einstellungen ----------
+//   cube.settings = { mode: 'classic' | 'relax' }
+const SETTINGS = 'cube.settings';
+export function loadSettings() {
+  const s = store.get(SETTINGS, null) || {};
+  return { mode: s.mode === 'relax' ? 'relax' : 'classic' };
+}
+export function saveSettings(patch) {
+  const s = { ...loadSettings(), ...patch };
+  store.set(SETTINGS, s);
+  return s;
+}

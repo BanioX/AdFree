@@ -597,7 +597,7 @@ function showGame(session, slot, { fresh = false } = {}) {
   }
 
   function checkDeadEnd() {
-    if (session.won || deadWarned || session.remaining > 60) return;
+    if (session.won || deadWarned || session.cert || session.remaining > 60) return;
     const r = solve(session.board, session.faces, session.present, { maxNodes: 2500 });
     if (r.result === 'unsolvable') {
       deadWarned = true;
@@ -918,6 +918,7 @@ window.__mahjong = {
   /** Nächstes Paar einer Lösung ab der aktuellen Stellung */
   nextPair() {
     const s = active.session;
+    if (s.cert && s.cert.length) return s.cert[0].slice();
     const r = solve(s.board, s.faces, s.present, { maxNodes: 400000 });
     return r.moves.length ? r.moves[0] : null;
   },

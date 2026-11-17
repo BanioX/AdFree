@@ -42,17 +42,17 @@ async function settle() {
 }
 
 /** Ein guter Zug (wie der Test-Spieler) als Wisch-Geste ausführen. */
-async function playMove(k) {
-  const m = await page.evaluate(async (k) => {
+async function playMove(k, weak = false) {
+  const m = await page.evaluate(async ([k, weak]) => {
     const { chooseMove } = await import('/match3/solver.js');
     const { Rng } = await import('/match3/engine.js');
     const { game, board } = window.__m3.cur;
-    const mv = chooseMove(game, new Rng(k + 1));
+    const mv = weak ? game.findMoves().pop() : chooseMove(game, new Rng(k + 1));
     if (!mv) return null;
     const r = board.canvas.getBoundingClientRect();
     const at = (i) => [r.left + board.ox + ((i % game.w) + 0.5) * board.cs, r.top + board.oy + (Math.floor(i / game.w) + 0.5) * board.cs];
     return { a: at(mv.a), b: at(mv.b), used: game.movesUsed };
-  }, k);
+  }, [k, weak]);
   assert.ok(m, 'es gibt immer einen gültigen Zug');
   await swipe(m.a[0], m.a[1], m.b[0], m.b[1]);
   await page.waitForFunction((u) => window.__m3.cur.game.movesUsed > u || window.__m3.cur.board.busy, m.used, { timeout: 5000 });
@@ -124,8 +124,8 @@ log('Level 1 gewonnen, Sterne:', prog.stars[1], 'Summary:', summary);
 await clickModal(/Weiter zu Level 2/);
 await page.waitForFunction(() => location.hash === '#level/2' && window.__m3.cur && window.__m3.cur.n === 2);
 await page.locator('.m3-intro').tap().catch(() => {});
-for (let k = 0; k < 2; k++) { assert.equal(await settle(), 'ready'); await playMove(k); }
-await settle();
+for (let k = 0; k < 2; k++) { assert.equal(await settle(), 'ready'); await playMove(k, true); }
+assert.equal(await settle(), 'ready');
 const before = await page.evaluate(() => JSON.stringify(window.__m3.cur.game.save()));
 await page.reload();
 await page.waitForFunction(() => window.__m3 && window.__m3.cur && window.__m3.cur.n === 2);
@@ -153,7 +153,9 @@ assert.match(await page.textContent('.gm-primary'), /Weiterspielen/);
 assert.match(await page.textContent('.gm-primary'), /Level 2/);
 
 // ---------- 5) Levelkarte ----------
+await shot('dbg-before-map');
 await page.locator('.gm-sec', { hasText: 'Levelkarte' }).tap();
+await page.waitForTimeout(800); await shot('dbg-after-map');
 await page.waitForSelector('.m3-node.cur');
 await page.waitForTimeout(300);
 await shot('07-map');

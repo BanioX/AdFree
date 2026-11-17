@@ -2,10 +2,11 @@
 // Logik steckt in ./logic/rules.js – hier nur Darstellung, Animation und Eingabe.
 
 import { sfx } from '../shared/sfx.js';
-import { icon, h, toast, showModal, celebrate, ease } from '../shared/ui.js';
+import { icon, h, toast, showModal, celebrate, ease, soundButton } from '../shared/ui.js';
 import { makeRng } from '../shared/rng.js';
 import { Game, TRAY_SIZE, SHELF_SIZE, HELPER_KEYS } from './logic/rules.js';
-import { solve } from './logic/solver.js';
+import { solve, findHint } from './logic/solver.js';
+import { showHelp } from './howto.js';
 import { bounds } from './logic/board.js';
 import { themeById, themes } from './data/themes.js';
 import { formatTime } from './progress.js';
@@ -40,11 +41,26 @@ function onPress(el, fn) {
     if (!down) return;
     down = false;
     const r = el.getBoundingClientRect();
-    if (e.clientX >= r.left - 8 && e.clientX <= r.right + 8 && e.clientY >= r.top - 8 && e.clientY <= r.bottom + 8) fn(e);
+    if (e.clientX >= r.left - 8 && e.clientX <= r.right + 8 && e.clientY >= r.top - 8 && e.clientY <= r.bottom + 8) {
+      swallowGhostClick();
+      fn(e);
+    }
   });
   el.addEventListener('pointercancel', () => { down = false; });
   // Tastatur (Enter/Leertaste) erzeugt einen click ohne Pointer
   el.addEventListener('click', (e) => { if (e.detail === 0) fn(e); });
+}
+
+/**
+ * Nach einer Auslösung per pointerup folgt der «click» derselben Berührung erst danach –
+ * und träfe sonst das Element, das inzwischen an dieser Stelle liegt (z.B. den
+ * Zurück-Knopf des Menüs → Startseite). Den nächsten click darum kurz abfangen.
+ */
+function swallowGhostClick() {
+  const stop = (ev) => { ev.preventDefault(); ev.stopPropagation(); done(); };
+  const done = () => { window.removeEventListener('click', stop, true); clearTimeout(t); };
+  const t = setTimeout(done, 400);
+  window.addEventListener('click', stop, true);
 }
 
 // ---------- kleine Tween-Maschine (eine Bewegung pro Stein, jederzeit umlenkbar) ----------
@@ -151,16 +167,17 @@ export function mountPlay(root, ctx) {
   const restartBtn = h('button.icon-btn', { type: 'button', 'aria-label': 'Neu beginnen' });
   restartBtn.innerHTML = icon('refresh');
   onPress(restartBtn, onRestartClick);
-  const soundBtn = h('button.icon-btn', { type: 'button', 'aria-label': 'Ton an/aus' });
-  const renderSound = () => { soundBtn.innerHTML = icon(sfx.muted ? 'soundOff' : 'soundOn'); };
-  renderSound();
-  onPress(soundBtn, () => { sfx.toggle(); renderSound(); sfx.play('click'); });
+  const soundBtn = soundButton();
+  const helpBtn = h('button.icon-btn', { type: 'button', 'aria-label': 'So geht’s' });
+  helpBtn.innerHTML = '<span class="tr-q">?</span>';
+  onPress(helpBtn, () => { sfx.play('click'); showHelp(); });
 
   const top = h('header.topbar.tr-top', null,
     backBtn,
     h('div.tr-title', null,
       h('b', null, ctx.title),
       h('small', null, ctx.subtitle)),
+    helpBtn,
     restartBtn,
     soundBtn);
 
@@ -487,6 +504,7 @@ export function mountPlay(root, ctx) {
     const ev = game.pick(id);
     if (!ev) return false;
     sfx.play('tap');
+    removeCoach();
     clearHint();
     const t = game.types[id];
     let lastSame = -1;
@@ -730,11 +748,42 @@ export function mountPlay(root, ctx) {
     later(() => { busy = false; }, 200 + order.length * step + 360 + 9 * 40);
   }
 
+  // ---------- Coach-Mark (nur Level 1, bis zum ersten Zug) ----------
+  let coach = null;
+  let coachId = -1;
+  function showCoach() {
+    if (!alive || coach || game.moves > 0 || game.status !== 'play') return;
+    const r = findHint(game.position(), { nodeLimit: 20000, timeLimit: 150 });
+    coachId = r.ids.length ? r.ids[0] : (game.freeTiles()[0] ?? -1);
+    if (coachId < 0 || !sp[coachId]) return;
+    coach = h('div.tr-coach', { 'aria-hidden': 'true' }, h('i'), h('span', null, 'Tippe einen hellen Stein an'));
+    fx.append(coach);
+    placeCoach();
+  }
+  function placeCoach() {
+    if (!coach || !sp[coachId]) return;
+    const p = boardPos(coachId);
+    coach.style.left = p.x + 'px';
+    coach.style.top = p.y + 'px';
+    coach.style.setProperty('--cw', L.tileW + 'px');
+    coach.style.setProperty('--ch', L.tileH + 'px');
+    const label = coach.lastChild;
+    label.classList.toggle('below', p.y < L.H * 0.3);
+  }
+  function removeCoach() {
+    if (!coach) return;
+    const c = coach;
+    coach = null;
+    c.classList.add('gone');
+    setTimeout(() => c.remove(), 300);
+  }
+  if (ctx.coach && game.moves === 0) later(showCoach, fresh ? 1500 : 500);
+
   // ---------- Grössenänderung ----------
   let resizeT = 0;
   const onResize = () => {
     clearTimeout(resizeT);
-    resizeT = setTimeout(() => { if (!alive) return; layout(); placeAll(); }, 60);
+    resizeT = setTimeout(() => { if (!alive) return; layout(); placeAll(); placeCoach(); }, 60);
   };
   window.addEventListener('resize', onResize);
   const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(onResize) : null;

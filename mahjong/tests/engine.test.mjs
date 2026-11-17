@@ -139,3 +139,31 @@ test('Session: Paar, Zurück, Mischen, Speichern/Laden', () => {
   assert.equal(s.won, true);
   assert.equal(countPresent(s.present), 0);
 });
+
+test('bekannte Lösung bleibt bei beliebigen Zügen, Zurück und Mischen gültig', () => {
+  let kept = 0, total = 0;
+  for (const def of layouts.filter((_, k) => k % 3 === 0)) {
+    for (let seed = 0; seed < 4; seed++) {
+      const s = Session.create(parseLayout(def), { kind: 'level', ref: def.id, seed: `c${seed}`, name: def.name });
+      let r = seed * 7919 + 1;
+      const rnd = () => ((r = (r * 1103515245 + 12345) % 2147483648) / 2147483648);
+      for (let step = 0; step < 200 && !s.won; step++) {
+        const free = s.freeList();
+        const pairs = [];
+        for (let x = 0; x < free.length; x++) for (let y = x + 1; y < free.length; y++) if (s.canMatch(free[x], free[y])) pairs.push([free[x], free[y]]);
+        const roll = rnd();
+        if (!pairs.length || roll < 0.04) { if (!s.shuffle()) s.undo(); }
+        else if (roll < 0.12 && s.history.length) s.undo();
+        else { const [x, y] = pairs[Math.floor(rnd() * pairs.length)]; s.match(x, y); }
+        total++;
+        if (s.cert) {
+          kept++;
+          assert.ok(verifySolution(s.board, s.faces, s.present, s.cert), `${def.id}: Lösung ungültig`);
+          const back = Session.fromSave(JSON.parse(JSON.stringify(s.serialize())));
+          assert.equal(back.cert?.length, s.cert.length);
+        }
+      }
+    }
+  }
+  assert.ok(kept > 0 && total > 0);
+});

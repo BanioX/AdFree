@@ -13,7 +13,7 @@ export const CAM_DIST = 9.5;
 const BEVEL = 0.05; // Einzug der Seitenflächen von der Kante (Würfel-Einheiten)
 const LIGHT = (() => { const l = [-0.42, 0.78, 0.46]; const n = Math.hypot(...l); return l.map((v) => v / n); })();
 
-const C = {
+const BASE = {
   ink: '#4a3418',
   inkShadow: 'rgba(84, 52, 18, 0.20)',
   faceLight: [255, 251, 243],
@@ -25,6 +25,12 @@ const C = {
   blue: '#2f7de1',
   red: '#e5484d',
 };
+
+export function hexRgb(hex) {
+  const m = /^#?([0-9a-f]{6})$/i.exec(hex || '');
+  const v = m ? parseInt(m[1], 16) : 0xffffff;
+  return [(v >> 16) & 255, (v >> 8) & 255, v & 255];
+}
 
 let floorCanvas = null;
 function floorSprite() {
@@ -206,6 +212,26 @@ export class CubeRenderer {
     this.extCache = new Map();
     this.hull = [];
     this.ready = false;
+    this.C = { ...BASE };
+  }
+
+  /** Papier-Thema setzen: { light, dark, edge, ink, hint } als #rrggbb (fehlende Werte = Standard). */
+  setTheme(t) {
+    const C = { ...BASE };
+    if (t) {
+      if (t.light) C.faceLight = hexRgb(t.light);
+      if (t.dark) C.faceDark = hexRgb(t.dark);
+      if (t.edge) C.bevel = t.edge;
+      if (t.ink) {
+        const [r, g, b] = hexRgb(t.ink);
+        C.ink = t.ink;
+        C.inkShadow = `rgba(${r}, ${g}, ${b}, 0.20)`;
+        C.dot = `rgba(${r}, ${g}, ${b}, 0.13)`;
+        C.bevelEdge = `rgba(${r}, ${g}, ${b}, 0.16)`;
+      }
+      if (t.hint) C.blue = t.hint;
+    }
+    this.C = C;
   }
 
   resize(w, h, dpr) {
@@ -349,8 +375,8 @@ export class CubeRenderer {
     ctx.closePath();
     ctx.lineJoin = 'round';
     ctx.lineWidth = Math.max(2, BEVEL * S * 1.2);
-    ctx.strokeStyle = C.bevel;
-    ctx.fillStyle = C.bevel;
+    ctx.strokeStyle = this.C.bevel;
+    ctx.fillStyle = this.C.bevel;
     ctx.fill();
     ctx.stroke();
 
@@ -382,8 +408,8 @@ export class CubeRenderer {
       let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
       for (const p of inner) { x0 = Math.min(x0, p[0]); y0 = Math.min(y0, p[1]); x1 = Math.max(x1, p[0]); y1 = Math.max(y1, p[1]); }
       const g = ctx.createLinearGradient(x0, y0, x1, y1);
-      g.addColorStop(0, mix(C.faceDark, C.faceLight, Math.min(1, t + 0.07)));
-      g.addColorStop(1, mix(C.faceDark, C.faceLight, Math.max(0, t - 0.07)));
+      g.addColorStop(0, mix(this.C.faceDark, this.C.faceLight, Math.min(1, t + 0.07)));
+      g.addColorStop(1, mix(this.C.faceDark, this.C.faceLight, Math.max(0, t - 0.07)));
       ctx.beginPath();
       roundedPoly(ctx, inner, Math.max(2, Math.min(10, BEVEL * S * 1.6)));
       ctx.fillStyle = g;
@@ -419,8 +445,8 @@ export class CubeRenderer {
       if (any) {
         ctx.lineCap = 'butt'; ctx.lineJoin = 'round';
         ctx.lineWidth = wpx * 1.7;
-        ctx.strokeStyle = C.trace;
-        ctx.fillStyle = C.trace;
+        ctx.strokeStyle = this.C.trace;
+        ctx.fillStyle = this.C.trace;
         for (let f = 0; f < 6; f++) {
           if (!tr[f]) continue;
           ctx.globalAlpha = smoothstep(0.02, 0.25, facing[f]);
@@ -437,7 +463,7 @@ export class CubeRenderer {
     if (!dbo.noDots) {
       const N = geo.N;
       const r = Math.max(0.8, Math.min(2.6, this.cellPx * 0.055));
-      ctx.fillStyle = C.dot;
+      ctx.fillStyle = this.C.dot;
       const tmp = [0, 0];
       for (let f = 0; f < 6; f++) {
         if (!vis[f] || facing[f] < 0.06) continue;
@@ -483,8 +509,8 @@ export class CubeRenderer {
       ctx.save();
       ctx.globalAlpha = alpha * shadowK;
       ctx.translate(0, shOff);
-      ctx.strokeStyle = C.inkShadow;
-      ctx.fillStyle = C.inkShadow;
+      ctx.strokeStyle = this.C.inkShadow;
+      ctx.fillStyle = this.C.inkShadow;
       ctx.lineWidth = wpx * 1.12;
       ctx.stroke(strokes[f]);
       ctx.fill(caps[f]);
@@ -495,8 +521,8 @@ export class CubeRenderer {
       ctx.globalAlpha = alpha;
       }
       // Tinte
-      ctx.strokeStyle = C.ink;
-      ctx.fillStyle = C.ink;
+      ctx.strokeStyle = this.C.ink;
+      ctx.fillStyle = this.C.ink;
       ctx.lineWidth = wpx;
       ctx.stroke(strokes[f]);
       ctx.fill(caps[f]);
@@ -593,10 +619,10 @@ export class CubeRenderer {
     const red = st.color === 'red';
     const mixK = st.mix == null ? 1 : st.mix;
     const k = clamp(st.k == null ? 1 : st.k, 0, 1);
-    const col = red ? C.red : C.blue;
+    const col = red ? this.C.red : this.C.blue;
     ctx.lineCap = 'butt'; ctx.lineJoin = 'round';
     ctx.globalAlpha = (0.2 + 0.2 * k) * Math.max(0.35, mixK);
-    ctx.strokeStyle = red ? C.red : C.blue;
+    ctx.strokeStyle = red ? this.C.red : this.C.blue;
     ctx.lineWidth = wpx * (2.5 + 0.7 * k);
     ctx.stroke(union);
     for (let f = 0; f < 6; f++) {
@@ -605,7 +631,7 @@ export class CubeRenderer {
       if (alpha <= 0.01) continue;
       if (mixK < 1) {
         ctx.globalAlpha = alpha;
-        ctx.strokeStyle = C.ink; ctx.fillStyle = C.ink;
+        ctx.strokeStyle = this.C.ink; ctx.fillStyle = this.C.ink;
         ctx.lineWidth = wpx;
         ctx.stroke(strokes[f]); ctx.fill(caps[f]);
         ctx.lineWidth = wpx * 0.42;
@@ -657,7 +683,7 @@ export class CubeRenderer {
       headPath.lineTo(t[2][0], t[2][1]);
       headPath.closePath();
     }
-    const col = an.color === 'red' ? C.red : an.color === 'blue' ? C.blue : C.ink;
+    const col = an.color === 'red' ? this.C.red : an.color === 'blue' ? this.C.blue : this.C.ink;
     const alpha = an.alpha == null ? 1 : an.alpha;
     ctx.save();
     ctx.lineCap = 'round'; ctx.lineJoin = 'round';
@@ -665,7 +691,7 @@ export class CubeRenderer {
       const union = new Path2D();
       union.addPath(stroke); union.addPath(headPath);
       ctx.globalAlpha = alpha * an.glow * 0.32;
-      ctx.strokeStyle = C.blue;
+      ctx.strokeStyle = this.C.blue;
       ctx.lineWidth = wpx * 2.6;
       ctx.stroke(union);
     }

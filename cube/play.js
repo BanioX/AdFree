@@ -2,16 +2,18 @@
 
 import { sfx } from '../shared/sfx.js';
 import { icon, h, showModal, confirmDialog, celebrate, soundButton, ease } from '../shared/ui.js';
-import { generateLevel } from './generator.js';
+import { generateLevel, specialFor, themeFor } from './generator.js';
+import { PRAISE, CHAPTER_SIZE } from './data/levels.js';
+import { showHowto } from './howto.js';
 import { makeCube } from './geometry.js';
 import { Game } from './game.js';
 import { CubeRenderer } from './render.js';
 import { attachGestures } from './input.js';
 import { qMul, qAxisAngle, qNorm, qSlerp, qToMat, clamp, smoothstep, add, scale } from './math.js';
-import { loadCurrent, saveCurrent, clearCurrent, completeLevel } from './progress.js';
+import { loadCurrent, saveCurrent, clearCurrent, completeLevel, bumpStats, recordWin, loadSettings } from './progress.js';
 
-/** Schöne 3/4-Ansicht: oben, links (+Z) und rechts (+X) sichtbar. */
-export const Q_DEFAULT = qNorm(qMul(qAxisAngle([1, 0, 0], 0.5), qAxisAngle([0, 1, 0], -0.68)));
+import { Q_DEFAULT } from './view.js';
+export { Q_DEFAULT };
 
 /** Die 24 Drehlagen eines Würfels (als Quaternionen). */
 const CUBE_ORIENTS = (() => {
@@ -55,6 +57,9 @@ function setTimeScale(k) {
 
 export function mountPlay(root, levelNum, nav) {
   const level = generateLevel(levelNum);
+  const sp = specialFor(levelNum);
+  const theme = themeFor(levelNum);
+  const relax = loadSettings().mode === 'relax';
   const geo = makeCube(level.N);
   const saved = loadCurrent(levelNum);
   let game = new Game(level, geo, saved);
@@ -66,9 +71,11 @@ export function mountPlay(root, levelNum, nav) {
   const back = h('button.icon-btn', { type: 'button', 'aria-label': 'Zurück zur Levelauswahl', html: icon('back') });
   const title = h('div.lvl-title', null,
     h('b', null, `Level ${levelNum}`),
-    level.special ? h('span.special', { html: `${icon('sparkle', { size: 13 })}Spezial` }) : null);
-  const heartsEl = h('div.hearts', { 'aria-label': 'Herzen' });
-  const top = h('header.topbar', null, back, title, h('div.spacer'), heartsEl, soundButton());
+    sp ? h('span.special', { html: `${icon('sparkle', { size: 13 })}${sp.title}` }) : h('span.chapter-name', null, `Kapitel ${theme.chapter} · ${theme.name}`));
+  const heartsEl = h('div.hearts' + (relax ? '.relax' : ''), { 'aria-label': 'Herzen' });
+  const helpBtn = h('button.icon-btn.help-btn', { type: 'button', 'aria-label': 'So geht’s', html: '<span class="gm-q">?</span>' });
+  helpBtn.addEventListener('click', () => { sfx.play('click'); saveNow(); showHowto(); });
+  const top = h('header.topbar', null, back, title, h('div.spacer'), heartsEl, helpBtn, soundButton());
   const canvas = h('canvas.cube-canvas', { 'aria-label': 'Würfel mit Pfeilen' });
   const pill = h('div.pill');
   const bubble = h('div.bubble.hidden');
@@ -88,6 +95,7 @@ export function mountPlay(root, levelNum, nav) {
   // ---------- Zustand ----------
   const renderer = new CubeRenderer(canvas);
   renderer.setLevel(geo, level.arrows);
+  renderer.setTheme(theme);
   const view = { q: saved && Array.isArray(saved.q) && saved.q.length === 4 ? qNorm(saved.q) : Q_DEFAULT.slice(), zoom: 1, panX: 0, panY: 0, shakeX: 0 };
   let vel = [0, 0, 0];       // Winkelgeschwindigkeit (Kamera-Raum, rad/ms)
   let viewAnim = null;
@@ -115,6 +123,11 @@ export function mountPlay(root, levelNum, nav) {
   // ---------- Herzen & Anzeige ----------
   function renderHearts(lostIndex = -1) {
     heartsEl.innerHTML = '';
+    if (relax) {
+      heartsEl.append(h('span.relax-chip', { html: `${icon('heart', { size: 16, fill: true })}<span>Entspannt</span>` }));
+      heartsEl.setAttribute('aria-label', 'Entspannt – ohne Herzen');
+      return;
+    }
     for (let i = 0; i < game.maxHearts; i++) {
       const full = i < game.hearts;
       const el = h('span.heart' + (full ? '.full' : ''), { html: icon('heart', { size: 22, fill: full }) });
@@ -132,7 +145,17 @@ export function mountPlay(root, levelNum, nav) {
   updatePill();
 
   // ---------- Speichern ----------
+  // Spielzeit (nur solange die Seite sichtbar ist)
+  let activeSince = document.visibilityState === 'visible' ? performance.now() : 0;
+  function flushTime() {
+    if (activeSince) {
+      const ms = Math.min(30 * 60000, performance.now() - activeSince);
+      if (ms > 500) bumpStats({ playMs: ms });
+    }
+    activeSince = document.visibilityState === 'visible' && !destroyed ? performance.now() : 0;
+  }
   function saveNow() {
+    flushTime();
     if (ended) return;
     saveCurrent({ level: levelNum, ...game.serialize(), q: view.q.map((v) => +v.toFixed(5)) });
   }
@@ -140,7 +163,7 @@ export function mountPlay(root, levelNum, nav) {
     clearTimeout(saveTimer);
     saveTimer = setTimeout(saveNow, 400);
   }
-  const onHide = () => { if (document.visibilityState === 'hidden') saveNow(); };
+  const onHide = () => { if (document.visibilityState === 'hidden') saveNow(); else activeSince = performance.now(); };
   document.addEventListener('visibilitychange', onHide);
   window.addEventListener('pagehide', saveNow);
 
@@ -402,6 +425,7 @@ export function mountPlay(root, levelNum, nav) {
       anims.push({ kind: 'exit', id, t0: clock(), dur, travel, path, emitted: false });
       hidden.add(id);
       sfx.play('whoosh');
+      bumpStats({ arrows: 1 });
       updatePill(true);
       if (tutorial === 'tap') { hideBubble(true); if (levelNum === 1) setTimeout(() => { if (!destroyed && !ended && rotatedAmount < 0.9) showBubble('swipe'); }, 900); }
       clearTimeout(tutTimer);
@@ -434,6 +458,8 @@ export function mountPlay(root, levelNum, nav) {
     shake = { t0: clock() };
     try { navigator.vibrate?.(30); } catch { /* ignore */ }
     if (ended || locked) return;
+    bumpStats({ mistakes: 1 });
+    if (relax) { game.mistakes++; saveNow(); return; }
     const before = game.hearts;
     const left = game.loseHeart();
     renderHearts(before - 1);
@@ -470,7 +496,9 @@ export function mountPlay(root, levelNum, nav) {
     ended = true;
     if (tutorial) hideBubble(true);
     const stars = game.stars();
+    flushTime();
     const res = completeLevel(levelNum, stars);
+    recordWin(stars);
     setTimeout(() => showWin(stars, res), 720);
   }
 
@@ -478,7 +506,13 @@ export function mountPlay(root, levelNum, nav) {
     if (destroyed) return;
     sfx.play('complete');
     celebrate(CONFETTI);
-    const msg = stars === 3 ? 'Ohne einen einzigen Fehler!' : stars === 2 ? 'Nur ein Fehler – stark!' : 'Geschafft – weiter so!';
+    const pool = PRAISE[stars] || PRAISE[1];
+    const msg = pool[(levelNum * 7 + game.mistakes) % pool.length];
+    const nsp = specialFor(levelNum + 1);
+    const newChapter = levelNum % CHAPTER_SIZE === 0;
+    const nth = themeFor(levelNum + 1);
+    const teaser = nsp ? `Als Nächstes: Spezial «${nsp.title}» ${nsp.emoji || ''}`.trim()
+      : newChapter ? `Neues Kapitel: ${nth.name}` : null;
     const starRow = h('div.win-stars');
     for (let i = 0; i < 3; i++) {
       const st = h('span.win-star' + (i < stars ? '.on' : ''), { html: icon('star', { size: 56 }), style: { '--i': i } });
@@ -487,7 +521,8 @@ export function mountPlay(root, levelNum, nav) {
     const content = h('div.win', null,
       starRow,
       h('p.win-msg', null, msg),
-      res.best > stars ? h('p.win-best', null, `Bestleistung: ${res.best} ${res.best === 1 ? 'Stern' : 'Sterne'}`) : null);
+      res.best > stars ? h('p.win-best', null, `Bestleistung: ${res.best} ${res.best === 1 ? 'Stern' : 'Sterne'}`) : null,
+      teaser ? h('p.win-next', null, teaser) : null);
     for (let i = 0; i < stars; i++) setTimeout(() => sfx.play(i === 2 ? 'sparkle' : 'pop'), 380 + i * 200);
     const v = await showModal({
       title: `Level ${levelNum} gelöst!`,
@@ -542,6 +577,7 @@ export function mountPlay(root, levelNum, nav) {
     }
     for (const id of [...highlights.keys()]) if (highlights.get(id).kind === 'hint') highlights.delete(id);
     lastHint = pick.i;
+    bumpStats({ hints: 1 });
     highlights.set(pick.i, { kind: 'hint', t0: clock(), dur: 5200 });
     sfx.play('sparkle');
     if (pick.v < 0.62 || !renderer.tapPointFor(pick.i, skip)) rotateToArrow(pick.i);
@@ -624,12 +660,10 @@ export function mountPlay(root, levelNum, nav) {
   } else if (levelNum === 2 && fresh) {
     showBubble('swipe');
   }
-  if (level.special && fresh) {
+  if (sp && fresh) {
     bubbleTimer = setTimeout(() => {
       if (destroyed || tutorial) return;
-      showBubble('special', level.special === 'edges'
-        ? 'Spezial: Jeder Pfeil läuft über eine Kante'
-        : level.grew ? 'Spezial: Grösserer Würfel, weniger Herzen' : 'Spezial: Dicht gepackt, weniger Herzen');
+      showBubble('special', `${sp.title}: ${sp.text}`);
       bubbleTimer = setTimeout(() => { if (tutorial === 'special') hideBubble(true); }, 3400);
     }, 650);
   }
@@ -692,8 +726,9 @@ export function mountPlay(root, levelNum, nav) {
 
   return {
     destroy() {
-      destroyed = true;
       saveNow();
+      destroyed = true;
+      activeSince = 0;
       clearTimeout(saveTimer);
       clearTimeout(tutTimer);
       clearTimeout(bubbleTimer);

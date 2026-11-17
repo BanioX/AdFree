@@ -340,7 +340,7 @@ const cache = new Map();
 let persist = null;
 /** Optionaler Zwischenspeicher (z.B. localStorage), damit die Kalibrierung nur einmal läuft. */
 export function setLevelStore(p) { persist = p; }
-const VERSION = 8;
+const VERSION = 9;
 
 /** Spielbereites Level n (1, 2, 3, …). */
 export function getLevel(n) {

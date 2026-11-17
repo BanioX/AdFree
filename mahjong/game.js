@@ -2,12 +2,20 @@
 
 import {
   buildBoard, normalizeTiles, tilesToString, tilesFromString, isFree, facesMatch, freeTiles,
-  hasMoves, countPresent, reshuffle, findHint, generateDeal, blockersOf, computeStars,
+  hasMoves, countPresent, reshuffleWithOrder, findHint, generateDeal, blockersOf, computeStars,
+  advanceSolution, verifySolution,
 } from './engine.js';
 
 const B36 = '0123456789abcdefghijklmnopqrstuvwxyz';
 const facesToStr = (f) => f.map((x) => (x < 36 ? B36[x] : String.fromCharCode(65 + x - 36))).join('');
 const facesFromStr = (s) => [...s].map((c) => (c >= 'A' && c <= 'Z' ? 36 + c.charCodeAt(0) - 65 : B36.indexOf(c)));
+
+const unflat = (a) => {
+  if (!Array.isArray(a) || a.length % 2) return null;
+  const out = [];
+  for (let k = 0; k < a.length; k += 2) out.push([a[k], a[k + 1]]);
+  return out;
+};
 
 export class Session {
   /**
@@ -27,6 +35,7 @@ export class Session {
     this.undos = 0;
     this.won = false;
     this.shuffleCounter = 0;
+    this.cert = null; // bekannte Lösung ab der aktuellen Stellung ([[a,b],…]) oder null
   }
 
   static create(layout, meta) {
@@ -34,6 +43,7 @@ export class Session {
     const deal = generateDeal(board, meta.seed);
     const s = new Session(layout, deal.faces, meta);
     s.solution = deal.solution;
+    s.cert = deal.solution.slice();
     return s;
   }
 
@@ -58,6 +68,7 @@ export class Session {
     this.present[a] = 0;
     this.present[b] = 0;
     this.history.push({ t: 'm', a, b });
+    this.cert = advanceSolution(this.board, this.faces, this.present, this.cert, a, b);
     if (this.remaining === 0) this.won = true;
     return true;
   }
@@ -70,8 +81,11 @@ export class Session {
       this.present[h.a] = 1;
       this.present[h.b] = 1;
       this.won = false;
+      // a und b waren vor dem Zug frei → das Paar vorne anfügen hält die Lösung gültig
+      if (this.cert) this.cert = [[h.a, h.b], ...this.cert];
     } else if (h.t === 's') {
       this.faces = facesFromStr(h.prev);
+      this.cert = h.cert || null;
     }
     this.undos++;
     return h;
@@ -80,11 +94,13 @@ export class Session {
   /** Mischt die verbleibenden Steine (lösbar). Gibt { prev, next } oder null zurück. */
   shuffle() {
     const seed = `${this.meta.seed}-mischen-${this.shuffleCounter++}-${this.remaining}`;
-    const next = reshuffle(this.board, this.faces, this.present, seed);
-    if (!next) return null;
+    const r = reshuffleWithOrder(this.board, this.faces, this.present, seed);
+    if (!r) return null;
+    const next = r.faces;
     const prev = this.faces.slice();
-    this.history.push({ t: 's', prev: facesToStr(prev) });
+    this.history.push({ t: 's', prev: facesToStr(prev), cert: this.cert });
     this.faces = next;
+    this.cert = r.order;
     this.shuffles++;
     return { prev, next };
   }
@@ -100,6 +116,7 @@ export class Session {
   }
 
   hint(opts) {
+    if (this.cert && this.cert.length) return { pair: this.cert[0].slice(), safe: true, unsolvable: false };
     return findHint(this.board, this.faces, this.present, opts);
   }
 
@@ -111,7 +128,8 @@ export class Session {
       name: this.layout.name,
       id: this.layout.id,
       faces: facesToStr(this.faces),
-      hist: this.history.map((h) => (h.t === 'm' ? [h.a, h.b] : h.prev)),
+      hist: this.history.map((h) => (h.t === 'm' ? [h.a, h.b] : h.cert ? { p: h.prev, c: h.cert.flat() } : h.prev)),
+      cert: this.cert ? this.cert.flat() : null,
       elapsed: Math.round(this.elapsed),
       hints: this.hints,
       shuffles: this.shuffles,
@@ -138,6 +156,8 @@ export class Session {
           s.history.push({ t: 'm', a, b });
         } else if (typeof h === 'string') {
           s.history.push({ t: 's', prev: h });
+        } else if (h && typeof h.p === 'string') {
+          s.history.push({ t: 's', prev: h.p, cert: unflat(h.c) });
         }
       }
       s.elapsed = data.elapsed || 0;
@@ -146,6 +166,8 @@ export class Session {
       s.undos = data.undos || 0;
       s.shuffleCounter = data.sc || 0;
       s.won = !!data.won || s.remaining === 0;
+      const cert = unflat(data.cert);
+      s.cert = cert && verifySolution(s.board, s.faces, s.present, cert) ? cert : null;
       return s;
     } catch {
       return null;

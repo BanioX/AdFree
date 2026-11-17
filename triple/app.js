@@ -11,6 +11,7 @@ import { themeById } from './data/themes.js';
 import { generateLevel, generateFree, SIZES } from './logic/generator.js';
 import { mountPlay } from './play.js';
 import { mountMenu, mountFree, mountLevels, tagLabel } from './menu.js';
+import { maybeShowHelp } from './howto.js';
 import {
   loadProgress, saveProgress, updateStats, loadSave, writeSave, clearSave, updateSummary,
 } from './progress.js';
@@ -57,6 +58,7 @@ function startMain() {
     title: `Level ${L}`,
     subtitle: theme.title,
     tag: tagLabel(level.tag) || theme.title,
+    coach: L === 1,
     save: (g) => writeSave('play', { levelNo: L, seed: level.seed, game: g }),
     onStart: () => updateStats((s) => { s.played++; }),
     onLoss: () => updateStats((s) => { s.streak = 0; }),
@@ -222,3 +224,5 @@ function route() {
 window.addEventListener('hashchange', route);
 updateSummary();
 route();
+// Beim allerersten Start: «So geht's» (liegt über Menü bzw. Spiel)
+maybeShowHelp();

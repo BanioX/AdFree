@@ -27,11 +27,10 @@ const savedEndless = () => page.evaluate(() => JSON.parse(localStorage.getItem('
 /** Bildschirmpunkt (CSS-px) für Logik-Koordinaten des Spielfelds */
 async function toScreen(x, y) {
   return page.evaluate(async ([x, y]) => {
-    const hex = await import('./core/hex.js');
+    const { fieldLayout } = await import('./view.js');
     const c = document.querySelector('.bz-canvas');
     const r = c.getBoundingClientRect();
-    const s = Math.min(r.width / hex.WIDTH, r.height / hex.FIELD_H);
-    const ox = (r.width - hex.WIDTH * s) / 2, oy = r.height - hex.FIELD_H * s;
+    const { s, ox, oy } = fieldLayout(r.width, r.height);
     return { x: r.left + ox + x * s, y: r.top + oy + y * s };
   }, [x, y]);
 }

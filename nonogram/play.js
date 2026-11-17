@@ -126,6 +126,7 @@ export function createPlay(o) {
     if (settings.timer) timeEl.textContent = ` · ${save.formatTime(game.elapsed)}`;
   }
   let timer = 0;
+  let tipTimer = 0;
   let saveTimer = 0;
   function persist() {
     clearTimeout(saveTimer);
@@ -603,8 +604,11 @@ export function createPlay(o) {
       } else {
         running = !isNew;
         if (board.zoomable && !settings.zoomTip) {
-          setTimeout(() => { if (el.isConnected && !game.solved) toast('Tipp: Mit zwei Fingern zoomen – oder die Lupe benutzen.', 3200); }, 700);
-          settings = save.settings.set({ zoomTip: true });
+          tipTimer = setTimeout(() => {
+            if (!el.isConnected || game.solved || board.zoomed || settings.zoomTip) return;
+            settings = save.settings.set({ zoomTip: true });
+            toast('Tipp: Mit zwei Fingern zoomen – oder die Lupe benutzen.', 3000);
+          }, 900);
         }
       }
       timer = setInterval(tick, 1000);
@@ -616,6 +620,7 @@ export function createPlay(o) {
     destroy() {
       persist();
       clearInterval(timer);
+      clearTimeout(tipTimer);
       clearTimeout(saveTimer);
       if (raf) cancelAnimationFrame(raf);
       if (scrollRaf) cancelAnimationFrame(scrollRaf);

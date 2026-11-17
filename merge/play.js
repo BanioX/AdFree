@@ -72,6 +72,7 @@ export function mountPlay(app, opts, nav) {
   app.className = 'app play' + (skin.dark ? ' dark-skin' : '');
   app.textContent = '';
   app.style.setProperty('--board', skin.board);
+  document.body.classList.add('in-play');
 
   const back = backButton(isLevel ? '#etappen' : '#', () => (isLevel ? nav.map() : nav.menu()));
   const title = h('div.title-wrap',
@@ -408,6 +409,7 @@ export function mountPlay(app, opts, nav) {
       cancelAnimationFrame(scoreAnim);
       board.destroy();
       app.style.removeProperty('--board');
+      document.body.classList.remove('in-play');
     },
   };
 }

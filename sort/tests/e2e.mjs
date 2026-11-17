@@ -163,6 +163,7 @@ step('Statistik');
 await page.waitForTimeout(400);
 await page.getByText('Statistik').first().tap();
 await page.locator('.sp-modal-backdrop.show').waitFor();
+await page.waitForTimeout(400);
 await shot('09-stats');
 await closeModal();
 
@@ -181,7 +182,11 @@ await page.waitForTimeout(400);
 await page.evaluate(() => { location.hash = 'replay/120'; });
 await page.waitForFunction(() => window.__sort.game && window.__sort.game.run && window.__sort.game.run.n === 120, null, { timeout: 20000 });
 await waitBoard();
-while (await modalOpen()) await closeModal();
+// Einführung «Geheimnis-Level» erscheint beim ersten Mal
+await page.locator('.sp-modal-backdrop.show').waitFor({ timeout: 4000 });
+assert.match(await page.locator('.sp-modal h2').first().textContent(), /Geheimnis/);
+await closeModal();
+await page.waitForTimeout(600);
 await shot('11-geheimnis');
 const hidden = await page.evaluate(() => window.__sort.game.run.state.tubes.some((t) => t.h > 0));
 assert.ok(hidden, 'verdeckte Schichten');

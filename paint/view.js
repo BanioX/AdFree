@@ -10,7 +10,7 @@ import { renderExport, luminance } from './engine/render.js';
 import { encodeBits, decodeBits, encodeOrder, decodeOrder, percent } from './engine/progress.js';
 import { loadProgress, saveProgress, removeProgress, updateSummary } from './state.js';
 import { onTap } from './tap.js';
-import { addStats, formatDuration } from './stats.js';
+import { addStats, loadStats, formatDuration } from './stats.js';
 import { TIPS } from './data/howto.js';
 import { showHowto } from './tutorial.js';
 
@@ -203,6 +203,7 @@ export function createPaintView(lib, { onBack, onChanged, debug = false } = {}) 
       setDockMode('palette');
     }
     S.ready = true;
+    if (!rec && !S.done && loadStats().fills === 0) showCoach();
     if (rec && !rec.h && hash) scheduleSave();
     if (debug) exposeDebug();
   }
@@ -259,6 +260,7 @@ export function createPaintView(lib, { onBack, onChanged, debug = false } = {}) 
     if (!S || S.done) return;
     if (user) sfx.play('click');
     if (c === S.selected) { if (user) bounce(c); return; }
+    clearCoach();
     S.selected = c;
     S.stage.setSelected(c);
     markSelected(true);
@@ -317,6 +319,7 @@ export function createPaintView(lib, { onBack, onChanged, debug = false } = {}) 
   function fill(i, ux, uy) {
     const M = S.M;
     tick();
+    clearCoach();
     S.pendFills++;
     S.filled[i] = 1;
     S.order.push(i);
@@ -370,6 +373,28 @@ export function createPaintView(lib, { onBack, onChanged, debug = false } = {}) 
     barFill.style.width = p + '%';
   }
 
+  // ---------- Coach-Mark (nur beim allerersten Bild) ----------
+  function showCoach() {
+    const M = S.M, c = S.selected;
+    let best = -1, bf = 0;
+    for (const i of M.colorShapes[c]) {
+      const lb = M.labelOf(i);
+      if (lb.f > bf) { bf = lb.f; best = i; }
+    }
+    if (best < 0) return;
+    const lb = M.labelOf(best);
+    S.coach = true;
+    setTimeout(() => {
+      if (S && S.coach) S.stage.coachRing(lb.x, lb.y, Math.max(lb.f * 0.9, 3));
+    }, 700);
+  }
+
+  function clearCoach() {
+    if (!S || !S.coach) return;
+    S.coach = false;
+    S.stage.clearCoach();
+  }
+
   // ---------- Tipp ----------
   async function hint() {
     if (!S || S.done || S.playing) return;
@@ -377,6 +402,7 @@ export function createPaintView(lib, { onBack, onChanged, debug = false } = {}) 
     const c = S.selected;
     const open = M.colorShapes[c].filter((i) => !S.filled[i]);
     if (!open.length) return;
+    clearCoach();
     sfx.play('whoosh');
     const [cx, cy] = st.toUnits(st.VW / 2, st.VH / 2);
     let best = null, bd = Infinity;

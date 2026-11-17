@@ -575,8 +575,9 @@ export class Stage {
     const dpr = this.dpr;
     const keep = [];
     for (const g of this.rings) {
-      const el = now - g.t0;
-      if (el > g.dur) continue;
+      const el0 = now - g.t0;
+      if (!g.loop && el0 > g.dur) continue;
+      const el = g.loop ? el0 % 1900 : el0;
       keep.push(g);
       const [sx, sy] = this.toScreen(g.ux, g.uy);
       const base = Math.max(18, Math.min(120, g.r * this.cam.s * 1.25));
@@ -590,7 +591,7 @@ export class Stage {
         ctx.strokeStyle = hexA(ACCENT, 0.9 * (1 - t));
         ctx.stroke();
       }
-      const ft = Math.min(1, el / 250) * Math.max(0, 1 - (el - g.dur + 450) / 450);
+      const ft = g.loop ? Math.min(1, el0 / 300) : Math.min(1, el / 250) * Math.max(0, 1 - (el - g.dur + 450) / 450);
       if (ft > 0) {
         ctx.beginPath();
         ctx.arc(sx * dpr, sy * dpr, base * 0.55 * dpr, 0, Math.PI * 2);
@@ -662,6 +663,18 @@ export class Stage {
   hintRing(ux, uy, rUnits) {
     this.rings.push({ ux, uy, r: rUnits, t0: performance.now(), dur: 1650 });
     this.kick();
+  }
+
+  /** Dauerhaft pulsierender Ring (Coach-Mark beim allerersten Bild), bis clearCoach(). */
+  coachRing(ux, uy, rUnits) {
+    this.rings.push({ ux, uy, r: rUnits, t0: performance.now(), dur: Infinity, loop: true });
+    this.kick();
+  }
+
+  clearCoach() {
+    const n = this.rings.length;
+    this.rings = this.rings.filter((g) => !g.loop);
+    if (n !== this.rings.length) this.kick();
   }
 
   pulseWrong(i, ux, uy) {

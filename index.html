@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
   <title>Spielpause</title>
-  <meta name="description" content="Drei entspannte Spiele – ganz ohne Werbung.">
+  <meta name="description" content="Entspannte Spiele – ganz ohne Werbung.">
   <meta name="theme-color" content="#fbf6ef">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
@@ -15,132 +15,114 @@
   <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
   <link rel="stylesheet" href="shared/style.css">
   <style>
-    .hub { padding: 6px 18px calc(28px + var(--safe-bottom)); max-width: 560px; margin: 0 auto; }
-    .hub-head { padding: 18px 4px 18px; display: flex; align-items: flex-end; gap: 12px; }
+    .hub { padding: 4px 16px calc(28px + var(--safe-bottom)); max-width: 640px; margin: 0 auto; }
+    .hub-head { padding: 16px 4px 8px; display: flex; align-items: center; gap: 12px; }
     .hub-head h1 { margin: 0; font-size: 34px; font-weight: 900; letter-spacing: -.02em; }
-    .hub-head p { margin: 4px 0 0; color: var(--text-2); font-weight: 600; }
-    .hub-head .grow { flex: 1 1 auto; }
+    .hub-head p { margin: 2px 0 0; color: var(--text-2); font-weight: 650; font-size: 15px; }
+    .hub-head .grow { flex: 1 1 auto; min-width: 0; }
 
-    .games { display: grid; gap: 16px; }
-    .game {
-      display: flex; align-items: center; gap: 16px;
-      padding: 14px; text-decoration: none; color: inherit;
-      border-radius: 26px; background: var(--surface); box-shadow: var(--shadow);
+    .section-title {
+      margin: 22px 4px 10px; font-size: 13px; font-weight: 800; letter-spacing: .06em;
+      text-transform: uppercase; color: var(--text-3);
+      display: flex; align-items: center; gap: 8px;
+    }
+
+    /* Tagesrätsel-Leiste */
+    .daily {
+      display: flex; gap: 10px; overflow-x: auto; padding: 2px 4px 8px; margin: 0 -16px; padding-left: 20px; padding-right: 20px;
+      scrollbar-width: none; scroll-snap-type: x proximity;
+    }
+    .daily::-webkit-scrollbar { display: none; }
+    .daily a {
+      flex: 0 0 auto; scroll-snap-align: start;
+      display: flex; align-items: center; gap: 10px; padding: 8px 14px 8px 8px;
+      border-radius: 18px; background: var(--surface); box-shadow: var(--shadow);
+      text-decoration: none; color: inherit; transition: transform .15s var(--ease-out);
+    }
+    .daily a:active { transform: scale(.96); }
+    .daily img, .daily .ph { width: 40px; height: 40px; border-radius: 11px; flex: 0 0 auto; }
+    .daily .ph { font-size: 20px; }
+    .daily b { display: block; font-size: 15px; font-weight: 800; }
+    .daily small { display: block; font-size: 12.5px; font-weight: 700; color: var(--text-2); }
+    .daily .done small { color: var(--good); }
+
+    /* Kategorien */
+    .chips { display: flex; gap: 8px; overflow-x: auto; margin: 10px -16px 4px; padding: 2px 20px 6px; scrollbar-width: none; }
+    .chips::-webkit-scrollbar { display: none; }
+
+    /* Katalog: 4 Kacheln pro Reihe */
+    .grid {
+      display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
+      column-gap: 12px; row-gap: 18px; padding: 8px 2px 0;
+    }
+    .tile {
+      display: flex; flex-direction: column; align-items: center; gap: 7px;
+      text-decoration: none; color: inherit; min-width: 0; position: relative;
+      -webkit-touch-callout: none;
+    }
+    .tile .ic {
+      width: 100%; aspect-ratio: 1; border-radius: 23%; overflow: hidden; position: relative;
+      box-shadow: 0 6px 14px rgba(70, 45, 20, .14), 0 1px 3px rgba(70, 45, 20, .10);
       transition: transform .18s var(--ease-out);
-      position: relative; overflow: hidden;
+      background: var(--surface-2);
     }
-    .game:active { transform: scale(.97); }
-    .game .art {
-      flex: 0 0 auto; width: 104px; height: 104px; border-radius: 22px;
-      display: grid; place-items: center; overflow: hidden;
+    .tile:active .ic { transform: scale(.9); }
+    .tile .ic img { width: 100%; height: 100%; display: block; }
+    .tile .ic .ph { width: 100%; height: 100%; }
+    .tile .ic::after {
+      content: ''; position: absolute; inset: 0; border-radius: inherit;
+      box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .05);
     }
-    .game .art svg { width: 100%; height: 100%; }
-    .game .info { flex: 1 1 auto; min-width: 0; }
-    .game h2 { margin: 0 0 4px; font-size: 22px; font-weight: 850; letter-spacing: -.01em; }
-    .game .kind { margin: 0 0 8px; color: var(--text-2); font-size: 15px; font-weight: 600; }
-    .game .status {
-      display: inline-flex; align-items: center; gap: 6px;
-      padding: 4px 10px; border-radius: 999px; font-size: 13px; font-weight: 750;
-      background: var(--surface-2); color: var(--text-2); max-width: 100%;
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    .tile .name {
+      font-size: 12.5px; font-weight: 750; text-align: center; line-height: 1.2;
+      width: 100%; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+      letter-spacing: -.015em; -webkit-hyphens: manual; hyphens: manual; overflow-wrap: anywhere;
     }
-    .game .go {
-      flex: 0 0 auto; width: 40px; height: 40px; border-radius: 50%;
-      display: grid; place-items: center; color: #fff;
+    .tile .new {
+      position: absolute; top: -6px; right: -6px; z-index: 2;
+      padding: 2px 6px; border-radius: 999px; background: var(--bad); color: #fff;
+      font-size: 10.5px; font-weight: 850; box-shadow: 0 0 0 2px var(--bg);
     }
-    .game .go svg { width: 20px; height: 20px; transform: rotate(180deg); }
-    .game.paint .art { background: linear-gradient(145deg, #ffe3ea, #ffd0c2); }
-    .game.paint .go { background: #ff6f7d; }
-    .game.cube .art { background: linear-gradient(145deg, #fff0cc, #ffd98a); }
-    .game.cube .go { background: #f29a1f; }
-    .game.beads .art { background: linear-gradient(145deg, #dff1ff, #c5e3ff); }
-    .game.beads .go { background: #3f8ef0; }
+    .tile .dot {
+      position: absolute; top: -3px; right: -3px; z-index: 2; width: 14px; height: 14px; border-radius: 50%;
+      background: var(--good); box-shadow: 0 0 0 2px var(--bg);
+      display: grid; place-items: center;
+    }
+    .ph { display: grid; place-items: center; color: #fff; font-weight: 900; font-size: 28px; }
+    
+    /* Info-Blatt beim langen Drücken */
+    .info-ic { width: 84px; height: 84px; border-radius: 22px; overflow: hidden; margin: 0 auto 12px; box-shadow: var(--shadow); }
+    .info-ic img, .info-ic .ph { width: 100%; height: 100%; }
+    .info-ic .ph { font-size: 40px; }
+    .info-status { margin-top: 6px; font-weight: 700; color: var(--text); }
 
-    .foot { margin: 28px 0 0; text-align: center; color: var(--text-3); font-size: 14px; font-weight: 600; }
+    .foot { margin: 30px 0 0; text-align: center; color: var(--text-3); font-size: 14px; font-weight: 600; }
     .foot .heart { color: #ff6f7d; }
 
     .install-tip {
-      margin: 18px 0 0; padding: 14px 16px; border-radius: 18px;
+      margin: 16px 0 0; padding: 14px 16px; border-radius: 18px;
       background: var(--surface-2); color: var(--text-2); font-size: 14px; font-weight: 600;
     }
     .install-tip b { color: var(--text); }
     .install-tip svg { display: inline; vertical-align: -4px; width: 18px; height: 18px; }
+
+    @media (min-width: 520px) {
+      .grid { column-gap: 18px; row-gap: 22px; }
+      .tile .name { font-size: 14px; }
+    }
   </style>
 </head>
 <body>
   <div class="app">
-    <div class="scroll">
+    <div class="scroll" id="scroll">
       <main class="hub">
         <header class="hub-head">
           <div class="grow">
             <h1>Spielpause</h1>
-            <p>Drei Spiele. Null Werbung.</p>
+            <p id="tagline">Entspannt spielen – ohne Werbung.</p>
           </div>
           <span id="sound"></span>
         </header>
-
-        <nav class="games">
-          <a class="game paint" href="paint/">
-            <div class="art" aria-hidden="true">
-              <svg viewBox="0 0 100 100">
-                <g stroke="#3a2a2a" stroke-width="1.6" stroke-linejoin="round">
-                  <path d="M50 22c9 0 15 7 14 15 8-2 15 5 13 13-1 7-8 10-14 9 3 7-2 15-10 16-6 1-10-3-12-7-3 5-9 8-15 5-7-3-8-11-4-16-7 0-12-6-10-13 2-7 10-10 16-7-1-8 6-15 14-15z" fill="#ff8fa3"/>
-                  <circle cx="50" cy="50" r="10" fill="#ffd23f"/>
-                  <path d="M50 76v16" fill="none"/>
-                  <path d="M50 86c-8-6-16-4-20 1 8 4 15 3 20-1z" fill="#fff"/>
-                  <path d="M50 84c7-6 15-5 19 0-7 4-14 4-19 0z" fill="#7bd389"/>
-                </g>
-                <g font-family="ui-rounded, -apple-system, sans-serif" font-weight="800" font-size="8" fill="#5a4a4a" text-anchor="middle">
-                  <text x="39" y="89">3</text>
-                </g>
-              </svg>
-            </div>
-            <div class="info">
-              <h2>Farbenzauber</h2>
-              <p class="kind">Malen nach Zahlen</p>
-              <span class="status" data-summary="paint">Los geht's</span>
-            </div>
-            <span class="go" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></span>
-          </a>
-
-          <a class="game cube" href="cube/">
-            <div class="art" aria-hidden="true">
-              <svg viewBox="0 0 100 100">
-                <g stroke="#4a3418" stroke-width="1.6" stroke-linejoin="round">
-                  <path d="M50 16l30 16-30 16-30-16z" fill="#fffaf0"/>
-                  <path d="M20 32l30 16v34L20 66z" fill="#f6ead2"/>
-                  <path d="M80 32L50 48v34l30-16z" fill="#efdcb8"/>
-                </g>
-                <g fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M38 30l12 6 10-5" stroke="#e5484d"/>
-                  <path d="M56 29l4 2-1 4" stroke="#e5484d"/>
-                  <path d="M28 46v12l10 5v8" stroke="#3f8ef0"/>
-                  <path d="M35 68l3 4 3-2" stroke="#3f8ef0"/>
-                  <path d="M58 70V58l14-8" stroke="#34a86a"/>
-                  <path d="M68 49l4 1-1 4" stroke="#34a86a"/>
-                </g>
-              </svg>
-            </div>
-            <div class="info">
-              <h2>Pfeilwürfel</h2>
-              <p class="kind">3D-Pfeilrätsel</p>
-              <span class="status" data-summary="cube">Los geht's</span>
-            </div>
-            <span class="go" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></span>
-          </a>
-
-          <a class="game beads" href="beads/">
-            <div class="art" aria-hidden="true">
-              <svg viewBox="0 0 100 100" id="beads-art"></svg>
-            </div>
-            <div class="info">
-              <h2>Perlenbild</h2>
-              <p class="kind">Steine sortieren, Bild legen</p>
-              <span class="status" data-summary="beads">Los geht's</span>
-            </div>
-            <span class="go" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></span>
-          </a>
-        </nav>
 
         <div class="install-tip hidden" id="install-tip">
           <b>Tipp:</b> Im Safari auf
@@ -148,54 +130,145 @@
           tippen und <b>«Zum Home-Bildschirm»</b> wählen – dann startet Spielpause wie eine echte App, auch offline.
         </div>
 
+        <div class="chips" id="chips" role="tablist"></div>
+        <div class="grid" id="grid"></div>
+
+        <section id="daily-wrap" class="hidden">
+          <h2 class="section-title">Tagesrätsel</h2>
+          <div class="daily" id="daily"></div>
+        </section>
+
         <p class="foot">Gemacht mit <span class="heart">♥</span> – keine Werbung, keine Käufe.</p>
       </main>
     </div>
   </div>
 
   <script type="module">
-    import { setupPage, soundButton } from './shared/ui.js';
-    import { readSummary } from './shared/storage.js';
+    import { games, categories } from './games.js';
+    import { setupPage, soundButton, showModal, h } from './shared/ui.js';
+    import { store, readSummary, isDailyDone, dailyStreak } from './shared/storage.js';
+    import { sfx } from './shared/sfx.js';
 
     setupPage();
     document.getElementById('sound').append(soundButton());
+    document.getElementById('tagline').textContent = `${games.length} Spiele – ganz ohne Werbung.`;
 
-    for (const el of document.querySelectorAll('[data-summary]')) {
-      const s = readSummary(el.dataset.summary);
-      if (s && s.text) el.textContent = s.text;
+    // «Neu» nur für Spiele, die nach dem ersten Besuch dazugekommen sind (14 Tage lang, bis gespielt)
+    const NEW_DAYS = 14;
+    const firstVisit = store.get('hub.firstVisit', null) || (store.set('hub.firstVisit', new Date().toISOString().slice(0, 10)), store.get('hub.firstVisit'));
+    const isNew = (g) => g.added && g.added > firstVisit
+      && (Date.now() - new Date(g.added + 'T00:00:00').getTime()) < NEW_DAYS * 864e5
+      && !store.get('played.' + g.id, false);
+
+    function iconEl(g, cls = '') {
+      const img = h('img', { src: `icons/games/${g.id}.svg`, alt: '', draggable: 'false', class: cls, loading: 'lazy' });
+      img.addEventListener('error', () => {
+        const ph = h('div.ph', { style: { background: `linear-gradient(145deg, ${g.color}cc, ${g.color})` } }, g.title[0]);
+        img.replaceWith(ph);
+      }, { once: true });
+      return img;
     }
 
-    // Perlen-Herz für die Karte zeichnen
-    const heart = [
-      '.aa...aa.',
-      'abba.abba',
-      'abbbabbba',
-      'abbbbbbba',
-      '.abbbbba.',
-      '..abbba..',
-      '...aba...',
-      '....a....',
-    ];
-    const cols = { a: '#c2185b', b: '#ff5c8a' };
-    const svg = document.getElementById('beads-art');
-    const cell = 9.5, ox = 50 - (9 * cell) / 2, oy = 50 - (8 * cell) / 2;
-    let out = '';
-    heart.forEach((row, y) => [...row].forEach((ch, x) => {
-      const cx = ox + x * cell + cell / 2, cy = oy + y * cell + cell / 2;
-      if (ch === '.') {
-        out += `<circle cx="${cx}" cy="${cy}" r="3.6" fill="#ffffff" opacity=".75"/>`;
-      } else {
-        out += `<circle cx="${cx}" cy="${cy}" r="4.3" fill="${cols[ch]}"/>` +
-               `<circle cx="${cx - 1.3}" cy="${cy - 1.4}" r="1.3" fill="#fff" opacity=".55"/>`;
-      }
-    }));
-    svg.innerHTML = out;
+    function rememberPlay(g) {
+      store.set('played.' + g.id, true);
+      store.update('recent', [], (list) => [g.id, ...list.filter((x) => x !== g.id)].slice(0, 8));
+    }
 
-    // Installations-Tipp nur in Safari ausserhalb des Home-Bildschirm-Modus zeigen
+    function tile(g, { badges = true } = {}) {
+      const a = h('a.tile', { href: `${g.id}/`, 'aria-label': `${g.title} – ${g.subtitle}` },
+        h('div.ic', null, iconEl(g)),
+        h('span.name', null, g.tile || g.title));
+      if (badges && isNew(g)) a.append(h('span.new', null, 'Neu'));
+      a.addEventListener('click', () => { sfx.play('tap'); rememberPlay(g); });
+      // Langes Drücken: Info zum Spiel
+      let timer = 0, sx = 0, sy = 0, long = false;
+      a.addEventListener('pointerdown', (e) => {
+        long = false; sx = e.clientX; sy = e.clientY;
+        timer = setTimeout(() => { long = true; showInfo(g); }, 550);
+      });
+      const cancel = () => clearTimeout(timer);
+      a.addEventListener('pointermove', (e) => { if (Math.hypot(e.clientX - sx, e.clientY - sy) > 10) cancel(); });
+      a.addEventListener('pointerup', cancel);
+      a.addEventListener('pointercancel', cancel);
+      a.addEventListener('click', (e) => { if (long) { e.preventDefault(); e.stopImmediatePropagation(); } }, { capture: true });
+      return a;
+    }
+
+    function showInfo(g) {
+      const s = readSummary(g.id);
+      const content = h('div', null,
+        h('div.info-ic', null, iconEl(g)),
+        h('p', null, g.subtitle),
+        s && s.text ? h('p.info-status', null, s.text) : null);
+      showModal({
+        title: g.title, content,
+        buttons: [
+          { label: 'Spielen', value: 'play', primary: true },
+          ...(g.daily ? [{ label: 'Tagesrätsel', value: 'daily' }] : []),
+          { label: 'Schliessen', value: null, ghost: true },
+        ],
+      }).then((v) => {
+        if (!v) return;
+        rememberPlay(g);
+        location.href = `${g.id}/${v === 'daily' ? '#daily' : ''}`;
+      });
+    }
+
+    // Tagesrätsel
+    const dailies = games.filter((g) => g.daily);
+    if (dailies.length) {
+      document.getElementById('daily-wrap').classList.remove('hidden');
+      const box = document.getElementById('daily');
+      const sorted = [...dailies].sort((a, b) => isDailyDone(a.id) - isDailyDone(b.id));
+      for (const g of sorted) {
+        const done = isDailyDone(g.id);
+        const streak = dailyStreak(g.id);
+        const a = h('a', { href: `${g.id}/#daily`, class: done ? 'done' : '' },
+          iconEl(g),
+          h('span', null,
+            h('b', null, g.title),
+            h('small', null, done ? `✓ Gelöst${streak > 1 ? ` · ${streak} Tage` : ''}` : (streak > 0 ? `Serie: ${streak} Tage` : 'Heute neu'))));
+        a.addEventListener('click', () => { sfx.play('tap'); rememberPlay(g); });
+        box.append(a);
+      }
+    }
+
+    // Kategorien + Katalog
+    const chips = document.getElementById('chips');
+    const grid = document.getElementById('grid');
+    let current = store.get('hub.category', 'alle');
+    if (current !== 'alle' && !categories.some((c) => c.id === current)) current = 'alle';
+
+    function renderGrid() {
+      grid.replaceChildren(...games.filter((g) => current === 'alle' || g.category === current).map((g) => tile(g)));
+      for (const c of chips.children) c.classList.toggle('active', c.dataset.id === current);
+    }
+    for (const c of [{ id: 'alle', title: 'Alle' }, ...categories.filter((c) => games.some((g) => g.category === c.id))]) {
+      const b = h('button.chip', { type: 'button', role: 'tab', 'data-id': c.id }, c.title);
+      b.addEventListener('click', () => {
+        current = c.id; store.set('hub.category', current); sfx.play('click'); renderGrid();
+      });
+      chips.append(b);
+    }
+    renderGrid();
+
+    // Scrollposition merken (zurück aus einem Spiel)
+    const scroller = document.getElementById('scroll');
+    scroller.scrollTop = store.get('hub.scroll', 0);
+    scroller.addEventListener('scroll', () => store.set('hub.scroll', scroller.scrollTop), { passive: true });
+
+    // Installations-Tipp nur in Safari ausserhalb des Home-Bildschirm-Modus
     const standalone = window.navigator.standalone === true || matchMedia('(display-mode: standalone)').matches;
     const ios = /iPhone|iPad|iPod/.test(navigator.userAgent) ||
       (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-    if (ios && !standalone) document.getElementById('install-tip').classList.remove('hidden');
+    if (ios && !standalone && !store.get('hub.tipHidden', false)) {
+      const tip = document.getElementById('install-tip');
+      tip.classList.remove('hidden');
+      tip.addEventListener('click', () => { tip.classList.add('hidden'); store.set('hub.tipHidden', true); });
+    }
+
+    // Kehrt man per Zurück-Geste zurück (bfcache), Status neu laden
+    window.addEventListener('pageshow', (e) => { if (e.persisted) location.reload(); });
   </script>
 </body>
 </html>

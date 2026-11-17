@@ -4,11 +4,14 @@ Spielpause ist eine werbefreie Web-App (PWA) mit drei Spielen für das iPhone.
 Sie wird über GitHub Pages ausgeliefert und per Safari → «Zum Home-Bildschirm» installiert.
 Ziel: fühlt sich an wie eine liebevoll gemachte native App. Ruhig, hochwertig, befriedigend.
 
-| Ordner     | Spiel          | Mechanik                                                        |
-|------------|----------------|-----------------------------------------------------------------|
-| `/paint/`  | **Farbenzauber** | Malen nach Zahlen (Bereiche mit Nummern einfärben)            |
-| `/cube/`   | **Pfeilwürfel**  | 3D-Würfel drehen, Pfeile antippen, die frei herausgleiten     |
-| `/beads/`  | **Perlenbild**   | Steine aus einem Vorrat sortieren, um ein Pixelbild zu legen  |
+Die Startseite (`/index.html`) ist ein **Spielkatalog** (4 Kacheln pro Reihe). Alle Spiele stehen
+im Verzeichnis **`/games.js`** (id, Titel, Kategorie, Farbe, Tagesrätsel ja/nein). Jedes Spiel lebt
+in seinem eigenen Ordner `/<id>/` und hat ein Kachel-Icon `/icons/games/<id>.svg`.
+
+**Ein neues Spiel hinzufügen:** Ordner `/<id>/` anlegen, Icon zeichnen, Eintrag in `/games.js` – fertig.
+
+Aktuelle Spiele: siehe `/games.js` (Farbenzauber, Perlenbild, Pfeilwürfel, Solitär, Mahjong, Dreierlei,
+Sudoku, Bilderrätsel, Farbfluss, Blockpuzzle, Verdoppeln, Wortsuche, Wortrate, Juwelen, Blasenzauber, Puzzle).
 
 Wichtig: Das sind **eigene** Spiele mit ähnlicher Mechanik wie bekannte Apps – keine Kopien.
 Keine fremden Namen, Figuren, Marken (kein Marvel, Disney, Pokémon, …), kein nachgebautes Aussehen.
@@ -30,9 +33,11 @@ Keine fremden Namen, Figuren, Marken (kein Marvel, Disney, Pokémon, …), kein 
 - Spielstand wird automatisch gespeichert (beim Verlassen nichts verloren). Kein Login, nichts online.
 - **Keine Werbung, keine Käufe, keine künstlichen Wartezeiten, keine Energie-/Leben-Paywalls.**
   Hilfen (Tipps, Mischen, …) sind gratis.
-- Jede Datei, die du anlegst, gehört in **deinen** Ordner. Ändere keine Dateien ausserhalb
-  deines Bereichs (insbesondere nicht `/shared/*`, `/index.html`, `/sw.js`). Wenn dir in `shared`
-  etwas fehlt, baue es lokal in deinem Ordner.
+- Jede Datei, die du anlegst, gehört in **deinen** Ordner (plus dein Icon `/icons/games/<id>.svg`).
+  Ändere keine Dateien ausserhalb deines Bereichs (insbesondere nicht `/shared/*`, `/index.html`,
+  `/games.js`, `/sw.js`). Wenn dir in `shared` etwas fehlt, baue es lokal in deinem Ordner.
+- Laufzeit-Code nicht in Ordner namens `tests`, `tools` oder `src` legen – diese werden beim
+  Veröffentlichen weggelassen (dort gehören Tests, Werkzeuge und Quellskripte hin).
 - **Keine git-Befehle, die etwas verändern** (kein commit/add/checkout/stash/reset). Der Orchestrator committet.
 
 ## Gemeinsame Module (`/shared/`)
@@ -52,10 +57,21 @@ import { icon, h, toast, showModal, confirmDialog, celebrate, setupPage,
   zoomIn, zoomOut, expand, share, download, lock, grid, rotate, sparkle, more.
 - `showModal({title, text|html|content, buttons:[{label, value, primary, ghost, icon}]})` → Promise(value).
 - `celebrate(colors?)` – Konfetti. `toast(text)` – kurze Meldung.
-- `reportSummary('paint'|'cube'|'beads', 'Level 7')` – kurzer Status-Text für die Startseite.
+- `reportSummary('<id>', 'Level 7')` – kurzer Status-Text (wird im Info-Blatt der Kachel gezeigt).
+- Tagesrätsel (nur Spiele mit `daily: true` in `/games.js`): Route `#daily` startet das Rätsel des Tages,
+  Seed aus `todayKey()` (z.B. `makeRng('sudoku-' + todayKey())`) – für alle gleich, jeden Tag neu.
+  Nach dem Lösen `markDailyDone('<id>')`. Helfer: `todayKey, markDailyDone, isDailyDone, dailyStreak`
+  aus `/shared/storage.js`. Im Spielmenü sichtbar anbieten («Tagesrätsel» mit Häkchen wenn gelöst).
 - CSS-Klassen: `.app`, `.topbar`, `.title`, `.icon-btn`, `.btn`, `.btn.primary`, `.chip`, `.card`,
   `.scroll`, `.sp-shake`, `.sp-pop`, Variablen `--accent`, `--surface`, `--text-2`, … (siehe `shared/style.css`).
   Jedes Spiel darf `--accent` für sich überschreiben: Farbenzauber `#ff6f7d`, Pfeilwürfel `#f29a1f`, Perlenbild `#3f8ef0`.
+
+## Kachel-Icon (`/icons/games/<id>.svg`)
+
+- `viewBox="0 0 100 100"`, vollflächiger Hintergrund (sanfter Verlauf in der Spielfarbe, hell),
+  ein klares, freundliches Motiv in der Mitte, **kein Text**, keine feinen Details (wird ~80 px gross gezeigt).
+  Die Startseite rundet die Ecken selbst ab. Stil wie `/icons/games/paint.svg`, `cube.svg`, `beads.svg`:
+  flach, dunkelbraune Konturen (#3a2a2a / #4a3418) oder konturlos mit weichen Glanzlichtern.
 
 ## Seitengerüst eines Spiels
 
@@ -83,7 +99,9 @@ import { icon, h, toast, showModal, confirmDialog, celebrate, setupPage,
 ```
 
 Der Zurück-Button oben links führt aus dem Spiel-Menü zur Startseite (`../`), aus einem laufenden
-Level zurück ins Spiel-Menü. Innerhalb eines Spiels kann man Hash-Routing (`#play/rose`) verwenden,
+Level zurück ins Spiel-Menü. Jedes Spiel hat ein eigenes kleines Menü (Startbildschirm) mit grossem
+«Spielen»/«Weiter»-Button, ggf. Modus/Schwierigkeit, Tagesrätsel, Statistik und einer kurzen
+Anleitung («So geht's», beim ersten Start automatisch). Innerhalb eines Spiels kann man Hash-Routing (`#play/rose`) verwenden,
 damit der Zustand beim Neuladen erhalten bleibt.
 
 ## Testen
@@ -100,6 +118,8 @@ damit der Zustand beim Neuladen erhalten bleibt.
 - Reine Logik (Generatoren, Löser, Geometrie) als `node --test` Tests in `/<spiel>/tests/`.
 - Konsolenfehler prüfen (`page.on('console')`, `page.on('pageerror')`) – es dürfen keine auftreten.
 - Service Worker wird lokal nur mit `?sw=1` registriert – normal also kein Cache-Ärger.
+- Emoji dürfen als Bildinhalte verwendet werden (auf dem iPhone sehr schön). Hier im Test-Chromium
+  ist «Noto Color Emoji» installiert – sieht anders aus, aber funktioniert.
 
 ---
 

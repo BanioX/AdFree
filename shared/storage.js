@@ -65,3 +65,37 @@ export function reportSummary(gameId, text) {
 export function readSummary(gameId) {
   return store.get(`summary.${gameId}`, null);
 }
+
+// ---------- Tagesrätsel ----------
+// Spiele mit Tagesrätsel starten es unter "#daily". Der Seed ist das lokale Datum,
+// z.B. makeRng(`sudoku-${todayKey()}`). Nach dem Lösen markDailyDone('sudoku') aufrufen.
+
+/** Lokales Datum als 'JJJJ-MM-TT' (Tageswechsel um Mitternacht Ortszeit). */
+export function todayKey(d = new Date()) {
+  const p = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+}
+
+export function markDailyDone(gameId, day = todayKey()) {
+  store.set(`daily.${gameId}.${day}`, true);
+  // Serie (Tage am Stück) mitführen
+  const s = store.get(`dailyStreak.${gameId}`, { last: null, count: 0 });
+  if (s.last !== day) {
+    const y = new Date();
+    y.setDate(y.getDate() - 1);
+    s.count = s.last === todayKey(y) ? s.count + 1 : 1;
+    s.last = day;
+    store.set(`dailyStreak.${gameId}`, s);
+  }
+}
+
+export function isDailyDone(gameId, day = todayKey()) {
+  return store.get(`daily.${gameId}.${day}`, false) === true;
+}
+
+export function dailyStreak(gameId) {
+  const s = store.get(`dailyStreak.${gameId}`, { last: null, count: 0 });
+  const y = new Date();
+  y.setDate(y.getDate() - 1);
+  return s.last === todayKey() || s.last === todayKey(y) ? s.count : 0;
+}

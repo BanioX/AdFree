@@ -1,0 +1,38 @@
+import { dict } from '../shared/i18n.js';
+
+export const tr = dict({
+  de: {
+    title: 'Früchte-Fusion',
+    tagline: 'Fallen lassen und verschmelzen',
+    level: 'Stufe',
+    goal: 'Ziel: Stufe {n}',
+    score: '{n} Punkte',
+    full: 'Diese Reihe ist voll',
+    bowl: 'Der Korb ist voll',
+    win: 'Die Frucht ist reif',
+    super: 'Super!',
+    tut1: 'Reihe tippen',
+    tut1t: 'Die Frucht fällt in die Reihe, die du tippst.',
+    tut2: 'Verschmelzen',
+    tut2t: 'Zwei gleiche Früchte werden eine grössere. Ketten zählen mit.',
+    tut3: 'Ziel',
+    tut3t: 'Erreiche die Stufe oben. Es gibt keine Uhr.',
+  },
+  en: {
+    title: 'Fruit Merge',
+    tagline: 'Drop them and let them fuse',
+    level: 'Level',
+    goal: 'Goal: tier {n}',
+    score: '{n} points',
+    full: 'That column is full',
+    bowl: 'The bowl is full',
+    win: 'The fruit is ripe',
+    super: 'Super!',
+    tut1: 'Tap a column',
+    tut1t: 'The fruit falls into the column you tap.',
+    tut2: 'They fuse',
+    tut2t: 'Two of a kind become a bigger one. Chains count.',
+    tut3: 'The goal',
+    tut3t: 'Reach the tier shown above. Nothing is timed.',
+  },
+});

@@ -69,6 +69,7 @@ export const games = [
   { id: 'binaer', title: 'Binärrätsel', title_en: 'Binary', tile: 'Binär\u00ADrätsel', tile_en: 'Binary', subtitle: 'Nullen und Einsen, gleich viele', subtitle_en: 'Zeros and ones, the same count', category: 'logik', color: '#4a6fa5', added: '2026-11-17' },
   { id: 'lichter', title: 'Lichter aus', title_en: 'Lights Out', tile: 'Lichter aus', tile_en: 'Lights Out', subtitle: 'Tippen löscht das Licht und die Nachbarn', subtitle_en: 'A tap flips a light and its neighbours', category: 'logik', color: '#e6a317', added: '2026-11-17' },
   { id: 'futoshiki', title: 'Grösser-Kleiner', title_en: 'Futoshiki', tile: 'Grösser-\u00ADKleiner', tile_en: 'Futoshiki', subtitle: 'Zahlen mit Zeichen dazwischen', subtitle_en: 'Numbers with signs between them', category: 'logik', color: '#6a4cc4', added: '2026-11-17' },
+  { id: 'frucht', title: 'Früchte-Fusion', title_en: 'Fruit Merge', tile: 'Früchte-\u00ADFusion', tile_en: 'Fruit Merge', subtitle: 'Fallen lassen und verschmelzen', subtitle_en: 'Drop them and let them fuse', category: 'action', color: '#e25b4a', added: '2026-11-17' },
 ];
 
 /** Titel/Untertitel/Kachelname in der aktuellen Sprache */

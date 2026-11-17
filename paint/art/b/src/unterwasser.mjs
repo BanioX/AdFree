@@ -154,6 +154,23 @@ export default function build() {
   fish(330, 620, 90, 44, 1, [0.05], ['purple', 'pink'], 'pink');
   fish(220, 650, 90, 44, 1, [0.05], ['purple', 'pink'], 'pink');
 
+  fish(560, 700, 90, 44, -1, [0.05], ['yellow', 'orange'], 'orange');
+  fish(660, 760, 80, 40, -1, [0.05], ['yellow', 'orange'], 'orange');
+
+  // Qualle
+  p.tag('qualle');
+  {
+    const jx = 790;
+    const jy = 170;
+    for (const [dx, ph] of [[-48, 0], [-16, 1.4], [16, 2.6], [48, 4]]) {
+      const pts = [];
+      for (let k = 0; k <= 6; k++) pts.push([jx + dx + Math.sin(k * 0.9 + ph) * 12, jy + 10 + k * 32]);
+      p.add(stroke(pts, 16, { w1: 10 }), dx % 32 ? 'purple' : 'pink');
+    }
+    p.add(smooth([[jx - 84, jy + 22, 1], [jx - 76, jy - 40], [jx, jy - 86], [jx + 76, jy - 40], [jx + 84, jy + 22, 1], [jx + 42, jy + 8], [jx, jy + 24], [jx - 42, jy + 8]]), 'pink');
+    p.add(smooth([[jx - 50, jy - 20, 1], [jx, jy - 60], [jx + 50, jy - 20, 1], [jx, jy - 4]]), 'purple');
+  }
+
   // Luftblasen
   p.tag('blasen');
   for (const [x, y, r] of [[420, 110, 22], [455, 60, 15], [400, 40, 12], [700, 250, 18], [735, 205, 13], [620, 520, 16], [960, 330, 18], [930, 280, 13]]) {

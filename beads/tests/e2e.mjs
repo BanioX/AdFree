@@ -97,28 +97,44 @@ async function main() {
   const browser = await chromium.launch();
   const errors = [];
   try {
-    const ctx = await browser.newContext({ ...devices['iPhone 13'] });
+    const ctx = await browser.newContext({ ...devices['iPhone 13'], deviceScaleFactor: 1 });
     const page = await ctx.newPage();
     page.on('console', (m) => { if (m.type() === 'error' || m.type() === 'warning') errors.push(`${m.type()}: ${m.text()}`); });
     page.on('pageerror', (e) => errors.push('pageerror: ' + e.message));
 
     console.log('Startbildschirm');
     await page.goto(BASE);
-    await page.waitForSelector('.sp-modal h2');
-    await sleep(500);
-    check((await page.textContent('.sp-modal h2')).includes('So geht'), 'Anleitung erscheint beim ersten Start');
+    await page.waitForSelector('.tut-title');
+    await sleep(900);
+    check((await page.textContent('.tut-title')).includes('Spalte'), 'Tutorial erscheint beim ersten Start');
+    check(await page.locator('.tut-stage .bt-gem').count() >= 6, 'Tutorial zeigt animierte Mini-Demo');
     await shot(page, '01-howto');
-    await page.locator('.sp-modal .btn').first().tap();
-    await sleep(450);
+    for (let i = 0; i < 3; i++) { await page.locator('.tut-card button', { hasText: 'Weiter' }).last().tap(); await sleep(350); }
+    await sleep(2500);
+    await shot(page, '01b-howto-ablage');
+    await page.locator('.tut-card button', { hasText: 'Los geht' }).tap();
+    await sleep(550);
     await shot(page, '02-menu');
-    check((await page.textContent('.bp-hero .btn.primary')).includes('Level 1'), 'Spielen-Knopf zeigt Level 1');
+    check((await page.textContent('.gm-primary')).includes('Level 1'), 'Spielen-Knopf zeigt Level 1');
+    check(await page.locator('.gm-sec').count() === 2, 'Sammlung und Eigenes Foto im Menü');
+    check(await page.locator('.gm-stat').count() === 4, 'Statistik im Menü');
+    await page.reload();
+    await sleep(800);
+    check(await page.locator('.tut-title').count() === 0, 'Tutorial nur beim ersten Start');
 
     console.log('Level 1 durchspielen');
-    await page.locator('.bp-hero .btn.primary').tap();
+    await page.locator('.gm-primary').tap();
     await page.waitForFunction(() => window.__beads && window.__beads.state);
     await sleep(400);
     check(page.url().endsWith('#play/1'), 'Route #play/1');
+    check(await page.locator('.bp-coach').count() === 1, 'Coach-Mark zeigt die erste Spalte');
     await shot(page, '03-play-start');
+    await page.locator('.topbar .icon-btn[aria-label^="So geht"]').tap();
+    await page.waitForSelector('.tut-title');
+    await sleep(400);
+    check(true, '«?» öffnet die Anleitung im Spiel');
+    await page.locator('.tut-card button', { hasText: 'Überspringen' }).tap();
+    await sleep(450);
     const noScroll = await page.evaluate(() => document.scrollingElement.scrollHeight <= window.innerHeight + 1);
     check(noScroll, 'Spielbildschirm passt ohne Scrollen');
 
@@ -126,6 +142,7 @@ async function main() {
     await playToEnd(page, {
       delay: 60,
       onTap: async (n) => {
+        if (n === 1) check(await page.locator('.bp-coach').count() === 0, 'Coach-Mark verschwindet nach dem ersten Zug');
         if (n === 4) {
           await sleep(140);
           await shot(page, '04-flying');

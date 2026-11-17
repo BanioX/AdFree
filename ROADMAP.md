@@ -79,7 +79,7 @@ Mehrere KI-Agenten bauen parallel – Zuständigkeiten und Regeln stehen in [AGE
 | 45 | Fünf in einer Reihe (Gomoku) | ✅ |
 | 46 | Schiffe versenken | ✅ |
 | 47 | Schach (mit freundlicher KI) | ✅ |
-| 48 | Backgammon | 📋 |
+| 48 | Backgammon | ✅ |
 
 **Wörter** (gemeinsame deutsche Wortlisten)
 | # | Spiel | Stand |

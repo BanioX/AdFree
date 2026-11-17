@@ -54,6 +54,7 @@ export const games = [
   { id: 'eile', title: 'Eile mit Weile', title_en: 'Ludo', tile: 'Eile mit\u00A0Weile', tile_en: 'Ludo', subtitle: 'Kurze Runde, vier Farben', subtitle_en: 'A short race, four colours', category: 'brett', color: '#e23d4a', added: '2026-11-17' },
   { id: 'schiffe', title: 'Schiffe versenken', title_en: 'Battleship', tile: 'Schiffe\u00A0versenken', tile_en: 'Battleship', subtitle: 'Flotte setzen, Treffer suchen', subtitle_en: 'Place a fleet, hunt the hits', category: 'brett', color: '#1f7aa8', added: '2026-11-17' },
   { id: 'schach', title: 'Schach', title_en: 'Chess', subtitle: 'Weiss gegen den Computer', subtitle_en: 'White against the computer', category: 'brett', color: '#4a5568', added: '2026-11-17' },
+  { id: 'backgammon', title: 'Backgammon', tile: 'Backgammon', subtitle: 'Würfeln, ziehen, abtragen', subtitle_en: 'Roll, move, bear off', category: 'brett', color: '#9a3b2f', added: '2026-11-17' },
 ];
 
 /** Titel/Untertitel/Kachelname in der aktuellen Sprache */

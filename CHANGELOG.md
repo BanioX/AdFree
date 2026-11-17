@@ -9,6 +9,7 @@ Was in Spielpause neu dazukommt. Neueste Einträge oben.
 - **Reversi**: schwarz gegen den Computer, Steine umdrehen, drei Stärken.
 - **Kalaha**: Samen säen, Extra-Zug und Fangen, drei Stärken.
 - **Fünf in einer Reihe**: 13×13, fünf Steine in einer Linie, drei Stärken.
+- **Dame**: deutsche Regeln, Schlagzwang und fliegende Damen, drei Stärken.
 
 ## 17. November 2026 (Abend)
 

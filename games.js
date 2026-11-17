@@ -48,6 +48,7 @@ export const games = [
   { id: 'reversi', title: 'Reversi', subtitle: 'Steine einschliessen und umdrehen', category: 'brett', color: '#1f8a4c', added: '2026-11-17' },
   { id: 'kalaha', title: 'Kalaha', subtitle: 'Samen säen, Vorrat füllen', category: 'brett', color: '#c4843a', added: '2026-11-17' },
   { id: 'gomoku', title: 'Fünf in einer Reihe', tile: 'Fünf in\u00A0einer Reihe', subtitle: 'Fünf Steine in einer Linie', category: 'brett', color: '#8a5a2b', added: '2026-11-17' },
+  { id: 'dame', title: 'Dame', subtitle: 'Schlagen, bis die Dame fliegt', category: 'brett', color: '#c45c26', added: '2026-11-17' },
 ];
 
 export function gameById(id) {

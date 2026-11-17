@@ -1,6 +1,6 @@
 # Spielpause
 
-**20 entspannte Spiele in einer App – ganz ohne Werbung, ohne Käufe, ohne Konto.**
+**21 entspannte Spiele in einer App – ganz ohne Werbung, ohne Käufe, ohne Konto.**
 
 Spielpause ist eine Web-App (PWA) für das iPhone: im Safari öffnen, auf den Home-Bildschirm legen,
 und sie startet wie eine normale App – im Vollbild und auch offline. Alle Spielstände bleiben auf dem Gerät.
@@ -39,6 +39,7 @@ iPhones und lässt sich mit dem Lautsprecher-Knopf auf leise / normal / aus stel
 | ⚫ **Reversi** | Brettspiele | Gegnerische Steine einschliessen und umdrehen | gegen den Computer, drei Stärken | |
 | 🟤 **Kalaha** | Brettspiele | Samen säen und den eigenen Vorrat füllen | gegen den Computer, drei Stärken | |
 | ⚪ **Fünf in einer Reihe** | Brettspiele | Fünf Steine in einer Linie | gegen den Computer, drei Stärken | |
+| 🟠 **Dame** | Brettspiele | Steine schlagen, auf der letzten Reihe wird die Dame | gegen den Computer, drei Stärken | |
 
 Jedes Spiel bekommt einen einheitlichen **Startbildschirm** (ein Knopf zum Weiterspielen, Tagesrätsel,
 Modus, Statistik) und eine **kurze, animierte Anleitung** («So geht's»), die beim ersten Start

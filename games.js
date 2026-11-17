@@ -26,6 +26,7 @@ export const categories = [
   { id: 'sortieren', title: 'Sortieren & Ordnen', title_en: 'Sorting' },
   { id: 'action', title: 'Kombinieren', title_en: 'Match & Combine' },
   { id: 'gedaechtnis', title: 'Gedächtnis & Wissen', title_en: 'Memory & Trivia' },
+  { id: 'retro', title: 'Retro-Ecke', title_en: 'Retro Corner' },
 ];
 
 export const games = [
@@ -82,6 +83,7 @@ export const games = [
   { id: 'hochhaus', title: 'Hochhäuser', title_en: 'Skyscrapers', tile: 'Hochhäuser', tile_en: 'Skyscrapers', subtitle: 'Wie viele Häuser siehst du?', subtitle_en: 'How many buildings do you see?', category: 'logik', color: '#5c6bc0', added: '2026-11-17' },
   { id: 'inseln', title: 'Inseln', title_en: 'Islands', tile: 'Inseln', tile_en: 'Islands', subtitle: 'Die Zahl ist eine Insel dieser Grösse', subtitle_en: 'The number is an island of that size', category: 'logik', color: '#1f8f86', added: '2026-11-17' },
   { id: 'rundweg', title: 'Rundweg', title_en: 'Loop', tile: 'Rundweg', tile_en: 'Loop', subtitle: 'Eine Schlaufe, die Zahlen zählen die Kanten', subtitle_en: 'One loop, the numbers count the edges', category: 'logik', color: '#7b5ea7', added: '2026-11-17' },
+  { id: 'riesen', title: 'Riesenjagd', title_en: 'Giant Hunt', tile: 'Riesen\u00ADjagd', tile_en: 'Giant Hunt', subtitle: 'Schiff gegen riesige Mechs', subtitle_en: 'A ship against giant mechs', category: 'retro', color: '#e23d8a', added: '2026-11-17' },
 ];
 
 /** Titel/Untertitel/Kachelname in der aktuellen Sprache */

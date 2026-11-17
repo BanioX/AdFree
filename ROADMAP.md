@@ -171,7 +171,7 @@ Mehrere KI-Agenten bauen parallel – Zuständigkeiten und Regeln stehen in [AGE
 - neue Themen für Wortsuche, neue Mahjong-Layouts, neue Kartenrücken und Tischfarben
 - saisonale Inhalte (Advent, Ostern, Sommer) und Tagesrätsel-Serien
 
-## Welle 5 – Retro-Ecke (nach den 100) · offen
+## Welle 5 – Retro-Ecke (nach den 100) · Grok
 
 Klassiker mit wenig Verzögerung, auf dem iPhone mit Touch-Steuerung **und** Bluetooth-Controller
 (Xbox/PlayStation über die Gamepad-Schnittstelle von Safari). Nur Open Source bzw. frei lizenzierte
@@ -190,7 +190,7 @@ Inhalte – keine kommerziellen ROMs.
 | # | Spiel | Stand |
 |--:|---|:-:|
 | 106 | Labyrinth 3D – Schatzsuche im Stil der 90er-Ego-Perspektive | 📋 |
-| 107 | Weltraum-Shooter | 📋 |
+| 107 | Riesenjagd – Weltraum-Shooter gegen riesige Mechs | ✅ |
 | 108 | Hüpfheld – Jump'n'Run | 📋 |
 | 109 | Turmverteidigung | 📋 |
 | 110 | Asteroiden | 📋 |

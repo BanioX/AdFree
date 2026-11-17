@@ -15,7 +15,7 @@ Abhängigkeiten, keine Werbung).
 | Welle 2 | Brettspiele gegen den Computer, Wörter | **Grok** |
 | Welle 3 | Logikrätsel, Kombinieren (Arcade) | **Grok** |
 | Welle 4 | Schieben & Verbinden, Gedächtnis & Wissen, Steine & Würfel, Kreativ | offen |
-| Welle 5 | Retro-Ecke | offen |
+| Welle 5 | Retro-Ecke | **Grok** |
 
 Wer eine Welle übernimmt, trägt sich hier und in `ROADMAP.md` ein.
 

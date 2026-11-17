@@ -84,7 +84,7 @@ Mehrere KI-Agenten bauen parallel – Zuständigkeiten und Regeln stehen in [AGE
 **Wörter** (gemeinsame deutsche Wortlisten)
 | # | Spiel | Stand |
 |--:|---|:-:|
-| 49 | Wortkreis – Wörter aus Buchstabenrad | 📋 |
+| 49 | Wortkreis – Wörter aus Buchstabenrad | ✅ |
 | 50 | Wabenwort – Wörter aus 7 Buchstaben | 📋 |
 | 51 | Buchstabenjagd (Galgenmännchen-Art) | 📋 |
 | 52 | Geheimschrift – Zitate entschlüsseln | 📋 |

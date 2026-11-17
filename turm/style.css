@@ -1,0 +1,7 @@
+.tw { position: relative; width: min(100%, 280px); height: min(360px, 48dvh); margin: 0 auto; background: #fff6ec; border-radius: 18px; overflow: hidden; touch-action: manipulation; }
+.tw i { position: absolute; height: 22px; border-radius: 6px; background: #c4843a; }
+.tw i.live { background: #e6a317; }
+.tw i:nth-child(odd) { background: #a86b28; }
+.tw-demo { width: 100px; height: 48px; position: relative; }
+.tw-demo b { position: absolute; left: 20px; bottom: 0; width: 50px; height: 14px; border-radius: 4px; background: #c4843a; }
+.tw-demo i { position: absolute; left: 8px; top: 0; width: 50px; height: 14px; border-radius: 4px; background: #e6a317; }

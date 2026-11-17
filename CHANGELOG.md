@@ -37,6 +37,7 @@ Was in Spielpause neu dazukommt. Neueste Einträge oben.
 - **Farbkugeln**: Kugeln auf freiem Weg schieben, fünf in einer Linie räumen. Deutsch und Englisch.
 - **Schlängel**: Richtung tippen, Futter sammeln, am Rand weiter, kein Stoss in sich selbst. Deutsch und Englisch.
 - **Mauerbrecher**: Schläger mit dem Finger ziehen, der Ball kommt nach einem Fehlschuss zurück. Deutsch und Englisch.
+- **Turmbau**: Block gleitet, Tipp lässt ihn fallen, Überstand wird abgeschnitten. Deutsch und Englisch.
 
 ### Behoben (Grok)
 - **Vier in einer Reihe**: Tippen auf eine Reihe legt wieder einen Stein (iPhone). Der Tipp hebt die Reihe nur hervor.

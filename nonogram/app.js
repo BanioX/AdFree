@@ -227,9 +227,9 @@ function renderPack(packId) {
     const tile = h('button.tile', { type: 'button', 'data-id': def.id, class: isSolved ? 'tile solved' : pr ? 'tile started' : 'tile' });
     if (isSolved) drawThumb(cv, def, { mode: 'color', size: 76 });
     else drawThumb(cv, def, { mode: 'progress', cells: pr ? pr.c : null, size: 76 });
-    tile.append(h('span.tile-pic', null, cv, !isSolved && !pr ? h('span.tile-q', null, '?') : null),
+    tile.append(...[h('span.tile-pic', null, cv, !isSolved && !pr ? h('span.tile-q', null, '?') : null),
       h('span.tile-lbl', null, isSolved ? def.title : `Nr. ${k + 1}`),
-      isSolved && solved[def.id].p ? h('span.tile-star', { html: icon('star', { size: 14 }) }) : null);
+      isSolved && solved[def.id].p ? h('span.tile-star', { html: icon('star', { size: 14 }) }) : null].filter(Boolean));
     tile.addEventListener('click', () => { sfx.play('tap'); go('#play/' + def.id); });
     grid.append(tile);
   });

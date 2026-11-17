@@ -22,7 +22,7 @@ const fmtValue = (e) => {
 export function tileFace(skin, e, opts = {}) {
   const t = tileOf(skin, e);
   const face = h('div.face');
-  face.style.background = t.color;
+  face.style.backgroundColor = t.color;
   face.style.color = t.ink || skin.ink;
   if (skin.numbers) {
     const label = fmtValue(e);

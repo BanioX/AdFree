@@ -159,7 +159,7 @@ const DEMOS = {
     const ring = h('span.tz-ring');
     stage.append(bulb, ring);
     return api.loop(async () => {
-      s.reset((r) => r !== leaf && r.c !== 3);
+      s.reset((r) => r !== leaf);
       s.select(3);
       ring.classList.remove('on');
       await api.sleep(300);
@@ -173,7 +173,7 @@ const DEMOS = {
       await api.sleep(900);
       await api.finger.tap(leaf.shape, 450);
       ring.classList.remove('on');
-      for (const r of s.regs.filter((x) => x.c === 3)) s.fill(r);
+      s.fill(leaf);
       await api.sleep(900);
     }, 400);
   },

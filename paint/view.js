@@ -12,6 +12,7 @@ import { loadProgress, saveProgress, removeProgress, updateSummary } from './sta
 import { onTap } from './tap.js';
 import { addStats, formatDuration } from './stats.js';
 import { TIPS } from './data/howto.js';
+import { showHowto } from './tutorial.js';
 
 const NBSP = ' ';
 const RING_C = 2 * Math.PI * 21;
@@ -79,6 +80,7 @@ export function createPaintView(lib, { onBack, onChanged, debug = false } = {}) 
     if (!S.done) list.append(item('image', 'Vorlage anzeigen', () => showTemplate()));
     if (S.done) list.append(item('play', 'Zeitraffer', () => timelapse()));
     if (S.done) list.append(item('download', 'Bild sichern', () => exportImage()));
+    list.append(item('hint', 'So geht’s', () => showHowto()));
     list.append(item('refresh', 'Neu beginnen', () => restart(), '.danger'));
     const backdrop = h('div.pv-menu-back');
     backdrop.addEventListener('pointerdown', (e) => { e.preventDefault(); closeMenu(); });

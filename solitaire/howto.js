@@ -37,7 +37,7 @@ export function tutorialSteps(face = {}) {
         const b1 = demoCard(-1, 22, 14, { up: false });
         const r8 = C(1, 8, 22, 24);
         const b2 = demoCard(-1, 58, 14, { up: false });
-        const b3 = demoCard(-1, 58, 22, { up: false });
+        const b3 = C(3, 4, 58, 22, { up: false });
         const s7 = C(0, 7, 58, 32);
         box.append(b1, r8, b2, b3, s7);
         return api.loop(async () => {
@@ -113,7 +113,8 @@ export function tutorialSteps(face = {}) {
     {
       title: 'Drei Spielarten',
       text: 'Klondike, Spider mit 1, 2 oder 4 Farben und FreeCell – dazu jeden Tag neue Tagesrätsel.',
-      demo(stage) {
+      demo(stage, api) {
+        api.finger.hide();
         const box = scene(stage);
         const groups = [
           { x: 6, label: 'Klondike', cards: [[-1], [1, 13], [0, 1]] },

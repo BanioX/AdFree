@@ -7,10 +7,15 @@ import { loadLibrary } from './library.js';
 import { createGallery } from './gallery.js';
 import { createPaintView } from './view.js';
 import { updateSummary } from './state.js';
+import { maybeShowHowto } from './tutorial.js';
 
 setupPage();
 
 const app = document.getElementById('app');
+// Die Doppeltipp-Sperre aus shared/ui.js ruft preventDefault() auch bei nicht abbrechbaren
+// touchend (nach Scrollen/Zoomen) auf – Chrome meldet das als Konsolenfehler. Diese Ereignisse
+// gar nicht erst weiterreichen.
+window.addEventListener('touchend', (e) => { if (!e.cancelable) e.stopPropagation(); }, { capture: true, passive: true });
 const debug = new URLSearchParams(location.search).get('debug') === '1';
 const lib = await loadLibrary({ debug });
 
@@ -52,3 +57,4 @@ function route() {
 window.addEventListener('hashchange', route);
 route();
 updateSummary();
+maybeShowHowto();

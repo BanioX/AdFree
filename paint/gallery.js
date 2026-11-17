@@ -1,6 +1,7 @@
 // Galerie von Farbenzauber: Kategorien-Chips, 2-spaltiges Raster mit Vorschaubildern und Fortschritt.
 
-import { icon, h, toast, confirmDialog, soundButton, backButton } from '../shared/ui.js';
+import { icon, h, toast, confirmDialog } from '../shared/ui.js';
+import { gameMenu } from '../shared/gamemenu.js';
 import { sfx } from '../shared/sfx.js';
 import { store } from '../shared/storage.js';
 import { allProgress, isStarted, isDone, updateSummary } from './state.js';
@@ -8,6 +9,8 @@ import { requestThumb, thumbKey, cachedThumb, setThumbLoader, forgetThumb } from
 import { percent } from './engine/progress.js';
 import { PHOTO_CAT, TEST_CAT } from './library.js';
 import { openPhotoSheet } from './photo.js';
+import { showHowto } from './tutorial.js';
+import { statsSummary } from './stats.js';
 
 const NBSP = ' ';
 const ALL = 'Alle', STARTED = 'Begonnen', DONE = 'Fertig';
@@ -17,18 +20,116 @@ export function createGallery(lib, { onOpen }) {
 
   const chipsEl = h('div.gv-chips', { role: 'tablist', 'aria-label': 'Kategorien' });
   const content = h('div.gv-content');
-  const scroll = h('div.scroll.gv-scroll', null, chipsEl, content);
-  const top = h('header.topbar.gv-top', null,
-    backButton('../'),
-    h('div.title', null, 'Farbenzauber'),
-    soundButton());
-  const el = h('div.view.gv', null, top, scroll);
+  const galSec = h('section.gm-section.gv-gal', null, h('h2.gm-section-title', null, 'Galerie'), chipsEl, content);
+  const artImg = h('img', { src: '../icons/games/paint.svg', alt: '', draggable: 'false' });
+  const art = h('div.gv-hero-art', null, artImg);
+  const menu = gameMenu({
+    id: 'paint',
+    title: 'Farbenzauber',
+    tagline: 'Malen nach Zahlen',
+    accent: '#ff6f7d',
+    art,
+    sections: [galSec],
+    onHelp: () => showHowto(),
+    backHref: '../',
+  });
+  const scroll = menu.scroller;
+  scroll.classList.add('gv-scroll');
+  const el = h('div.view.gv', null, menu);
 
   let chip = store.get('paint.chip', ALL);
   let progress = new Map();
   let editPhotos = false;
+  let heroId = null;
+  const broken = new Set();
   const cardInfo = new WeakMap();
   const io = new IntersectionObserver(onIntersect, { root: scroll, rootMargin: '320px 0px' });
+
+  // ---------- Startbildschirm (Hauptknopf, Nebenknöpfe, Kennzahlen) ----------
+
+  function suggestNew() {
+    const fresh = (it) => !progress.has(it.id) && !broken.has(it.id);
+    for (const cat of lib.artCategories()) {
+      const it = lib.artIn(cat).find(fresh);
+      if (it) return it;
+    }
+    for (const cat of lib.genCategories()) {
+      for (const g of lib.gensIn(cat)) {
+        const it = lib.genList(g.id).filter((x) => x.seed < 1000).find(fresh);
+        if (it) return it;
+      }
+    }
+    return null;
+  }
+
+  function lastStarted() {
+    let best = null, bts = -1;
+    for (const it of lib.all()) {
+      if (it.kind === 'fixture') continue;
+      const r = progress.get(it.id);
+      if (isStarted(r) && (r.ts || 0) > bts) { best = it; bts = r.ts || 0; }
+    }
+    return best;
+  }
+
+  function randomGen() {
+    const gens = lib.gens;
+    if (!gens.length) return;
+    const gen = gens[Math.floor(Math.random() * gens.length)];
+    const item = lib.addGenSeed(gen.id);
+    if (!item) return;
+    sfx.play('pop');
+    onOpen(item);
+  }
+
+  async function openPhoto() {
+    const item = await openPhotoSheet(lib);
+    if (item) onOpen(item);
+  }
+
+  function shortTime(ms) {
+    const min = Math.round(ms / 60000);
+    if (min < 60) return `${min}${NBSP}Min.`;
+    return `${(min / 60).toFixed(min < 600 ? 1 : 0).replace('.', ',')}${NBSP}Std.`;
+  }
+
+  function setHeroArt(item) {
+    const id = item ? item.id : null;
+    heroId = id;
+    if (!item) { artImg.src = '../icons/games/paint.svg'; art.classList.remove('thumb'); return; }
+    const rec = progress.get(item.id);
+    const key = thumbKey(rec);
+    const set = (url) => { if (heroId === id) { artImg.src = url; art.classList.add('thumb'); } };
+    const url = cachedThumb(item.id, key);
+    if (url) { set(url); return; }
+    requestThumb({ item, rec, key, isWanted: () => heroId === id, onReady: set, onError: () => {} });
+  }
+
+  function updateMenu() {
+    const cont = lastStarted();
+    let primary;
+    if (cont) {
+      const r = progress.get(cont.id);
+      primary = { label: 'Weitermalen', sub: `${cont.title} · ${percent(r.n, r.t)}${NBSP}%`, icon: 'play', onClick: () => onOpen(cont) };
+      setHeroArt(cont);
+    } else {
+      const next = suggestNew();
+      if (next) primary = { label: 'Spielen', sub: `Neues Bild: ${next.title}`, icon: 'play', onClick: () => onOpen(next) };
+      else primary = { label: 'Spielen', sub: 'Ein neues Bild erzeugen', icon: 'sparkle', onClick: randomGen };
+      setHeroArt(null);
+    }
+    const secondary = [];
+    if (lib.photoEnabled) secondary.push({ label: 'Eigenes Foto', sub: 'Foto ausmalen', icon: 'camera', onClick: openPhoto });
+    if (lib.gens.length) secondary.push({ label: 'Zufallsbild', sub: 'Neu erzeugen', icon: 'shuffle', onClick: randomGen });
+    const st = statsSummary();
+    const stats = [
+      { label: 'Fertig', value: st.done },
+      { label: 'Begonnen', value: st.started },
+      { label: 'Felder', value: st.fills.toLocaleString('de-CH') },
+      { label: 'Malzeit', value: shortTime(st.ms) },
+    ];
+    menu.update({ primary, secondary, stats });
+  }
 
   function chipList() {
     const list = [ALL, STARTED, DONE, ...lib.artCategories(), ...lib.genCategories()];
@@ -50,7 +151,8 @@ export function createGallery(lib, { onOpen }) {
         store.set('paint.chip', c);
         renderChips();
         renderContent();
-        scroll.scrollTo({ top: 0 });
+        const y = galSec.getBoundingClientRect().top - scroll.getBoundingClientRect().top + scroll.scrollTop - 4;
+        if (scroll.scrollTop > y) scroll.scrollTop = y;
         b.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' });
       });
       chipsEl.append(b);
@@ -124,7 +226,12 @@ export function createGallery(lib, { onOpen }) {
           isWanted: () => info.visible && b.isConnected,
           onSkip: () => { info.requested = false; },
           onReady: (url) => { info.img.src = url; b.classList.add('has-img'); io.unobserve(b); },
-          onError: () => { info.thumb.classList.add('err'); io.unobserve(b); },
+          onError: () => {
+            info.thumb.classList.add('err');
+            io.unobserve(b);
+            // Bild lässt sich (noch) nicht laden, z.B. weil es gerade erst entsteht: Karte ausblenden
+            if (info.item.kind === 'art') { broken.add(info.item.id); b.classList.add('gone'); }
+          },
         });
       }
     }
@@ -151,11 +258,7 @@ export function createGallery(lib, { onOpen }) {
         h('span.gv-new-ic', { html: icon('camera', { size: 30 }) }),
         h('span.gv-new-t', null, '+ Eigenes Foto')),
       h('div.gv-name', null, 'Foto ausmalen'));
-    b.addEventListener('click', async () => {
-      sfx.play('tap');
-      const item = await openPhotoSheet(lib);
-      if (item) onOpen(item);
-    });
+    b.addEventListener('click', () => { sfx.play('tap'); openPhoto(); });
     return b;
   }
 
@@ -168,6 +271,7 @@ export function createGallery(lib, { onOpen }) {
     toast('Foto gelöscht');
     if (!lib.photos().length) editPhotos = false;
     renderContent(true);
+    updateMenu();
   }
 
   // ---------- Abschnitte ----------
@@ -222,7 +326,7 @@ export function createGallery(lib, { onOpen }) {
     const byTs = (a, b) => ((progress.get(b.id) || {}).ts || 0) - ((progress.get(a.id) || {}).ts || 0);
 
     if (chip === ALL) {
-      const started = all.filter((it) => isStarted(progress.get(it.id))).sort(byTs).slice(0, 4);
+      const started = all.filter((it) => isStarted(progress.get(it.id))).sort(byTs).slice(1, 5);
       if (started.length) content.append(section('Weitermalen', started.map((it) => card(it))));
       for (const cat of lib.artCategories()) {
         const items = lib.artIn(cat);
@@ -258,6 +362,7 @@ export function createGallery(lib, { onOpen }) {
     el.classList.remove('hidden');
     renderChips();
     renderContent(true);
+    updateMenu();
     updateSummary();
   }
 

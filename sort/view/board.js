@@ -660,7 +660,8 @@ export class Board {
   drawShelf(row, now) {
     const ctx = this.ctx;
     const w = this.w;
-    const x0 = row.x0 - w * 0.5, x1 = row.x1 + w * 0.5;
+    const m = Math.min(10, w * 0.25);
+    const x0 = Math.max(m, row.x0 - w * 0.5), x1 = Math.min(this.W - m, row.x1 + w * 0.5);
     const y = row.base - w * 0.01;
     const h = SHELF * w * 0.62;
     // Schatten

@@ -32,7 +32,6 @@
 .gv { animation: pz-fade .25s var(--ease-out); }
 @keyframes pz-fade { from { opacity: 0; } to { opacity: 1; } }
 
-.gv-scroll { padding: 0 16px calc(28px + var(--safe-bottom)); }
 
 .gv-chips {
   position: sticky; top: 0; z-index: 3;
@@ -367,3 +366,55 @@
   transition: background .2s, color .2s, box-shadow .2s;
 }
 .ph-seg button.on { background: var(--surface); color: var(--text); box-shadow: 0 1px 4px rgba(70, 45, 20, .16); }
+
+/* =================================================================== Tutorial-Szenen */
+
+.tz-wrap { position: absolute; left: 0; right: 0; top: 14px; display: flex; justify-content: center; pointer-events: none; }
+.tz-pic {
+  display: block; overflow: visible; border-radius: 14px;
+  filter: drop-shadow(0 6px 14px rgba(70, 45, 20, .13));
+  transition: transform .6s var(--ease-out);
+}
+.tz-pic.tz-zoom { transform: scale(1.2); }
+.tz-pic.tz-done { animation: tz-pop .8s var(--ease-spring); }
+@keyframes tz-pop { 0% { transform: scale(1); } 40% { transform: scale(1.07); } 100% { transform: scale(1); } }
+.tz-shape { stroke: #9c8f82; stroke-width: 1; transition: fill .25s, stroke .4s; }
+.tz-reg.done .tz-shape { stroke: rgba(70, 45, 20, .18); }
+.tz-pic.tz-done .tz-shape { stroke: transparent; }
+.tz-shape.pop { animation: tz-fill .38s var(--ease-out); transform-box: fill-box; transform-origin: center; }
+@keyframes tz-fill { from { transform: scale(.82); } to { transform: none; } }
+.tz-num {
+  font: 750 11px var(--font); fill: #8a7d70; text-anchor: middle; dominant-baseline: central;
+  transition: opacity .2s;
+}
+.tz-reg.done .tz-num { opacity: 0; }
+.tz-bar { position: absolute; left: 0; right: 0; bottom: 14px; display: flex; justify-content: center; gap: 14px; }
+.tz-sw {
+  width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center;
+  font-weight: 850; font-size: 16px; color: #2b2420;
+  box-shadow: 0 0 0 3px #fff, 0 2px 7px rgba(70, 45, 20, .2);
+  transition: transform .22s var(--ease-spring), box-shadow .2s;
+}
+.tz-sw.on { transform: scale(1.14); box-shadow: 0 0 0 3px #fff, 0 0 0 5.5px #2b2420, 0 4px 10px rgba(70, 45, 20, .2); }
+.tz-bulb {
+  position: absolute; right: 14px; top: 12px; width: 42px; height: 42px; border-radius: 50%;
+  background: #fff; color: var(--text); display: grid; place-items: center; box-shadow: var(--shadow);
+}
+.tz-ring {
+  position: absolute; width: 54px; height: 54px; margin: -27px 0 0 -27px; border-radius: 50%;
+  border: 3px solid var(--accent); opacity: 0; pointer-events: none;
+}
+.tz-ring.on { animation: tz-ring 1s var(--ease-out) infinite; }
+@keyframes tz-ring { 0% { transform: scale(.45); opacity: .95; } 100% { transform: scale(1.35); opacity: 0; } }
+
+/* =================================================================== Startbildschirm */
+
+.gv-hero-art {
+  width: 138px; height: 138px; border-radius: 30px; overflow: hidden; background: #fff;
+  display: grid; place-items: center;
+}
+.gv-hero-art img { width: 100%; height: 100%; object-fit: contain; display: block; }
+.gv-hero-art.thumb img { padding: 6px; }
+.gv-gal { gap: 4px; }
+.gv-gal .gv-chips { margin: 0 -18px; padding: 6px 18px 12px; }
+.gv-card.gone { display: none; }

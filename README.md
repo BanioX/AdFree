@@ -33,11 +33,11 @@ Cloudflare Dashboard → **Workers & Pages** → **Create** → Repository **Ban
 | Feld | Wert |
 |---|---|
 | Project name | `adfree` (muss zu `name` in `wrangler.jsonc` passen) |
-| Build command | `node tools/build-site.mjs` |
+| Build command | leer lassen (oder `node tools/build-site.mjs`) |
 | Deploy command | `npx wrangler deploy` |
-| Branch | der Branch mit dem App-Code (Settings → Build → Branch control) |
+| Production branch | `main` |
 
-`wrangler.jsonc` sagt Cloudflare, dass die fertige App im Ordner `dist/` liegt.
+`wrangler.jsonc` baut die App bei jedem Deploy automatisch nach `dist/` und liefert sie von dort aus.
 Die App ist danach unter `https://adfree.<dein-konto>.workers.dev` erreichbar; jeder Push
 veröffentlicht automatisch eine neue Version.
 

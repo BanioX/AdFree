@@ -141,17 +141,17 @@ function showMenu() {
 
   const sess = loadSession(mode);
   const running = sess && sess.started && !sess.won;
-  const solvableTxt = settings.solvable && mode !== 'spider4' ? 'nur lösbare Partien' : (mode === 'spider4' ? 'die Herausforderung' : 'zufällige Partien');
+  const solvableTxt = settings.solvable && mode !== 'spider4' ? 'lösbar' : (mode === 'spider4' ? 'knifflig' : '');
   const primary = running
     ? { label: 'Weiterspielen', sub: `${modeLabel(mode)} · ${Stats.formatTime(sess.time)} · ${sess.moves} ${sess.moves === 1 ? 'Zug' : 'Züge'}`, onClick: () => go('play/' + mode) }
-    : { label: 'Spielen', sub: `${modeLabel(mode)} · ${solvableTxt}`, onClick: () => go('play/' + mode) };
+    : { label: 'Spielen', sub: `${modeLabel(mode)}${solvableTxt ? ' · ' + solvableTxt : ''}`, onClick: () => go('play/' + mode) };
 
   const kd = dailyDone('klondike');
   const kds = loadSession('daily-klondike');
   const kdRunning = !kd && kds && kds.day === todayKey() && kds.started;
   const daily = {
     label: 'Klondike des Tages', done: kd, streak: dailyStreak(GAME_ID),
-    sub: kdRunning ? `Angefangen · ${kds.moves} Züge` : 'Garantiert lösbar',
+    sub: kdRunning ? `Angefangen · ${kds.moves} Züge` : 'Ziehe 1',
     onClick: () => go('daily'),
   };
 
@@ -161,20 +161,20 @@ function showMenu() {
     return { id: key, label: f.title, sub: key === 'freecell' ? 'Alles offen' : MODES[m].sub };
   });
 
-  // Weitere Tagesrätsel (Spider, FreeCell)
+  // Weitere Tagesrätsel (Spider, FreeCell) – gleiche Karte wie das Haupt-Tagesrätsel
   const dl = h('div.daily-list');
+  const MONTHS = ['Jan.', 'Feb.', 'März', 'Apr.', 'Mai', 'Juni', 'Juli', 'Aug.', 'Sept.', 'Okt.', 'Nov.', 'Dez.'];
   const now = new Date();
-  const months = ['JAN', 'FEB', 'MÄR', 'APR', 'MAI', 'JUN', 'JUL', 'AUG', 'SEP', 'OKT', 'NOV', 'DEZ'];
   for (const [v, info] of Object.entries(DAILY_VARIANTS)) {
     if (v === 'klondike') continue;
     const done = dailyDone(v);
     const dsess = loadSession('daily-' + v);
     const inProgress = !done && dsess && dsess.day === todayKey() && dsess.started;
-    const sub = done ? '✓ Gelöst' : inProgress ? `Angefangen · ${dsess.moves} Züge` : `${v === 'spider' ? '1 Farbe · ' : ''}garantiert lösbar`;
-    const b = h('button.daily-row' + (done ? '.done' : ''), { type: 'button', 'data-daily': v },
-      h('span.cal', null, h('i', null, months[now.getMonth()]), h('span', null, String(now.getDate()))),
-      h('span.txt', null, h('b', null, info.title), h('small', null, sub)),
-      h('span.state', { html: icon(done ? 'check' : 'play', { size: 18 }) }));
+    const sub = done ? '✓ Gelöst' : inProgress ? `Angefangen · ${dsess.moves} Züge` : `${v === 'spider' ? '1 Farbe · ' : ''}Heute noch offen`;
+    const b = h('button.gm-daily' + (done ? '.done' : ''), { type: 'button', 'data-daily': v },
+      h('div.gm-cal', null, h('span.gm-cal-m', null, MONTHS[now.getMonth()]), h('span.gm-cal-d', null, String(now.getDate()))),
+      h('span.gm-daily-text', null, h('b', null, info.title), h('small', null, sub)),
+      h('span.gm-chev', { html: icon('back', { size: 18 }) }));
     b.addEventListener('click', () => { sfx.play('tap'); go('daily/' + v); });
     dl.append(b);
   }

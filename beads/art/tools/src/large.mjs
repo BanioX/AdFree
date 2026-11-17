@@ -3,21 +3,21 @@ import { Grid, sym, obj, background, rles } from '../raster.mjs';
 const P = (rows, odd) => Grid.parse(sym(rows, odd));
 const H = (specs, half, odd) => Grid.parse(sym(rles(specs, half), odd));
 
-/** Herzform (Mittelpunkt cx/cy, Grösse s, Drehung rot im Bogenmass). */
+/** Herzform aus zwei Kreisen und einem Dreieck (Mittelpunkt cx/cy, Grösse s, Drehung rot). */
 export function heart(cx, cy, s, rot = 0) {
   const c = Math.cos(rot), si = Math.sin(rot);
   return (px, py) => {
-    const dx = (px - cx) / s, dy = (cy - py) / s;
-    const X = dx * c - dy * si, Y = dx * si + dy * c + 0.1;
-    return (X * X + Y * Y - 1) ** 3 - X * X * Y ** 3 <= 0;
+    const dx = (px - cx) / s, dy = (py - cy) / s;
+    const X = dx * c + dy * si, Y = -dx * si + dy * c;
+    if ((X - 0.5) ** 2 + (Y + 0.3) ** 2 <= 0.56 ** 2 || (X + 0.5) ** 2 + (Y + 0.3) ** 2 <= 0.56 ** 2) return true;
+    return Y >= -0.3 && Y <= 1.05 && Math.abs(X) <= 1.04 * (1.05 - Y) / 1.35;
   };
 }
 /** Punkt der Herzspitze in Rasterkoordinaten. */
 function heartTip(cx, cy, s, rot = 0) {
-  const X = 0, Y = -1.1;
-  const c = Math.cos(-rot), si = Math.sin(-rot);
-  const dx = X * c - Y * si, dy = X * si + Y * c;
-  return [Math.round(cx + dx * s - 0.5), Math.round(cy - dy * s - 0.5)];
+  const Y = 1.0;
+  const dx = -Y * Math.sin(rot), dy = Y * Math.cos(rot);
+  return [Math.round(cx + dx * s - 0.5), Math.round(cy + dy * s - 0.5)];
 }
 
 export default [
@@ -268,9 +268,9 @@ export default [
       };
       // Stiel und Blatt
       obj(g, (l) => { l.poly([[12, 8], [12.4, 4.2], [14, 2.4], [15.2, 3.2], [14.2, 4.8], [14.2, 8]], 'n'); });
-      obj(g, (l) => { l.ellipse(18.6, 5.2, 3.6, 1.7, 'g'); l.ellipse(9.2, 6.2, 2.4, 1.2, 'g'); });
-      g.line(16, 5, 21, 5, 'G', { on: 'g' });
-      g.line(8, 6, 10, 6, 'G', { on: 'g' });
+      obj(g, (l) => l.poly([[14.2, 5.6], [16.4, 2.6], [20, 1.6], [23.4, 2.8], [21.4, 5.4], [17.6, 6.6]], 'g'));
+      g.line(15, 5, 21, 3, 'G', { on: 'g' });
+      for (const [x, y] of [[11, 6], [10, 5], [9, 5], [8, 4], [8, 3], [9, 2], [10, 2], [10, 3]]) g.set(x, y, 'G', { on: '.' });
       const body = g.layer();
       body.paint((px, py) => lobeAt(px, py) >= 0, 'o');
       for (let y = 0; y < g.h; y++) for (let x = 0; x < g.w; x++) {
@@ -280,7 +280,7 @@ export default [
         if (j >= 0 && j !== i) body.set(i < 2 ? x : x + 1, y, 'O');
         const [cx, rx, ry] = lobes[i];
         const dx = (x + 0.5 - cx) / rx, dy = (y + 0.5 - cy) / ry;
-        if (dx < -0.05 && dx > -0.6 && dy < -0.25 && dy > -0.8 && dx * dx + dy * dy < 0.5) body.set(x, y, 'l');
+        if (dx < -0.25 && dx > -0.62 && dy < 0.15 && dy > -0.62) body.set(x, y, 'l');
       }
       body.outline('k');
       g.over(body);
@@ -318,7 +318,7 @@ export default [
   },
   {
     id: 'schildkroete', title: 'Schildkröte', category: 'Tiere',
-    palette: { k: '#3a2a1a', o: '#d98e4f', O: '#9a5a2a', y: '#f6c35a', s: '#8fd06a', p: '#ff9db5', w: '#ffffff', g: '#3f9a4a', S: '#f6e2b3', B: '#cdf3f0' },
+    palette: { k: '#24402a', g: '#5cb85a', G: '#2f7f3a', y: '#f6c35a', s: '#c4e47a', p: '#ff9db5', w: '#ffffff', S: '#f6e2b3', B: '#cdf3f0' },
     build() {
       const g = new Grid(26, 22);
       const scx = 11.5, scy = 14.4, srx = 8.6, sry = 8.2;
@@ -328,22 +328,22 @@ export default [
       });
       obj(g, (l) => { l.rect(17.4, 9.6, 3.2, 3.2, 's'); l.circle(21.4, 9.3, 3.1, 's'); });
       obj(g, (l) => {
-        l.paint((px, py) => py <= scy && ((px - scx) / srx) ** 2 + ((py - scy) / sry) ** 2 <= 1, 'o');
+        l.paint((px, py) => py <= scy && ((px - scx) / srx) ** 2 + ((py - scy) / sry) ** 2 <= 1, 'g');
         l.rect(scx - srx - 0.6, scy - 1.6, 2 * srx + 1.2, 1.9, 'y');
       });
       g.paint((px, py) => {
         const dx = (px - scx) / srx, dy = (py - scy) / sry;
         const r = Math.hypot(dx, dy);
         const a = Math.atan2(dy, dx);
-        const ring = r > 0.5 && r < 0.66;
-        const spoke = r >= 0.66 && [-2.36, -1.57, -0.78].some((t) => Math.abs(a - t) < 0.13 / r);
+        const ring = r > 0.48 && r < 0.62;
+        const spoke = r >= 0.62 && [-2.5, -1.57, -0.64].some((t) => Math.abs(a - t) < 0.11 / r);
         return ring || spoke;
-      }, 'O', { on: 'o' });
-      g.ellipse(scx - 1.6, scy - 5.6, 1.6, 0.8, 'y', { on: 'o' });
-      g.set(22, 8, 'k'); g.set(22, 7, 'w', { on: 's' }); g.set(23, 10, 'p');
+      }, 'G', { on: 'g' });
+      g.ellipse(scx - 1.4, scy - 3.6, 1.4, 0.7, 'w', { on: 'g' });
+      g.stamp(21, 7, ['wk', 'kk']); g.set(23, 10, 'p');
       g.set(20, 11, 'k'); g.set(21, 11, 'k');
       background(g, (x, y) => (y >= 18 ? 'S' : 'B'));
-      for (const [x, y] of [[1, 17], [2, 16], [2, 17], [23, 17], [24, 16], [24, 17], [25, 17]]) g.set(x, y, 'g', { on: 'B' });
+      for (const [x, y] of [[1, 17], [2, 16], [2, 17], [23, 17], [24, 16], [24, 17], [25, 17]]) g.set(x, y, 'G', { on: 'B' });
       for (const [cx, cy, rx, ry] of [[4, 3, 2.8, 1.1], [20.5, 2.2, 2.4, 1]]) g.ellipse(cx, cy, rx, ry, 'w', { on: 'B' });
       for (const [x, y] of [[3, 20], [4, 20], [19, 19], [11, 21], [12, 21]]) g.set(x, y, 'y', { on: 'S' });
       return g;
@@ -356,9 +356,10 @@ export default [
       const g = new Grid(28, 26);
       obj(g, (l) => {
         l.poly([[13.6, 3.4], [13.6, 16.6], [5.4, 16.6]], 'w');
-        l.poly([[15.4, 5.4], [15.4, 16.6], [22.6, 16.6]], 'w');
+        l.poly([[15.4, 5.4], [15.4, 16.6], [22.6, 16.6]], 'r');
       });
       g.paint((px, py) => py > 12.5, 'c', { on: 'w' });
+      g.paint((px, py, x, y) => y === 12 || y === 13, 'w', { on: 'r' });
       g.line(14, 2, 14, 17, 'n');
       obj(g, (l) => l.poly([[14.5, 1.2], [18.6, 2.2], [14.5, 3.2]], 'r'));
       obj(g, (l) => l.poly([[4.6, 17.4], [23.8, 17.4], [21, 21.4], [7.4, 21.4]], 'r'));

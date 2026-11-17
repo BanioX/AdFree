@@ -243,7 +243,7 @@ button.card:active { transform: scale(.98); }
 
 .help { text-align: left; }
 .ex-grid {
-  display: grid; grid-template-columns: auto repeat(5, 26px); grid-template-rows: auto repeat(5, 26px);
+  display: grid; grid-template-columns: auto repeat(5, 24px); grid-template-rows: auto repeat(5, 24px);
   gap: 0; justify-content: center; margin: 0 auto 12px; font-weight: 800; font-size: 13px; color: var(--text);
 }
 .ex-corner { }
@@ -252,9 +252,9 @@ button.card:active { transform: scale(.98); }
 .ex-cell { border: 1px solid #ebe1d4; background: #fff; position: relative; }
 .ex-cell.fill::after { content: ''; position: absolute; inset: 2px; border-radius: 4px; background: var(--ink); }
 .ex-cell.cross::after { content: '✕'; position: absolute; inset: 0; display: grid; place-items: center; color: #b7a999; font-size: 14px; }
-.help-list { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; font-size: 15px; }
+.help-list { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 5px; font-size: 14.5px; line-height: 1.35; }
 .help-list b { color: var(--text); }
-.help-foot { margin: 10px 0 0; font-size: 14px; }
+.help-foot { margin: 8px 0 0; font-size: 14px; color: var(--accent); font-weight: 700; }
 
 @media (max-height: 640px) {
   .tool .tl { display: none; }

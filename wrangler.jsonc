@@ -1,9 +1,12 @@
 // Cloudflare Workers (statische Assets): liefert die gebaute App aus dist/ aus.
-// Build command:  node tools/build-site.mjs
-// Deploy command: npx wrangler deploy
+// «build.command» baut dist/ automatisch bei jedem «npx wrangler deploy» –
+// im Cloudflare-Dashboard ist deshalb kein eigener Build command nötig.
 {
   "name": "adfree",
   "compatibility_date": "2025-10-01",
+  "build": {
+    "command": "node tools/build-site.mjs"
+  },
   "assets": {
     "directory": "./dist",
     "html_handling": "auto-trailing-slash",

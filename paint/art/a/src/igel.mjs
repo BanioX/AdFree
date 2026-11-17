@@ -102,7 +102,7 @@ export function build() {
   // --- toadstools
   const toad = (x, y, w, h, stemH, cap, dots) => {
     pic.add(smooth([[x - w * 0.16, y + stemH, 'c'], [x - w * 0.12, y + stemH * 0.5], [x - w * 0.1, y, 'c'], [x + w * 0.1, y, 'c'], [x + w * 0.12, y + stemH * 0.5], [x + w * 0.16, y + stemH, 'c']]), 'white');
-    pic.add(ellipse(x, y + 4, w * 0.48, h * 0.14), 'be1');
+    pic.add(ellipse(x, y + 4, w * 0.48, Math.max(14, h * 0.14)), 'be1');
     pic.add(smooth([[x - w / 2, y, 'c'], [x - w * 0.4, y - h * 0.62], [x, y - h], [x + w * 0.4, y - h * 0.62], [x + w / 2, y, 'c'], [x, y + h * 0.1]]), cap);
     for (const [dx, dy, r] of dots) pic.add(circle(x + dx * w, y - dy * h, r), 'white');
   };
@@ -118,19 +118,19 @@ export function build() {
 
   // --- foreground grass and fallen leaves
   const daisy = (x, y, r) => {
-    for (let i = 0; i < 6; i++) pic.add(smooth(tf(petalPts(r, r * 0.62, { tip: 'round' }), { x, y, r: (i * 60 - 90) * DEG })), 'white');
+    for (let i = 0; i < 5; i++) pic.add(smooth(tf(petalPts(r, r * 0.7, { tip: 'round' }), { x, y, r: (i * 72 - 90) * DEG })), 'white');
     pic.add(circle(x, y, r * 0.36), 'or1');
   };
-  daisy(250, 850, 36);
-  daisy(600, 845, 34);
-  daisy(760, 800, 30);
+  daisy(250, 850, 46);
+  daisy(610, 850, 44);
+  daisy(770, 810, 40);
   pic.add(fillBelow(wavePts(-20, 1020, 905, 16, 300, 0.3), 1000), 'grass2');
   const tuft = (x, y, h) => {
-    for (const [dx, a] of [[-14, -18], [0, 0], [14, 20]]) pic.add(smooth(tf([[-11, 0, 'c'], [-4, -h * 0.6], [0, -h, 'c'], [4, -h * 0.6], [11, 0, 'c']], { x: x + dx, y, r: a * DEG })), 'grass1');
+    for (const [dx, a] of [[-14, -18], [0, 0], [14, 20]]) pic.add(smooth(tf([[-15, 0, 'c'], [-6, -h * 0.6], [0, -h, 'c'], [6, -h * 0.6], [15, 0, 'c']], { x: x + dx, y, r: a * DEG })), 'grass1');
   };
-  tuft(40, 940, 70);
-  tuft(560, 990, 60);
-  tuft(980, 960, 70);
+  tuft(40, 950, 90);
+  tuft(560, 1000, 80);
+  tuft(975, 975, 80);
   for (const [x, y, a, c1, c2] of [[480, 930, -20, 'or1', 'or2'], [700, 880, 200, 'red', 'redD'], [300, 960, 160, 'or2', 'red'], [850, 960, -40, 'or1', 'or2']]) {
     const [A, B] = leafHalves(x, y, a * DEG, 90, 46, { n: 3 });
     pic.add(A, c1);

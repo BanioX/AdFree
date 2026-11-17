@@ -34,13 +34,12 @@ function example() {
 export function showHelp() {
   const content = h('div.help',
     example(),
-    h('ol.help-list',
-      h('li', null, h('b', null, 'Zahlen lesen: '), 'Sie sagen, wie viele Felder am Stück gefüllt sind – in dieser Reihenfolge, mit mindestens einem leeren Feld dazwischen.'),
-      h('li', null, h('b', null, 'Füllen: '), 'Tippe ein Feld an. Ziehen füllt eine ganze Reihe auf einmal.'),
-      h('li', null, h('b', null, 'Kreuzchen ✕: '), 'Markiere Felder, die sicher leer bleiben – mit dem ✕-Knopf oder lange drücken.'),
-      h('li', null, h('b', null, 'Erledigt: '), 'Fertige Zahlen werden grau. Ist alles richtig, erscheint das Bild in Farbe!'),
-      h('li', null, h('b', null, 'Grosse Rätsel: '), 'Mit zwei Fingern zoomen und verschieben, oder die Lupe benutzen. Die Zahlen bleiben immer sichtbar.'),
+    h('ul.help-list',
+      h('li', null, h('b', null, 'Zahlen: '), 'So viele Felder sind am Stück gefüllt – der Reihe nach, mit Lücken dazwischen.'),
+      h('li', null, h('b', null, 'Füllen: '), 'Feld antippen. Ziehen füllt mehrere auf einmal.'),
+      h('li', null, h('b', null, 'Kreuzchen ✕: '), 'Für sicher leere Felder – mit dem ✕-Schalter oder lange drücken.'),
+      h('li', null, h('b', null, 'Grosse Bilder: '), 'Mit zwei Fingern oder der Lupe zoomen. Die Zahlen bleiben sichtbar.'),
     ),
-    h('p.help-foot', null, 'Kein Raten nötig: Jedes Bild lässt sich allein mit Logik lösen. Bei Bedarf hilft die Glühbirne.'));
+    h('p.help-foot', null, 'Kein Raten nötig. Ist alles richtig, erscheint das Bild in Farbe!'));
   return showModal({ title: 'So geht’s', content, buttons: [{ label: 'Los geht’s', value: true, primary: true }] });
 }

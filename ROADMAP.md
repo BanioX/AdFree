@@ -115,7 +115,7 @@ Mehrere KI-Agenten bauen parallel – Zuständigkeiten und Regeln stehen in [AGE
 |--:|---|:-:|
 | 68 | Früchte-Fusion – Früchte fallen lassen und verschmelzen | ✅ |
 | 69 | Kugelkette | ✅ |
-| 70 | Farbklicker – Farbgruppen abräumen | 📋 |
+| 70 | Farbklicker – Farbgruppen abräumen | ✅ |
 | 71 | Farbkugeln – fünf in einer Reihe | 📋 |
 | 72 | Schlängel (Snake) | 📋 |
 | 73 | Mauerbrecher | 📋 |

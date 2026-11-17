@@ -41,23 +41,33 @@ async function drag(a, b, steps = 8) {
   await page.mouse.up();
 }
 
-// 1) Erster Start: Anleitung erscheint automatisch
-step('Menü und Anleitung');
+// 1) Erster Start: animiertes Tutorial (shared/tutorial.js) erscheint automatisch
+step('Menü und Tutorial');
 await page.goto(BASE);
-await page.waitForSelector('.sp-modal', { timeout: 4000 });
-assert.match(await page.textContent('.sp-modal h2'), /So geht/);
+await page.waitForSelector('.tut-backdrop.show', { timeout: 4000 });
+assert.match(await page.textContent('.tut-title'), /Felder füllen/);
+await page.waitForTimeout(1900);
 await shot('01-help');
-await page.click('.sp-modal .btn.primary');
-await page.waitForSelector('.sp-modal-backdrop', { state: 'detached' });
+await page.click('.tut-next');
+await page.waitForTimeout(150);
+await page.click('.tut-next');
+await page.waitForTimeout(2600);
+await shot('01b-help-reveal');
+await page.click('.tut-skip');
+await page.waitForSelector('.tut-backdrop', { state: 'detached' });
+assert.ok(await page.$('.gm .gm-primary'), 'gemeinsamer Startbildschirm (gameMenu)');
 await shot('02-menu');
 
 // 2) Erstes Bild (5×5) komplett lösen
 step('Spielen → erstes Bild lösen');
-await page.tap('#play-btn');
+await page.tap('.gm-primary');
 await page.waitForFunction(() => window.__nono && location.hash.startsWith('#play/'));
 await page.waitForTimeout(300);
 const { w, h, mask } = await info();
 assert.equal(w, 5);
+assert.ok(await page.$('.coach'), 'Coach-Mark beim ersten Bild');
+assert.ok(await page.evaluate(() => !!window.__nono.board.coach));
+await shot('02b-coach');
 
 // Long-Press setzt ein Kreuz auf ein leeres Feld
 const emptyIdx = mask.indexOf(0);
@@ -68,6 +78,8 @@ await page.mouse.down();
 await page.waitForTimeout(560);
 await page.mouse.up();
 assert.equal((await cells())[emptyIdx], 2, 'langes Drücken setzt ✕');
+await page.waitForSelector('.coach', { state: 'detached' });
+assert.ok(await page.evaluate(() => !window.__nono.board.coach), 'Coach-Mark verschwindet nach dem ersten Zug');
 
 // Ein Tipp in ein falsches Feld und Rückgängig
 p = await cellXY(er, ec);
@@ -97,20 +109,32 @@ assert.ok(mask.every((v, i) => (v === 1) === (solvedCells[i] === 1)), 'Lösung k
 await page.click('.sp-modal .btn >> text=Bild ansehen');
 await page.waitForSelector('.play.is-solved .solved-bar');
 await shot('03b-picture');
+// Vom Menü aus geöffnet → Zurück führt ins Menü (nicht ins Paket)
 await page.tap('.play-top .icon-btn >> nth=0');
-await page.waitForFunction(() => location.hash === '#pack/mini');
-await page.waitForSelector('.tile.solved');
-await page.tap('.topbar .icon-btn >> nth=0');
 await page.waitForFunction(() => !location.hash);
 await page.waitForSelector('.pack[data-pack="mini"] .pack-count');
 assert.equal((await page.textContent('.pack[data-pack="mini"] .pack-count')).trim(), '1/34');
+// Aus dem Paket geöffnet → Zurück führt ins Paket, von dort ins Menü
+await page.waitForTimeout(400);
+await page.tap('.pack[data-pack="mini"]');
+await page.waitForSelector('.tile.solved');
+await page.waitForTimeout(400);
+await page.tap('.tile >> nth=1');
+await page.waitForFunction(() => window.__nono && location.hash === '#play/m-haus');
+await page.waitForTimeout(400);
+await page.tap('.play-top .icon-btn >> nth=0');
+await page.waitForFunction(() => location.hash === '#pack/mini');
+await page.waitForTimeout(400);
+await page.tap('.topbar .icon-btn >> nth=0');
+await page.waitForFunction(() => !location.hash);
+await page.waitForSelector('.gm-primary');
 const sum = await page.evaluate(() => localStorage.getItem('spielpause.summary.nonogram') || JSON.stringify(Object.keys(localStorage)));
 step('Kachel-Status: ' + sum);
 
 // 3) Tagesrätsel: ein paar Züge, Neuladen, Zustand muss bleiben
 step('Tagesrätsel + Neuladen');
 await page.waitForTimeout(400); // Doppeltipp-Schutz der Seite (320 ms) abwarten
-await page.tap('#daily-card');
+await page.tap('.gm-daily');
 await page.waitForFunction(() => window.__nono && location.hash === '#daily');
 await page.waitForTimeout(300);
 const d = await info();
@@ -135,7 +159,8 @@ await shot('04-daily-reload');
 step('zurück ins Menü');
 await page.tap('.play-top .icon-btn >> nth=0');
 await page.waitForFunction(() => !location.hash);
-assert.match(await page.textContent('#daily-card'), /Weiter/);
+await page.waitForSelector('.gm-daily');
+assert.match(await page.textContent('.gm-daily'), /Weiter/);
 
 // 4) Grosses Rätsel: Lupe vergrössert auf ≥ 28 px, Tippen funktioniert
 step('20×20 mit Lupe');

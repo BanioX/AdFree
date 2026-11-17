@@ -1,6 +1,6 @@
 # Spielpause
 
-**48 entspannte Spiele in einer App – ganz ohne Werbung, ohne Käufe, ohne Konto.**
+**53 entspannte Spiele in einer App – ganz ohne Werbung, ohne Käufe, ohne Konto.**
 
 Spielpause ist eine Web-App (PWA) für das iPhone: im Safari öffnen, auf den Home-Bildschirm legen,
 und sie startet wie eine normale App – im Vollbild und auch offline. Alle Spielstände bleiben auf dem Gerät.
@@ -67,6 +67,11 @@ iPhones und lässt sich mit dem Lautsprecher-Knopf auf leise / normal / aus stel
 | 🟠 **Mauerbrecher** | Kombinieren | Schläger ziehen und Steine treffen | der Ball kommt zurück, deutsch und englisch | |
 | 🟤 **Turmbau** | Kombinieren | Blöcke fallen lassen und stapeln | genauer Treffer behält die Breite, deutsch und englisch | |
 | 🔵 **Fallende Blöcke** | Kombinieren | Blöcke schieben, drehen und Reihen leeren | langsamer Fall, deutsch und englisch | |
+| 🔵 **Sternenhimmel** | Logikrätsel | Ein Stern pro Zeile, Spalte und Gebiet | ohne Berührung, deutsch und englisch | |
+| 🟢 **Zelte & Bäume** | Logikrätsel | Neben jedem Baum steht ein Zelt | Zahlen am Rand, deutsch und englisch | |
+| 🔵 **Hochhäuser** | Logikrätsel | Wie viele Häuser sieht man von aussen? | 4×4 und 5×5, deutsch und englisch | |
+| 🟢 **Inseln** | Logikrätsel | Die Zahl ist eine Insel dieser Grösse | Wasser verbunden, deutsch und englisch | |
+| 🟣 **Rundweg** | Logikrätsel | Eine Schlaufe, die Zahlen zählen die Kanten | 5×5 und 6×6, deutsch und englisch | |
 
 Jedes Spiel bekommt einen einheitlichen **Startbildschirm** (ein Knopf zum Weiterspielen, Tagesrätsel,
 Modus, Statistik) und eine **kurze, animierte Anleitung** («So geht's»), die beim ersten Start
@@ -121,7 +126,7 @@ unter <https://baniox.github.io/AdFree/>.
 ## Erweitern
 
 Die App ist darauf ausgelegt, stetig zu wachsen. Mehrere KI-Agenten bauen parallel daran
-(Claude: bestehende Spiele + Welle 1, Grok: Welle 2, Gemini: Welle 3) – die gemeinsamen Regeln
+(Claude: bestehende Spiele + Welle 1, Grok: Welle 2 und Welle 3) – die gemeinsamen Regeln
 stehen in [`AGENTS.md`](AGENTS.md), Probleme in fremden Spielen in [`HINWEISE.md`](HINWEISE.md).
 
 - **Neues Spiel:** Ordner `/<id>/` anlegen, Kachel-Icon `/icons/games/<id>.svg` zeichnen, Eintrag in

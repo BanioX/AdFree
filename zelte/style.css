@@ -1,0 +1,5 @@
+.pz button.field { background: #e7f3d8; }
+.pz button.tree { background: #d7ebc4; font-size: 18px; }
+.pz button.tent { background: #fff4d6; font-size: 18px; }
+.pz button.grass { background: #c5ddb0; }
+.pz button.clue { background: transparent; color: #2d4a28; box-shadow: none; }

@@ -39,6 +39,11 @@ Was in Spielpause neu dazukommt. Neueste Einträge oben.
 - **Mauerbrecher**: Schläger mit dem Finger ziehen, der Ball kommt nach einem Fehlschuss zurück. Deutsch und Englisch.
 - **Turmbau**: Block gleitet, Tipp lässt ihn fallen, Überstand wird abgeschnitten. Deutsch und Englisch.
 - **Fallende Blöcke**: langsam fallen, schieben, drehen, volle Reihen leeren. Deutsch und Englisch.
+- **Sternenhimmel**: ein Stern pro Zeile, Spalte und Gebiet, ohne Berührung. Deutsch und Englisch.
+- **Zelte & Bäume**: neben jedem Baum ein Zelt, Zahlen am Rand. Deutsch und Englisch.
+- **Hochhäuser**: Höhen mit Blickzahlen, jede Zahl einmal pro Zeile und Spalte. Deutsch und Englisch.
+- **Inseln**: Zahlen sind Inseln, das Wasser bleibt verbunden. Deutsch und Englisch.
+- **Rundweg**: eine Schlaufe, die Zahlen zählen die Kanten. Deutsch und Englisch.
 
 ### Behoben (Grok)
 - **Vier in einer Reihe**: Tippen auf eine Reihe legt wieder einen Stein (iPhone). Der Tipp hebt die Reihe nur hervor.

@@ -77,6 +77,11 @@ export const games = [
   { id: 'mauer', title: 'Mauerbrecher', title_en: 'Brick Break', tile: 'Mauer\u00ADbrecher', tile_en: 'Brick Break', subtitle: 'Schläger ziehen, Steine treffen', subtitle_en: 'Drag the paddle, hit the bricks', category: 'action', color: '#c45c26', added: '2026-11-17' },
   { id: 'turm', title: 'Turmbau', title_en: 'Tower', tile: 'Turmbau', tile_en: 'Tower', subtitle: 'Tippe, der Block fällt', subtitle_en: 'Tap, the block drops', category: 'action', color: '#c4843a', added: '2026-11-17' },
   { id: 'bloecke', title: 'Fallende Blöcke', title_en: 'Falling Blocks', tile: 'Fallende\u00A0Blöcke', tile_en: 'Falling\u00A0Blocks', subtitle: 'Schieben, drehen, Reihen leeren', subtitle_en: 'Slide, turn, clear the rows', category: 'action', color: '#2f7de1', added: '2026-11-17' },
+  { id: 'sterne', title: 'Sternenhimmel', title_en: 'Star Battle', tile: 'Sternenhimmel', tile_en: 'Star Battle', subtitle: 'Ein Stern pro Zeile, Spalte und Gebiet', subtitle_en: 'One star per row, column and region', category: 'logik', color: '#2c3e73', added: '2026-11-17' },
+  { id: 'zelte', title: 'Zelte & Bäume', title_en: 'Tents & Trees', tile: 'Zelte & Bäume', tile_en: 'Tents & Trees', subtitle: 'Neben jedem Baum steht ein Zelt', subtitle_en: 'One tent beside every tree', category: 'logik', color: '#3f8f4a', added: '2026-11-17' },
+  { id: 'hochhaus', title: 'Hochhäuser', title_en: 'Skyscrapers', tile: 'Hochhäuser', tile_en: 'Skyscrapers', subtitle: 'Wie viele Häuser siehst du?', subtitle_en: 'How many buildings do you see?', category: 'logik', color: '#5c6bc0', added: '2026-11-17' },
+  { id: 'inseln', title: 'Inseln', title_en: 'Islands', tile: 'Inseln', tile_en: 'Islands', subtitle: 'Die Zahl ist eine Insel dieser Grösse', subtitle_en: 'The number is an island of that size', category: 'logik', color: '#1f8f86', added: '2026-11-17' },
+  { id: 'rundweg', title: 'Rundweg', title_en: 'Loop', tile: 'Rundweg', tile_en: 'Loop', subtitle: 'Eine Schlaufe, die Zahlen zählen die Kanten', subtitle_en: 'One loop, the numbers count the edges', category: 'logik', color: '#7b5ea7', added: '2026-11-17' },
 ];
 
 /** Titel/Untertitel/Kachelname in der aktuellen Sprache */

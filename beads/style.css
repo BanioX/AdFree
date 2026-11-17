@@ -20,82 +20,30 @@ html, body {
   font-weight: 700; color: var(--text-2); font-size: 15px; margin-left: 2px;
 }
 
-/* ---------- Startbildschirm ---------- */
-
-.bp-menu {
-  padding: 2px 16px calc(28px + var(--safe-bottom));
-  max-width: 520px;
-  margin: 0 auto;
-  display: grid;
-  gap: 14px;
+/* ---------- Startbildschirm (shared/gamemenu.js) ---------- */
+.bp-menu-art {
+  position: relative; width: 184px; height: 184px; border-radius: 28px; background: #fff;
+  box-shadow: 0 14px 30px rgba(40, 70, 120, .16), 0 2px 6px rgba(40, 70, 120, .08);
+  display: grid; place-items: center; overflow: hidden;
 }
-
-.bp-hero {
-  padding: 14px 14px 16px;
-  border-radius: 28px;
-  position: relative;
-  overflow: hidden;
+.bp-menu-art::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(115deg, transparent 30%, rgba(255, 255, 255, .55) 45%, transparent 60%);
+  transform: translateX(-120%); animation: bp-art-shine 6s ease-in-out 1.2s infinite;
 }
-.bp-hero::before {
-  content: '';
-  position: absolute; inset: 0 0 auto 0; height: 62%;
-  background: radial-gradient(120% 90% at 50% 0%, #e3efff 0%, rgba(227, 239, 255, 0) 70%);
-  pointer-events: none;
+@keyframes bp-art-shine { 0%, 70% { transform: translateX(-120%); } 100% { transform: translateX(120%); } }
+.bp-menu-art canvas { display: block; }
+.bp-menu-art .pct {
+  position: absolute; right: 10px; bottom: 10px; background: var(--accent); color: #fff;
+  font-weight: 800; font-size: 12.5px; padding: 3px 8px; border-radius: 999px;
 }
-.bp-hero-pic {
-  position: relative;
-  width: min(100%, 270px);
-  aspect-ratio: 1 / 1;
-  margin: 2px auto 8px;
-  display: grid;
-  place-items: center;
+.bp-recent { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.bp-recent a {
+  aspect-ratio: 1; background: var(--surface); border-radius: 16px; box-shadow: var(--shadow);
+  display: grid; place-items: center; overflow: hidden; transition: transform .15s var(--ease-out);
 }
-.bp-hero-pic canvas { width: 100%; height: 100%; }
-.bp-hero-meta { position: relative; text-align: center; margin: 0 0 14px; }
-.bp-hero-meta .lvl {
-  display: inline-block; padding: 3px 10px; border-radius: 999px;
-  background: var(--accent-soft); color: var(--accent);
-  font-weight: 800; font-size: 13px; letter-spacing: .02em;
-}
-.bp-hero-meta h2 { margin: 6px 0 2px; font-size: 26px; font-weight: 850; letter-spacing: -.01em; }
-.bp-hero-meta p { margin: 0; color: var(--text-2); font-weight: 650; font-size: 15px; }
-.bp-hero .btn.primary {
-  min-height: 58px; font-size: 19px; font-weight: 800;
-  box-shadow: 0 10px 24px rgba(63, 142, 240, .35), 0 2px 4px rgba(63, 142, 240, .25);
-}
-.bp-hero .btn.primary svg { width: 22px; height: 22px; }
-
-.bp-tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-.bp-tile {
-  display: flex; flex-direction: column; align-items: flex-start; gap: 10px;
-  padding: 14px; border-radius: 22px; background: var(--surface); box-shadow: var(--shadow);
-  text-decoration: none; color: inherit; border: 0; text-align: left;
-  transition: transform .15s var(--ease-out);
-}
-.bp-tile:active { transform: scale(.97); }
-.bp-tile .ic {
-  width: 42px; height: 42px; border-radius: 14px; display: grid; place-items: center;
-  background: var(--accent-soft); color: var(--accent);
-}
-.bp-tile .ic svg { width: 24px; height: 24px; }
-.bp-tile.photo .ic { background: #fff0e3; color: #f08a3e; }
-.bp-tile b { font-size: 17px; font-weight: 800; display: block; }
-.bp-tile span { color: var(--text-2); font-size: 14px; font-weight: 600; }
-
-.bp-stats {
-  display: grid; grid-template-columns: repeat(3, 1fr);
-  padding: 14px 8px; border-radius: 22px;
-}
-.bp-stats div { text-align: center; }
-.bp-stats b { display: block; font-size: 22px; font-weight: 850; letter-spacing: -.01em; }
-.bp-stats span { color: var(--text-2); font-size: 13px; font-weight: 650; }
-.bp-stats .star { color: var(--gold); }
-.bp-stats .star svg { display: inline; width: 18px; height: 18px; vertical-align: -2px; }
-
-.bp-foot { text-align: center; color: var(--text-3); font-size: 14px; font-weight: 600; margin: 4px 0 0; }
-.bp-foot button {
-  border: 0; background: none; color: var(--accent); font-weight: 750; padding: 6px 8px;
-}
+.bp-recent a:active { transform: scale(.95); }
+.bp-recent canvas { display: block; }
 
 /* ---------- Spielbildschirm ---------- */
 
@@ -295,21 +243,7 @@ html, body {
 .bp-swatches i { width: 22px; height: 22px; border-radius: 50%; box-shadow: inset 0 -3px 5px rgba(0, 0, 0, .18), inset 0 2px 3px rgba(255, 255, 255, .6), 0 1px 2px rgba(0, 0, 0, .15); }
 .bp-hint { margin: 0; color: var(--text-3); font-size: 14px; font-weight: 600; text-align: center; }
 
-/* ---------- So geht's ---------- */
-
-.bp-howto { display: grid; gap: 12px; text-align: left; margin-top: 4px; }
-.bp-howto .step { display: flex; gap: 12px; align-items: flex-start; }
-.bp-howto .num {
-  flex: 0 0 auto; width: 34px; height: 34px; border-radius: 50%;
-  display: grid; place-items: center; color: #fff; font-weight: 850;
-  background: radial-gradient(circle at 35% 30%, #9fcbff 0%, #3f8ef0 55%, #2a6fc9 100%);
-  box-shadow: 0 2px 5px rgba(40, 90, 160, .3);
-}
-.bp-howto .step:nth-child(2) .num { background: radial-gradient(circle at 35% 30%, #ffc0cf 0%, #ff4f79 55%, #c92e57 100%); }
-.bp-howto .step:nth-child(3) .num { background: radial-gradient(circle at 35% 30%, #ffe7a3 0%, #f5b324 55%, #c98a10 100%); }
-.bp-howto .step:nth-child(4) .num { background: radial-gradient(circle at 35% 30%, #b8f0c0 0%, #3fbf6a 55%, #2a8f4c 100%); }
-.bp-howto p { margin: 5px 0 0; color: var(--text); font-weight: 600; font-size: 15.5px; line-height: 1.38; }
-.bp-howto p b { font-weight: 800; }
+/* ---------- Sammlung: noch gesperrte Bilder ---------- */
 .bp-helper .ic b { font-size: 14px; font-weight: 900; letter-spacing: -.02em; }
 
 .bp-locked { display: grid; grid-template-columns: repeat(5, 1fr); gap: 9px; }
@@ -323,3 +257,65 @@ html, body {
 .bp-locked b { font-size: 13px; font-weight: 800; }
 .bp-locked .next { background: var(--surface); color: var(--accent); box-shadow: var(--shadow); }
 .bp-locked .next svg { opacity: 1; }
+
+/* ---------- So geht's (animierte Mini-Demos) ---------- */
+.bt-scene { position: absolute; inset: 0; }
+.bt-panel { position: absolute; background: #fff; border-radius: 16px; box-shadow: 0 4px 14px rgba(40, 70, 120, .10); }
+.bt-col { position: absolute; width: 38px; margin-left: -19px; border-radius: 16px; background: rgba(255, 255, 255, .62); box-shadow: inset 0 1px 3px rgba(40, 70, 120, .10); }
+.bt-gem {
+  position: absolute; width: 22px; height: 22px; margin: -11px 0 0 -11px; border-radius: 50%; z-index: 2;
+  background:
+    radial-gradient(circle at 34% 30%, rgba(255, 255, 255, .95) 0 11%, rgba(255, 255, 255, 0) 30%),
+    radial-gradient(circle at 50% 62%, var(--c) 0 55%, color-mix(in srgb, var(--c) 72%, #000) 100%);
+  box-shadow: 0 2px 3px rgba(30, 30, 60, .2);
+  transition: left .48s cubic-bezier(.3, .75, .3, 1), top .48s cubic-bezier(.3, .75, .3, 1), transform .48s cubic-bezier(.3, .75, .3, 1), opacity .3s;
+}
+.bt-gem.placed { transform: scale(.72); }
+.bt-ghost { position: absolute; width: 11px; height: 11px; margin: -5.5px 0 0 -5.5px; border-radius: 50%; background: var(--c); opacity: .3; transition: opacity .2s; }
+.bt-ghost.hidden { opacity: 0; }
+.bt-zone {
+  position: absolute; left: 24%; width: 52%; border-radius: 10px; z-index: 1;
+  background: rgba(63, 142, 240, .12); box-shadow: 0 0 0 2px rgba(63, 142, 240, .35), 0 0 14px rgba(63, 142, 240, .25);
+  transition: top .5s cubic-bezier(.3, .75, .3, 1), height .4s;
+}
+.bt-slot { position: absolute; width: 28px; height: 28px; margin: -14px 0 0 -14px; border-radius: 50%; background: rgba(40, 70, 120, .07); box-shadow: inset 0 2px 4px rgba(40, 70, 120, .12); transition: box-shadow .3s; }
+.bt-slot.busy { box-shadow: inset 0 2px 4px rgba(40, 70, 120, .12), 0 0 0 2px var(--accent); }
+.bt-badge {
+  position: absolute; z-index: 3; min-width: 18px; height: 18px; margin: -9px 0 0 -9px; padding: 0 5px; border-radius: 9px;
+  background: var(--accent); color: #fff; font-size: 11.5px; font-weight: 800; display: grid; place-items: center;
+  transform: scale(0); transition: transform .3s cubic-bezier(.3, 1.6, .5, 1);
+}
+.bt-badge.show { transform: scale(1); }
+.bt-stars { position: absolute; left: 0; right: 0; top: 16%; display: flex; justify-content: center; gap: 8px; }
+.bt-stars span { color: #d9dde6; transition: color .3s, transform .3s; transform: scale(.9); display: grid; }
+.bt-stars span.on { color: var(--gold); transform: scale(1); }
+.bt-pill {
+  position: absolute; transform: translate(-50%, -50%); display: flex; align-items: center; gap: 6px; white-space: nowrap;
+  background: #fff; border-radius: 16px; padding: 10px 12px; font-weight: 800; font-size: 14px; color: var(--text);
+  box-shadow: 0 4px 12px rgba(40, 70, 120, .12);
+}
+.bt-pill .ic { color: var(--accent); display: grid; }
+.bt-pill .ic b { font-size: 15px; }
+.bt-pill.pop { animation: bt-pop .45s cubic-bezier(.3, 1.5, .5, 1); }
+@keyframes bt-pop { 0% { transform: translate(-50%, -50%) scale(1); } 40% { transform: translate(-50%, -50%) scale(1.14); } 100% { transform: translate(-50%, -50%) scale(1); } }
+
+/* Schritt 2: Steine «poppen» ins Bild */
+.bt-rows .bt-gem { transform: scale(0); opacity: 0; transition: transform .3s cubic-bezier(.3, 1.6, .5, 1), opacity .2s; }
+.bt-rows .bt-gem.on { transform: scale(.72); opacity: 1; }
+
+/* ---------- Coach-Mark (Level 1) ---------- */
+.bp-coach {
+  position: absolute; z-index: 4; pointer-events: none; border-radius: 18px;
+  box-shadow: 0 0 0 3px var(--accent), 0 0 0 7px rgba(63, 142, 240, .25);
+  animation: bp-coach 1.3s ease-in-out infinite;
+}
+.bp-coach span {
+  position: absolute; left: 50%; bottom: calc(100% + 8px); transform: translateX(-50%); white-space: nowrap;
+  background: var(--accent); color: #fff; font-weight: 800; font-size: 13.5px; padding: 6px 11px; border-radius: 12px;
+  box-shadow: 0 4px 10px rgba(63, 142, 240, .35);
+}
+.bp-coach span::after {
+  content: ''; position: absolute; left: 50%; top: 100%; margin-left: -6px;
+  border: 6px solid transparent; border-top-color: var(--accent);
+}
+@keyframes bp-coach { 0%, 100% { box-shadow: 0 0 0 3px var(--accent), 0 0 0 6px rgba(63, 142, 240, .25); } 50% { box-shadow: 0 0 0 3px var(--accent), 0 0 0 13px rgba(63, 142, 240, 0); } }

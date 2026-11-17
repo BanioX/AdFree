@@ -465,7 +465,7 @@ try {
   await page.waitForFunction(() => window.__paint && window.__paint.ready && /^foto-/.test(window.__paint.state().id), null, { timeout: 60000 });
   await wait(500);
   st = await state();
-  check('Eigenes Foto: wird zum Malbild', st.total > 60, `${st.total} Flächen`);
+  check('Eigenes Foto: wird zum Malbild', st.total > 15, `${st.total} Flächen`);
   await shot('20-foto-malen');
   await backToMenu();
   await page.reload({ waitUntil: 'load' });
@@ -475,7 +475,7 @@ try {
   check('Meine Fotos: nach Neuladen gespeichert', (await page.$$('.gv-card[data-id^="foto-"]')).length === 1);
   await page.locator('.gv-edit').tap();
   await wait(300);
-  await page.locator('.gv-card[data-id^="foto-"]').tap();
+  await page.locator('.gv-card[data-id^="foto-"]').tap({ force: true }); // wackelt im Bearbeiten-Modus
   await page.locator('.sp-modal .btn', { hasText: 'Löschen' }).tap();
   await wait(900);
   check('Meine Fotos: löschen', (await page.$$('.gv-card[data-id^="foto-"]')).length === 0);

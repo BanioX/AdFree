@@ -7,6 +7,10 @@
 //   #foto/<id>   eigenes Foto spielen
 
 import { setupPage, h, icon, toast, showModal, soundButton, backButton } from '../shared/ui.js';
+import { gameMenu, menuSection } from '../shared/gamemenu.js';
+import { tutorialSeen } from '../shared/tutorial.js';
+import { showHowto, maybeShowHowto } from './howto.js';
+import { tagline } from './data/texts.js';
 import { kv } from '../shared/idb.js';
 import { parsePattern, isValidPattern, levelConfig, Game } from './level.js';
 import { fixtures } from './engine-fixtures.js';
@@ -103,27 +107,6 @@ function topbar(backHref, title, ...extra) {
   return h('header.topbar', null, backButton(backHref), h('div.title.center', null, title), ...extra, soundButton());
 }
 
-// ---------------------------------------------------------------- So geht's
-
-export function showHowto() {
-  const step = (n, html) => {
-    const p = h('p');
-    p.innerHTML = html;
-    return h('div.step', null, h('span.num', null, String(n)), p);
-  };
-  const content = h('div.bp-howto', null,
-    step(1, '<b>Tippe auf eine Spalte</b> – die vordersten Steine gleicher Farbe fliegen ins Bild.'),
-    step(2, 'Das Bild entsteht <b>von unten nach oben</b>. Die leuchtende Zone zeigt, welche Farben gerade gebraucht werden.'),
-    step(3, 'Passt ein Stein noch nicht, wartet er in der <b>Ablage</b> und springt später von selbst ins Bild.'),
-    step(4, 'Ablage voll? <b>Magnet</b>, <b>Mischen</b> und <b>+1 Ablage</b> helfen – gratis und so oft du willst.'),
-  );
-  return showModal({
-    title: 'So geht’s',
-    content,
-    buttons: [{ label: 'Los geht’s', value: true, primary: true }],
-  });
-}
-
 // ---------------------------------------------------------------- Startbildschirm
 
 async function showMenu(token) {
@@ -144,60 +127,67 @@ async function showMenu(token) {
   const lib = await loadLibrary();
   if (token !== routeToken) return;
   const doneCount = lib.filter((e) => p.done[e.id]).length;
+  const perfect = lib.filter((e) => (p.done[e.id] | 0) >= 3).length;
 
-  const help = h('button.icon-btn', { type: 'button', 'aria-label': 'So geht’s' });
-  help.innerHTML = icon('hint');
-  help.addEventListener('click', () => showHowto());
+  // Titelbild: Live-Vorschau des aktuellen Levels (Geister + schon gelegte Steine)
+  const art = h('div.bp-menu-art');
+  const cv = h('canvas', { 'aria-hidden': 'true' });
+  art.append(cv);
+  if (pct > 0) art.append(h('span.pct', null, `${Math.round(pct * 100)} %`));
+  const box = 158;
+  drawPicture(cv, L, {
+    filled: filled || new Uint8Array(L.W * L.H),
+    size: L.H > L.W ? box * L.W / L.H : box, pad: 0.02,
+    ghostMix: 0.5, ghostR: 0.34,
+  });
 
-  const picBox = h('div.bp-hero-pic');
-  const canvas = h('canvas', { 'aria-hidden': 'true' });
-  picBox.append(canvas);
-  const playBtn = h('a.btn.primary.block', { href: '#play/' + n });
-  playBtn.innerHTML = icon('play', { size: 22 });
-  playBtn.append(document.createTextNode(pct > 0 ? `Weiter – Level ${n}` : `Spielen – Level ${n}`));
-
-  const tile = (cls, href, ic, title, sub) => {
-    const a = h('a.bp-tile' + cls, { href });
-    a.innerHTML = `<span class="ic">${icon(ic)}</span>`;
-    a.append(h('div', null, h('b', null, title), h('span', null, sub)));
-    return a;
-  };
-  const stars = totalStars(p);
-  const starEl = h('b.star');
-  starEl.innerHTML = `${stars} ${icon('star', { size: 18 })}`;
-  const howBtn = h('button', { type: 'button' }, 'So geht’s');
-  howBtn.addEventListener('click', () => showHowto());
-
-  app.append(
-    topbar('../', 'Perlenbild', help),
-    h('div.scroll', null,
-      h('main.bp-menu', null,
-        h('section.card.bp-hero', null,
-          picBox,
-          h('div.bp-hero-meta', null,
-            h('span.lvl', null, `Level ${n}`),
-            h('h2', null, L.title),
-            h('p', null, pct > 0 ? `${Math.round(pct * 100)} % gelegt` : `${L.total} Perlen · ${L.K} Farben`)),
-          playBtn),
-        h('div.bp-tiles', null,
-          tile('', '#album', 'grid', 'Sammlung', doneCount === 1 ? '1 Bild' : `${doneCount} Bilder`),
-          tile('.photo', '#photo', 'camera', 'Eigenes Foto', 'Aus deinen Bildern')),
-        h('section.card.bp-stats', null,
-          h('div', null, h('b', null, String(doneCount)), h('span', null, 'Bilder fertig')),
-          h('div', null, starEl, h('span', null, 'Sterne')),
-          h('div', null, h('b', null, p.beads.toLocaleString('de-CH')), h('span', null, 'Perlen gelegt'))),
-        h('p.bp-foot', null, 'Alle Helfer sind gratis. ', howBtn)),
-    ),
-  );
-
-  const box = picBox.clientWidth || 260;
-  const size = L.H > L.W ? box * L.W / L.H : box;
-  drawPicture(canvas, L, { filled: filled || new Uint8Array(L.W * L.H), size, pad: 0.04, ghostMix: filled ? 0.58 : 0.32, ghostR: filled ? 0.24 : 0.3 });
-
-  if (!p.tutorial) {
-    updateProgress((q) => { q.tutorial = true; });
-    setTimeout(() => { if (token === routeToken) showHowto(); }, 350);
+  const go = (href) => () => { location.hash = href; };
+  const sections = [];
+  const recent = (p.recent || []).map((id) => lib.find((e) => e.id === id)).filter(Boolean).slice(0, 4);
+  if (recent.length) {
+    const row = h('div.bp-recent');
+    for (const e of recent) {
+      const a = h('a', { href: '#album', 'aria-label': e.title || 'Bild' });
+      row.append(a);
+      resolveEntry(e).then((pat) => {
+        if (token !== routeToken) return;
+        const PL = parsePattern(pat);
+        const c = h('canvas');
+        a.append(c);
+        const w = (a.clientWidth || 70) - 10;
+        drawPicture(c, PL, { size: PL.H > PL.W ? w * PL.W / PL.H : w, pad: 0.04 });
+      }).catch(() => {});
+    }
+    sections.push(menuSection('Zuletzt gelegt', row));
   }
+
+  app.append(gameMenu({
+    id: 'beads',
+    title: 'Perlenbild',
+    tagline,
+    accent: '#3f8ef0',
+    art,
+    primary: {
+      label: `${pct > 0 ? 'Weiter' : 'Spielen'} – Level ${n}`,
+      sub: pct > 0 ? `${L.title} · ${Math.round(pct * 100)} % gelegt` : `${L.title} · ${L.total} Perlen · ${L.K} Farben`,
+      onClick: go('#play/' + n),
+    },
+    secondary: [
+      { label: 'Sammlung', icon: 'grid', sub: `${doneCount} von ${lib.length}`, onClick: go('#album') },
+      { label: 'Eigenes Foto', icon: 'camera', sub: 'Aus deinen Bildern', onClick: go('#photo') },
+    ],
+    stats: [
+      { label: 'Bilder', value: doneCount },
+      { label: 'Sterne', value: totalStars(p) },
+      { label: 'Ohne Helfer', value: perfect },
+      { label: 'Perlen', value: p.beads.toLocaleString('de-CH') },
+    ],
+    sections,
+    onHelp: () => showHowto(),
+    backHref: '../',
+  }));
+
+  if (!tutorialSeen('beads')) setTimeout(() => { if (token === routeToken) maybeShowHowto(); }, 350);
 }
 
 // ---------------------------------------------------------------- Level spielen
@@ -219,12 +209,15 @@ async function showLevel(n, token) {
     title: `Level ${n}`,
     subtitle: L.title,
     backHref: '#menu',
+    onHelp: () => showHowto(),
+    coach: n === 1 && game.st.placed === 0,
     save: (state) => saveRun(key, { patternId: L.id, state, t: Date.now() }),
     onComplete: (g, stars) => {
       clearRun(key);
       const q = updateProgress((pp) => {
         pp.done[L.id] = Math.max(pp.done[L.id] | 0, stars);
         pp.beads += L.total;
+        pp.recent = [L.id, ...(pp.recent || []).filter((x) => x !== L.id)].slice(0, 8);
         if (n >= pp.level) pp.level = n + 1;
       });
       report(q);
@@ -252,6 +245,7 @@ async function showPhotoLevel(id, token) {
     game,
     title: meta.title || 'Mein Foto',
     backHref: '#photo',
+    onHelp: () => showHowto(),
     save: (state) => saveRun(key, { patternId: L.id, state, t: Date.now() }),
     onComplete: (g, stars) => {
       clearRun(key);

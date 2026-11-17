@@ -109,6 +109,7 @@ step('Kachel-Status: ' + sum);
 
 // 3) Tagesrätsel: ein paar Züge, Neuladen, Zustand muss bleiben
 step('Tagesrätsel + Neuladen');
+await page.waitForTimeout(400); // Doppeltipp-Schutz der Seite (320 ms) abwarten
 await page.tap('#daily-card');
 await page.waitForFunction(() => window.__nono && location.hash === '#daily');
 await page.waitForTimeout(300);

@@ -108,6 +108,7 @@ function demoTap(stage, api) {
 
 function demoRows(stage, api) {
   const sc = scene(stage);
+  sc.classList.add('bt-rows');
   panel(sc, 18, 6, 64, 86);
   const rows = ['.RR.RR.', 'RPRRRRR', 'RRRRRRR', '.RRRRR.', '..RRR..', '...R...'];
   const pic = cells(rows, 29, 17, 7, 13);

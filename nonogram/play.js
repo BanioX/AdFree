@@ -566,12 +566,12 @@ export function createPlay(o) {
   // ---------- Verdrahtung ----------
   back.addEventListener('click', () => { sfx.play('click'); o.onBack(); });
   moreBtn.addEventListener('click', more);
-  undoBtn.addEventListener('click', undo);
-  segFill.addEventListener('click', () => setMode('fill'));
-  segCross.addEventListener('click', () => setMode('cross'));
-  zoomBtn.addEventListener('click', toggleZoom);
-  checkBtn.addEventListener('click', check);
-  hintBtn.addEventListener('click', hint);
+  onTap(undoBtn, undo);
+  onTap(segFill, () => setMode('fill'));
+  onTap(segCross, () => setMode('cross'));
+  onTap(zoomBtn, toggleZoom);
+  onTap(checkBtn, check);
+  onTap(hintBtn, hint);
   againBtn.addEventListener('click', restart);
   nextBtn.addEventListener('click', () => { sfx.play('tap'); if (o.onNext) o.onNext(); else o.onBack(true); });
 
@@ -630,6 +630,29 @@ export function createPlay(o) {
       window.removeEventListener('keydown', onKey);
     },
   };
+}
+
+/**
+ * Schneller Tipp-Handler für Werkzeug-Knöpfe: reagiert schon auf pointerup, damit auch rasch
+ * hintereinander getippte Knöpfe (z.B. mehrmals Rückgängig) jeden Tipp zählen – der Doppeltipp-
+ * Schutz der Seite verschluckt sonst den zweiten «click». Tastatur-Klicks funktionieren weiter.
+ */
+function onTap(el, fn) {
+  let down = null;
+  let last = 0;
+  el.addEventListener('pointerdown', (e) => { down = { id: e.pointerId }; });
+  el.addEventListener('pointerleave', () => { down = null; });
+  el.addEventListener('pointercancel', () => { down = null; });
+  el.addEventListener('pointerup', (e) => {
+    if (!down || down.id !== e.pointerId || el.disabled) return;
+    down = null;
+    last = performance.now();
+    fn();
+  });
+  el.addEventListener('click', () => {
+    if (performance.now() - last < 600) return;
+    fn();
+  });
 }
 
 // ---------- Einstellungen (auch vom Menü aus) ----------

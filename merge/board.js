@@ -5,7 +5,7 @@
 // beliebig ändern, ohne dass etwas neu berechnet werden muss. Schriftgrössen in cqw.
 
 import { h } from '../shared/ui.js';
-import { FREE, STONE, HOLE, valueOf } from './logic.js';
+import { STONE, HOLE, valueOf } from './logic.js';
 import { tileOf } from './data/skins.js';
 
 const GAP = 0.13;            // Abstand zwischen Feldern relativ zur Feldgrösse

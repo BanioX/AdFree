@@ -160,7 +160,7 @@ export function mountPlay(app, opts, nav) {
       sideVal.textContent = P.formatNumber(best);
     }
     if (s.goal.type === 'count') {
-      goalLbl.textContent = 'Ziel';
+      goalLbl.textContent = `Ziel ${P.formatNumber(valueOf(s.goal.e))}`;
       goalInfo.textContent = `${Math.min(s.made, s.goal.n)} / ${s.goal.n}`;
     } else {
       goalLbl.textContent = s.won && !isLevel ? 'Geschafft' : 'Ziel';

@@ -303,31 +303,54 @@
 
 /* ---------- Modals: So geht's, Gewinn, Statistik ---------- */
 
-.howto { text-align: left; }
-.howto-steps { list-style: none; margin: 14px 0 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
-.howto-steps li { display: flex; gap: 10px; align-items: flex-start; font-size: 15px; color: var(--text-2); }
-.howto-steps b { color: var(--text); }
-.howto-steps .hi { width: 32px; height: 32px; flex: 0 0 auto; border-radius: 10px; background: var(--surface-2); display: grid; place-items: center; font-size: 18px; }
-
-.demo { position: relative; width: 190px; height: 152px; margin: 0 auto; background: var(--surface-2); border-radius: 16px; padding: 8px; }
-.demo-grid, .demo-caps { position: absolute; inset: 8px; }
-.demo-grid { display: grid; grid-template-columns: repeat(5, 1fr); grid-template-rows: repeat(4, 1fr); }
-.demo-grid span { display: grid; place-items: center; font-weight: 850; font-size: 19px; color: var(--ink); }
-.demo-caps svg { width: 100%; height: 100%; overflow: visible; display: block; }
-.demo-caps line { stroke-linecap: round; fill: none; stroke-width: .78px; }
-.demo-found { stroke: #ff8fa3; opacity: .55; }
-.demo-swipe { stroke: var(--accent); opacity: .45; stroke-dasharray: 3.2; stroke-dashoffset: 3.2; animation: demo-swipe 2.6s ease-in-out infinite; }
-@keyframes demo-swipe { 0%, 12% { stroke-dashoffset: 3.2; opacity: .45; } 55%, 80% { stroke-dashoffset: 0; opacity: .45; } 88% { stroke: #9bd36a; opacity: .7; stroke-dashoffset: 0; } 100% { stroke-dashoffset: 0; opacity: 0; } }
-.demo-finger {
-  position: absolute; left: 8px; top: 8px; font-size: 26px; width: 34.8px; height: 34px; display: grid; place-items: center;
-  animation: demo-finger 2.6s ease-in-out infinite; transform-origin: 30% 10%;
+/* Tutorial-Demos (So geht's) */
+.wsd { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; }
+.wsd-grid {
+  position: relative; display: grid; grid-template-columns: repeat(6, 1fr); grid-template-rows: repeat(5, 1fr);
+  background: #fff; border-radius: 14px; box-shadow: 0 6px 16px rgba(70, 45, 20, .12); padding: 0; box-sizing: content-box;
+  border: 6px solid #fff;
 }
-@keyframes demo-finger {
-  0% { transform: translate(0, 46px) scale(1.15); opacity: 0; }
-  12% { transform: translate(0, 46px) scale(1); opacity: 1; }
-  55%, 80% { transform: translate(104px, 46px); opacity: 1; }
-  100% { transform: translate(104px, 60px); opacity: 0; }
+.wsd-grid span { position: relative; z-index: 1; display: grid; place-items: center; font-weight: 850; color: var(--ink); }
+.wsd-grid span.pop { animation: wsd-pop .42s var(--ease-spring) both; }
+.wsd-grid span.hint { color: var(--accent-dark); }
+.wsd-grid.wave span { animation: wsd-pop .5s var(--ease-spring) both; }
+.wsd-grid.wave span:nth-child(3n) { animation-delay: .08s; }
+.wsd-grid.wave span:nth-child(3n+1) { animation-delay: .16s; }
+@keyframes wsd-pop { 0% { transform: scale(1); } 45% { transform: scale(1.32); } 100% { transform: scale(1); } }
+.wsd-caps { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; z-index: 0; }
+.wsd-caps line { stroke-linecap: round; fill: none; }
+.wsd-sel { stroke: color-mix(in srgb, var(--accent) 35%, #fff); stroke-width: .8px; }
+.wsd-cap { stroke-width: .8px; opacity: .6; animation: wsd-cap .35s var(--ease-spring) both; }
+@keyframes wsd-cap { 0% { stroke-width: 1.05px; opacity: .9; } 100% { stroke-width: .8px; opacity: .6; } }
+.wsd-ring { stroke: #f5a524; stroke-width: .9px; opacity: .5; animation: wsd-ring .7s ease-in-out infinite alternate; }
+@keyframes wsd-ring { from { stroke-width: .7px; } to { stroke-width: 1.05px; } }
+.wsd-chips { display: flex; gap: 6px; }
+.wsd-chip {
+  padding: 4px 11px; border-radius: 99px; background: #fff; font-weight: 800; font-size: 13.5px; color: var(--text-2);
+  box-shadow: 0 2px 6px rgba(70, 45, 20, .08); transition: background .3s, color .3s;
 }
+.wsd-chip.found { background: color-mix(in srgb, var(--c) 45%, #fff); color: var(--ink); text-decoration: line-through; text-decoration-thickness: 2px; }
+.wsd-row { display: flex; align-items: center; gap: 14px; }
+.wsd-hint {
+  display: flex; align-items: center; gap: 5px; height: 34px; padding: 0 12px; border-radius: 99px; font-weight: 850; font-size: 14px;
+  background: #fff6dc; color: #9a6a00; box-shadow: inset 0 0 0 1.5px #f3d58a;
+}
+.wsd-stars { display: flex; gap: 2px; font-size: 22px; color: #e9dccb; }
+.wsd-stars.lit { color: #f5b324; }
+.wsd-stars.lit { animation: wsd-pop .5s var(--ease-spring); }
+.wsd-modes { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; gap: 10px; padding: 0 10px; }
+.wsd-mode {
+  flex: 0 1 96px; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 10px 4px 10px; border-radius: 18px;
+  background: #fff; box-shadow: 0 4px 12px rgba(70, 45, 20, .1); transition: transform .3s var(--ease-spring), box-shadow .3s;
+}
+.wsd-mode b { font-size: 15px; }
+.wsd-mode small { font-size: 12px; color: var(--text-2); font-weight: 700; }
+.wsd-mode.on { transform: translateY(-6px) scale(1.06); box-shadow: 0 0 0 3px var(--accent), 0 10px 20px rgba(70, 45, 20, .16); }
+.wsd-mode svg line { stroke-width: 4.5; stroke-linecap: round; }
+.wsd-mode svg line.on { stroke: var(--accent); }
+.wsd-mode svg line.off { stroke: #eee3d6; }
+.wsd-mode svg .tip { fill: var(--accent); }
+.wsd-mode svg .hub { fill: var(--ink); }
 
 .win { display: flex; flex-direction: column; align-items: center; gap: 10px; }
 .win-badge {

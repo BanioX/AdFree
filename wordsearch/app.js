@@ -9,15 +9,19 @@ import { themes, groups } from './data/themes.js';
 import { modes, DAILY_MODE } from './data/modes.js';
 import { generatePuzzle, matchSelection, starsFor, formatTime, dailyThemeIndex, pickHintWord } from './logic.js';
 import { Board, CAP_COLORS } from './board.js';
+import { gameMenu, menuSection } from '../shared/gamemenu.js';
+import { showTutorial, tutorialSeen } from '../shared/tutorial.js';
+import { tutorialSteps } from './howto.js';
 
 const ID = 'wordsearch';
+const ACCENT = '#5a9e3c';
 const K = {
   settings: 'wordsearch.settings',
   stats: 'wordsearch.stats',
   progress: 'wordsearch.progress',
   game: (m) => `wordsearch.game.${m}`,
   daily: 'wordsearch.daily',
-  howto: 'wordsearch.howtoSeen',
+  coach: 'wordsearch.coachDone',
   rot: 'wordsearch.rotation',
   seq: 'wordsearch.seq',
 };
@@ -163,31 +167,13 @@ function helpButton() {
 
 // ---------- «So geht's» ----------
 
-function howToDemo() {
-  // Mini-Raster mit animierter Wisch-Kapsel
-  const rows = ['KXROT', 'BLAUM', 'EGELB', 'RTGRÜ'];
-  const grid = h('div.demo-grid');
-  rows.forEach((row) => [...row].forEach((ch) => grid.append(h('span', null, ch))));
-  const svgEl = h('div.demo-caps', {
-    html: '<svg viewBox="0 0 5 4" preserveAspectRatio="none"><line class="demo-found" x1="2.5" y1=".5" x2="4.5" y2=".5"/><line class="demo-swipe" x1=".5" y1="1.5" x2="3.5" y2="1.5"/></svg>',
-  });
-  const finger = h('div.demo-finger', null, '👆');
-  return h('div.demo', null, svgEl, grid, finger);
-}
-
-async function showHowTo() {
-  store.set(K.howto, true);
-  const steps = [
-    ['👆', 'Wischen', 'Fahre vom ersten bis zum letzten Buchstaben eines Wortes – in einer geraden Linie.'],
-    ['🧭', 'Richtungen', 'Leicht: nur → und ↓. Mittel: auch diagonal. Schwer: alle Richtungen, auch rückwärts.'],
-    ['👉', 'Oder tippen', 'Erst den ersten, dann den letzten Buchstaben antippen.'],
-    ['💡', 'Tipp', 'Zeigt den Anfangsbuchstaben eines Wortes. Nochmals tippen zeigt den zweiten.'],
-    ['⭐', 'Sterne', 'Zügig und ohne Tipps gibt es drei Sterne. Zeit lassen ist aber ausdrücklich erlaubt!'],
-  ];
-  const content = h('div.howto', null,
-    howToDemo(),
-    h('ul.howto-steps', null, steps.map(([e, t, d]) => h('li', null, h('span.hi', null, e), h('span', null, h('b', null, t), ' ', d)))));
-  await modal({ title: "So geht's", content, buttons: [{ label: 'Los geht’s', value: true, primary: true }] });
+let tutorialOpen = null;
+function showHowTo() {
+  if (tutorialOpen) return tutorialOpen;
+  modalDepth++;
+  tutorialOpen = showTutorial({ id: ID, steps: tutorialSteps(modes), accent: ACCENT })
+    .finally(() => { modalDepth = Math.max(0, modalDepth - 1); tutorialOpen = null; });
+  return tutorialOpen;
 }
 
 // ---------- Menü ----------
@@ -207,147 +193,101 @@ function logo() {
   return g;
 }
 
-function showMenu() {
-  const settings = getSettings();
-  const stats = getStats();
-  reportSummary(ID, summaryText());
+const sizeLabel = (m) => (m.sizes.length > 1 ? `${m.sizes[0]}–${m.sizes[m.sizes.length - 1]}` : `${m.sizes[0]}×${m.sizes[0]}`);
 
-  const back = backButton('../');
-  const top = h('header.topbar', null, back, h('div.title', null, 'Wortsuche'), helpButton(), soundButton());
-  const body = h('div.scroll.menu');
-  screen('menu-screen', top, body);
-
-  // Hero: laufendes Rätsel oder neues
-  const hero = h('section.card.hero');
-  const renderHero = () => {
-    const s = getSettings();
-    const mode = modeById(s.mode);
-    const st = store.get(K.game(s.mode), null);
-    const running = validState(st) && !st.done;
-    hero.replaceChildren();
-    if (running) {
-      const t = themeById(st.puzzle.theme) || { title: st.puzzle.theme, emoji: '🔤', group: 'natur' };
-      const n = st.puzzle.words.length, f = st.found.length;
-      hero.append(
-        h('div.hero-top', null,
-          h('div.hero-emoji', { style: { '--g': themeColor(t) } }, t.emoji),
-          h('div.hero-text', null,
-            h('div.hero-kicker', null, f ? 'Weiterspielen' : 'Bereit'),
-            h('div.hero-title', null, t.title),
-            h('div.hero-sub', null, `${mode.title} · ${f} von ${n} Wörtern${st.elapsed > 1000 ? ' · ' + formatTime(st.elapsed) : ''}`))),
-        h('div.progress', null, h('i', { style: { width: (f / n) * 100 + '%' } })));
-      const btn = h('button.btn.primary.block.big', { type: 'button', html: icon('play', { size: 22 }) + (f || st.elapsed > 3000 ? 'Weiter' : 'Spielen') });
-      btn.addEventListener('click', () => { sfx.play('tap'); go('play/' + s.mode); });
-      const fresh = h('button.btn.ghost.small', { type: 'button', html: icon('refresh', { size: 18 }) + 'Neues Rätsel' });
-      fresh.addEventListener('click', async () => {
-        sfx.play('click');
-        if (st.found.length && !(await confirmLeave())) return;
-        createGame(s.mode);
-        go('play/' + s.mode);
-      });
-      hero.append(btn, fresh);
-    } else {
-      hero.append(
-        h('div.hero-top', null,
-          h('div.hero-emoji.dice', null, '🔤'),
-          h('div.hero-text', null,
-            h('div.hero-kicker', null, 'Neues Rätsel'),
-            h('div.hero-title', null, 'Überraschungsthema'),
-            h('div.hero-sub', null, `${mode.title} · ${mode.info}`))));
-      const btn = h('button.btn.primary.block.big', { type: 'button', html: icon('play', { size: 22 }) + 'Spielen' });
-      btn.addEventListener('click', () => { sfx.play('tap'); createGame(s.mode); go('play/' + s.mode); });
-      hero.append(btn);
-    }
-  };
-
-  // Schwierigkeit
-  const seg = h('div.seg', { role: 'tablist', 'aria-label': 'Schwierigkeit' });
-  const segInfo = h('p.seg-info');
-  const renderSeg = () => {
-    const s = getSettings();
-    seg.replaceChildren(...modes.map((m) => {
-      const st = store.get(K.game(m.id), null);
-      const running = validState(st) && !st.done && st.found.length > 0;
-      const b = h('button.seg-btn' + (m.id === s.mode ? '.active' : ''), { type: 'button', role: 'tab', 'aria-selected': m.id === s.mode ? 'true' : 'false', 'data-mode': m.id },
-        h('b', null, m.title), h('small', null, m.sizes.length > 1 ? `${m.sizes[0]}–${m.sizes[m.sizes.length - 1]}` : `${m.sizes[0]}×${m.sizes[0]}`),
-        running ? h('i.dot') : null);
-      b.addEventListener('click', () => {
-        if (getSettings().mode === m.id) return;
-        sfx.play('click');
-        setSettings({ mode: m.id });
-        renderSeg();
-        renderHero();
-      });
-      return b;
-    }));
-    const m = modeById(s.mode);
-    segInfo.textContent = `${m.info} · ${m.dirInfo}`;
-  };
-
-  // Tagesrätsel
-  const dTheme = todaysDailyTheme();
-  const dDone = isDailyDone(ID);
-  const streak = dailyStreak(ID);
-  const dSt = store.get(K.daily, null);
-  const dRunning = validState(dSt) && dSt.day === todayKey() && !dSt.done && dSt.found.length > 0;
-  const daily = h('button.card.row.daily' + (dDone ? '.done' : ''), { type: 'button' },
-    h('div.row-ic', { style: { '--g': '#f5a524' } }, '📅'),
-    h('div.row-text', null,
-      h('b', null, 'Tagesrätsel'),
-      h('small', null, `Heute: ${dTheme.emoji} ${dTheme.title}` + (dDone && dSt && dSt.day === todayKey() ? ` · ${formatTime(dSt.elapsed)}` : dRunning ? ` · ${dSt.found.length}/${dSt.puzzle.words.length}` : '')),
-      streak > 0 ? h('small.streak', null, `🔥 ${streak} ${streak === 1 ? 'Tag' : 'Tage'} in Folge`) : null),
-    dDone ? h('span.check', { html: icon('check', { size: 20, stroke: 3 }) }) : h('span.chev', { html: IC.chevron }));
-  daily.addEventListener('click', () => { sfx.play('tap'); go('daily'); });
-
-  // Themen
-  const progress = getProgress();
-  const solvedThemes = themes.filter((t) => progress[t.id] && Object.values(progress[t.id]).some((x) => x && x.w)).length;
-  const preview = themes.slice(0).sort((a, b) => (a.id < b.id ? -1 : 1));
-  const themesRow = h('button.card.row', { type: 'button' },
-    h('div.row-ic', { style: { '--g': '#5a9e3c' } }, '🗂️'),
-    h('div.row-text', null,
-      h('b', null, 'Thema wählen'),
-      h('small', null, `${themes.length} Themen · ${solvedThemes} schon gelöst`),
-      h('span.emoji-strip', null, ['🌷', '🧀', '🏔️', '🎄', '💃', '🐞', '☕', '🎨'].join(' '))),
-    h('span.chev', { html: IC.chevron }));
-  void preview;
-  themesRow.addEventListener('click', () => { sfx.play('tap'); go('themen'); });
-
-  // Statistik (Mini)
-  const statsCard = h('button.card.stats-mini', { type: 'button' },
-    h('div.sm-head', null, h('span', { html: IC.chart }), h('b', null, 'Statistik'), h('span.chev', { html: IC.chevron })),
-    h('div.sm-grid', null,
-      miniStat(stats.won, 'Gelöst'),
-      miniStat(stats.stars, 'Sterne', '★'),
-      miniStat(stats.words, 'Wörter'),
-      miniStat(streak, 'Serie', streak ? '🔥' : '')));
-  statsCard.addEventListener('click', () => { sfx.play('click'); showStats(); });
-
-  // Einstellungen
-  const settingsCard = h('section.card.settings', null,
-    h('div.set-head', null, h('span', { html: icon('settings', { size: 20 }) }), h('b', null, 'Einstellungen')),
-    toggleRow('Zeit anzeigen', 'showTimer'),
-    toggleRow('Gefundene Wörter ans Listenende', 'sortFound'));
-
-  body.append(
-    logo(),
-    hero,
-    h('h2.section-title', null, 'Schwierigkeit'),
-    seg, segInfo,
-    daily,
-    themesRow,
-    statsCard,
-    settingsCard,
-    h('p.foot', null, 'Jedes Rätsel wird neu erzeugt – die Wörter gehen nie aus. 🌿'));
-  renderSeg();
-  renderHero();
-  void settings;
-
-  if (!store.get(K.howto, false)) setTimeout(() => showHowTo(), 350);
+function runningGame(modeId) {
+  const st = store.get(K.game(modeId), null);
+  return validState(st) && !st.done ? st : null;
 }
 
-function miniStat(value, label, suffix = '') {
-  return h('div.sm', null, h('b', null, String(value), suffix ? h('span.suf', null, ' ' + suffix) : null), h('small', null, label));
+function primaryFor(modeId) {
+  const mode = modeById(modeId);
+  const st = runningGame(modeId);
+  if (st) {
+    const t = themeById(st.puzzle.theme) || { title: st.puzzle.theme, emoji: '🔤' };
+    const f = st.found.length, n = st.puzzle.words.length;
+    return {
+      label: f || st.elapsed > 3000 ? 'Weiterspielen' : 'Spielen',
+      sub: `${t.emoji} ${t.title} · ${mode.title} · ${f} von ${n} Wörtern`,
+      onClick: () => go('play/' + modeId),
+    };
+  }
+  return {
+    label: 'Spielen',
+    sub: `${mode.title} · ${mode.info} · Überraschungsthema`,
+    onClick: () => { createGame(modeId); go('play/' + modeId); },
+  };
+}
+
+function dailyInfo() {
+  const t = todaysDailyTheme();
+  const dSt = store.get(K.daily, null);
+  const today = validState(dSt) && dSt.day === todayKey();
+  const done = isDailyDone(ID);
+  let sub = `${t.emoji} ${t.title}`;
+  if (today && done && dSt.done) sub += ` · ${formatTime(dSt.elapsed)}`;
+  else if (today && dSt.found.length) sub += ` · ${dSt.found.length}/${dSt.puzzle.words.length}`;
+  return { done, sub, streak: dailyStreak(ID), onClick: () => go('daily') };
+}
+
+function secondaryFor(modeId) {
+  return [
+    { label: 'Themen', icon: 'grid', sub: `${themes.length} zur Wahl`, onClick: () => go('themen') },
+    {
+      label: 'Neu', icon: 'refresh', sub: 'Anderes Thema',
+      onClick: async () => {
+        const st = runningGame(modeId);
+        if (st && st.found.length && !(await confirmLeave())) return;
+        createGame(modeId);
+        go('play/' + modeId);
+      },
+    },
+    { label: 'Statistik', icon: 'star', onClick: () => showStats() },
+  ];
+}
+
+function menuStats() {
+  const s = getStats();
+  const streak = dailyStreak(ID);
+  return [
+    { label: 'Gelöst', value: s.won },
+    { label: 'Sterne', value: s.stars + ' ★' },
+    { label: 'Wörter', value: s.words },
+    { label: 'Tagesserie', value: streak ? `🔥 ${streak}` : '0' },
+  ];
+}
+
+function showMenu() {
+  reportSummary(ID, summaryText());
+  const s = getSettings();
+  const settingsCard = h('div.card.settings', null,
+    toggleRow('Zeit anzeigen', 'showTimer'),
+    toggleRow('Gefundene Wörter ans Listenende', 'sortFound'));
+  const menu = gameMenu({
+    id: ID,
+    title: 'Wortsuche',
+    tagline: `${themes.length} Themen · immer neue Rätsel`,
+    accent: ACCENT,
+    art: logo(),
+    primary: primaryFor(s.mode),
+    daily: dailyInfo(),
+    modes: {
+      label: 'Schwierigkeit',
+      value: s.mode,
+      options: modes.map((m) => ({ id: m.id, label: m.title, sub: sizeLabel(m) })),
+      onChange(id) {
+        setSettings({ mode: id });
+        menu.update({ primary: primaryFor(id), secondary: secondaryFor(id) });
+      },
+    },
+    secondary: secondaryFor(s.mode),
+    stats: menuStats(),
+    sections: [menuSection('Einstellungen', settingsCard)],
+    onHelp: () => showHowTo(),
+    backHref: '../',
+  });
+  menu.classList.add('ws-menu');
+  app.replaceChildren(menu);
 }
 
 function toggleRow(label, key) {
@@ -494,7 +434,7 @@ function showGame(kind, modeId) {
   const title = h('div.g-title', null,
     h('span.g-emoji', { style: { '--g': themeColor(theme) } }, theme.emoji),
     h('span.g-text', null, h('b', null, theme.title), h('small', null, sub)));
-  const top = h('header.topbar', null, back, title, timerEl);
+  const top = h('header.topbar', null, back, title, timerEl, helpButton());
   const pill = h('div.sel-pill');
   const boardWrap = h('div.board-wrap');
   const countEl = h('span.count');
@@ -786,7 +726,6 @@ function showGame(kind, modeId) {
     window.removeEventListener('pagehide', onHide);
   };
 
-  if (!store.get(K.howto, false)) setTimeout(() => showHowTo(), 300);
 }
 
 function dirOf(p) {
@@ -795,3 +734,4 @@ function dirOf(p) {
 }
 
 route();
+if (!tutorialSeen(ID)) showHowTo();

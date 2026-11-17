@@ -14,7 +14,7 @@ Mehrere KI-Agenten bauen parallel – Zuständigkeiten und Regeln stehen in [AGE
 |--:|---|---|:-:|
 | 1 | Farbenzauber – Malen nach Zahlen | Kreativ | ✅ |
 | 2 | Perlenbild – Steine sortieren, Bild legen | Kreativ | ✅ |
-| 3 | Puzzle – Bilder Teil für Teil | Kreativ | 🔧 |
+| 3 | Puzzle – Bilder Teil für Teil | Kreativ | ✅ |
 | 4 | Pfeilwürfel – 3D-Pfeilrätsel | Logik | ✅ |
 | 5 | Sudoku | Zahlen | ✅ |
 | 6 | Bilderrätsel – Nonogramme | Logik | ✅ |
@@ -26,8 +26,8 @@ Mehrere KI-Agenten bauen parallel – Zuständigkeiten und Regeln stehen in [AGE
 | 12 | Dreierlei – drei Gleiche sammeln | Steine | ✅ |
 | 13 | Wortsuche | Wörter | ✅ |
 | 14 | Wortrate – 5-Buchstaben-Wort | Wörter | ✅ |
-| 15 | Juwelen – drei in einer Reihe | Kombinieren | 🔧 |
-| 16 | Blasenzauber – Bubble Shooter | Kombinieren | 🔧 |
+| 15 | Juwelen – drei in einer Reihe | Kombinieren | ✅ |
+| 16 | Blasenzauber – Bubble Shooter | Kombinieren | ✅ |
 
 ## Welle 1 – die beliebtesten Familien (in Arbeit · Claude)
 

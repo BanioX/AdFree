@@ -186,7 +186,7 @@
 .world-info b { font-size: 20px; font-weight: 900; letter-spacing: -.01em; }
 .world-info .progress { margin: 8px 0 0; height: 8px; }
 .menu-world .star-total { align-self: flex-start; }
-.blocks-menu .skin-picker { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.blocks-menu .skin-picker { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
 .blocks-menu .skin-opt { background: var(--surface); box-shadow: var(--shadow); padding: 10px 2px 8px; font-size: 13px; }
 .blocks-menu .skin-opt canvas { max-width: 100%; height: auto !important; }
 
@@ -319,6 +319,23 @@
   position: absolute; top: 6px; right: 6px; width: 22px; height: 22px; border-radius: 50%;
   display: grid; place-items: center; background: var(--accent-deep); color: #fff;
 }
+.skin-opt.locked canvas { filter: grayscale(.75) brightness(1.08); opacity: .5; }
+.skin-opt.locked > span { color: var(--text-3); }
+.skin-lock {
+  position: absolute; top: 6px; right: 6px; display: inline-flex; align-items: center; gap: 2px;
+  padding: 2px 7px 2px 5px; border-radius: 999px; background: var(--surface); color: var(--gold);
+  box-shadow: 0 1px 4px rgba(70, 45, 20, .16); font-style: normal; font-size: 12px; font-weight: 900;
+}
+.skin-lock svg { flex: 0 0 auto; }
+.win-unlock {
+  display: flex; align-items: center; gap: 10px; margin: 4px 0 2px; padding: 8px 14px 8px 8px;
+  border-radius: 16px; background: #fff6e6; box-shadow: 0 0 0 2px var(--accent) inset;
+  animation: wd-pop .6s .5s var(--ease-out) both;
+}
+.win-unlock canvas { flex: 0 0 auto; }
+.win-unlock span { display: flex; flex-direction: column; text-align: left; }
+.win-unlock small { font-size: 12px; font-weight: 800; color: var(--accent-deep); text-transform: uppercase; letter-spacing: .04em; }
+.win-unlock b { font-size: 17px; color: var(--text); }
 
 .album-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
 .album-item { margin: 0; display: flex; flex-direction: column; align-items: center; gap: 4px; }
@@ -394,17 +411,17 @@
 .coach-ghost { position: absolute; animation: coach-ghost 2.8s ease .2s infinite both; filter: drop-shadow(0 8px 10px rgba(0, 0, 0, .25)); }
 @keyframes coach-drag {
   0% { transform: translate(var(--fx), var(--fy)); opacity: 0; }
-  10%, 22% { transform: translate(var(--fx), var(--fy)); opacity: 1; }
-  64%, 76% { transform: translate(var(--tx), var(--ty)); opacity: 1; }
-  90%, 100% { transform: translate(var(--tx), var(--ty)); opacity: 0; }
+  8%, 20% { transform: translate(var(--fx), var(--fy)); opacity: 1; }
+  62%, 68% { transform: translate(var(--tx), var(--ty)); opacity: 1; }
+  78%, 100% { transform: translate(var(--tx), var(--ty)); opacity: 0; }
 }
 @keyframes coach-press {
-  0%, 14% { transform: scale(1); }
-  20%, 70% { transform: scale(.86) translateY(3px); }
-  76%, 100% { transform: scale(1); }
+  0%, 12% { transform: scale(1); }
+  18%, 64% { transform: scale(.86) translateY(3px); }
+  70%, 100% { transform: scale(1); }
 }
 @keyframes coach-ghost {
-  0%, 18% { opacity: 0; transform: scale(.6); }
-  26%, 70% { opacity: .9; transform: scale(1); }
-  78%, 100% { opacity: 0; transform: scale(1); }
+  0%, 16% { opacity: 0; transform: scale(.6); }
+  24%, 66% { opacity: .92; transform: scale(1); }
+  74%, 100% { opacity: 0; transform: scale(1); }
 }

@@ -6,7 +6,7 @@ import { Game } from '../core/game.js';
 import { getLevel, goalLabel, worldOf } from '../core/levels.js';
 import { bestMove } from '../core/bot.js';
 import { praise as WORDS } from '../data/words.js';
-import { gems as GEMS } from '../data/skins.js';
+import { gems as GEMS, skins } from '../data/skins.js';
 import { BoardView } from './view.js';
 import { gemIconUrl } from './sprites.js';
 import { pictureById, pictureThumbUrl } from './picture.js';
@@ -14,7 +14,7 @@ import { skinPicker, miniBoard } from './sheets.js';
 import { showHelp } from './tutorial.js';
 import {
   currentSkin, loadClassic, saveClassic, loadLevelSave, saveLevelSave, getAdv,
-  updateBest, restoreBest, bestScore, recordClassicGame, countedOf, recordWin, recordTry, updateSummary, getStats,
+  updateBest, restoreBest, bestScore, recordClassicGame, countedOf, recordWin, recordTry, updateSummary, getStats, totalStars,
 } from './progress.js';
 
 // Finger wie im Tutorial (shared/tutorial.js), für den Coach-Mark im ersten Spiel.
@@ -471,9 +471,13 @@ export function mountPlay(app, opts, nav) {
     const stars = game.stars();
     const picId = game.goals && game.goals.picture;
     let rec = { first: false, newPic: false };
+    let unlocked = [];
     if (!meta.recorded) {
+      const before = totalStars();
       const gemsTotal = Object.values(game.collected).reduce((a, b) => a + b, 0);
       rec = recordWin(game.level, stars, picId, gemsTotal);
+      const after = totalStars();
+      unlocked = skins.filter((sk) => sk.unlock && before < sk.unlock && after >= sk.unlock);
       meta.recorded = true;
       save();
       updateSummary();
@@ -491,6 +495,10 @@ export function mountPlay(app, opts, nav) {
     if (picId) {
       const pic = pictureById(picId);
       parts.push(h('div.win-pic', null, h('img', { src: pictureThumbUrl(pic, 96), alt: pic.title }), h('span', null, rec.newPic ? `Neu im Album: «${pic.title}»` : `«${pic.title}»`)));
+    }
+    for (const sk of unlocked) {
+      parts.push(h('div.win-unlock', null, miniBoard(sk, ['012', '3r5'], 14),
+        h('span', null, h('small', null, 'Neues Aussehen frei'), h('b', null, `«${sk.title}»`))));
     }
     const hint = stars < 3 ? `Für ${stars + 1} Sterne: höchstens ${stars === 2 ? game.par.three : game.par.two} Teile.` : 'Perfekt – alle Sterne!';
     parts.push(h('p.win-line', null, `${game.moves} ${game.moves === 1 ? 'Teil' : 'Teile'} · ${fmt(game.score)} Punkte`));

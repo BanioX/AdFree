@@ -13,7 +13,7 @@ const RULES = { move: 'group', complete: 'lock' };
 const NAMES = { stack: 'Schraube', stacks: 'Schrauben', piece: 'Mutter', pieces: 'Muttern', extra: '+1 Schraube', extraLong: 'Eine leere Schraube dazu' };
 
 const view = {
-  aspect: 1.6, step: 1, padTop: 0.95, padBottom: 0.5, side: 0.04, liftGap: 0.2, maxPiece: 40, gapX: 0.32, gapY: 0.45,
+  aspect: 1.6, step: 1, padTop: 0.95, padBottom: 0.5, side: 0.04, liftTop: -0.5, maxPiece: 40, gapX: 0.32, gapY: 0.45,
   makeStack() {
     return h('div.sn-bolt', null, h('i.sn-base'), h('i.sn-rod'), h('i.sn-cap', null, h('i.sn-faces')));
   },

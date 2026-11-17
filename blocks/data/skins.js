@@ -9,6 +9,7 @@
 //            cover = verdecktes Feld (Bild-Level), coverMark = Muster darauf
 //   gray     Farbe für Steine, die gerade nicht passen / bei «Keine Züge mehr»
 //   page     optional: Hintergrundfarbe der Spielseite
+//   unlock   optional: so viele Sterne (Abenteuer) braucht es, bis das Aussehen frei wird
 
 export const skins = [
   {
@@ -35,7 +36,24 @@ export const skins = [
     board: { bg: ['#ffe4ef', '#ffd2e4'], cell: '#ffc3da', edge: '#f4a8c6', cover: '#fff3f8', coverMark: '#ff9cc4' },
     gray: '#cdb3bf',
   },
+  {
+    id: 'meeresglas', title: 'Meeresglas', style: 'soft', unlock: 20,
+    colors: ['#ff8f8f', '#ffb877', '#ffe07a', '#7fdcb0', '#6fd3e6', '#7fa8ff', '#b39bff', '#ff9ccf'],
+    board: { bg: ['#dcf4f4', '#bfe7ea'], cell: '#cdeef0', edge: '#a3d4da', cover: '#eefafa', coverMark: '#8ccbd3' },
+    gray: '#b4c9cc',
+  },
+  {
+    id: 'sternennacht', title: 'Sternennacht', style: 'jewel', unlock: 50,
+    colors: ['#ff4f7b', '#ff9c3a', '#ffe14d', '#3fe0a0', '#3fd0ff', '#5f86ff', '#b26bff', '#ff6fd0'],
+    board: { bg: ['#1f2856', '#121736'], cell: '#2a336e', edge: '#0d1130', cover: '#3a4590', coverMark: '#7d8ae0' },
+    gray: '#7a7f9e',
+  },
 ];
+
+/** Aussehen, die bei `stars` Sternen frei sind. */
+export function skinUnlocked(skin, stars) {
+  return !skin.unlock || stars >= skin.unlock;
+}
 
 // Edelsteine (Ziel «Edelsteine sammeln»). Zeichen im Level-Brett → Edelstein.
 export const gems = {

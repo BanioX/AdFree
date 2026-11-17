@@ -1,12 +1,12 @@
 // Dialoge: So geht's, Statistik, Aussehen, Album.
 
-import { h, icon, showModal } from '../../shared/ui.js';
+import { h, icon, showModal, toast } from '../../shared/ui.js';
 import { skins } from '../data/skins.js';
 import { pictures } from '../data/pictures.js';
 import { blockSprite, gemSprite, coverSprite, roundRect } from './sprites.js';
 import { renderPicture } from './picture.js';
 import { getStats, getAdv, totalStars, getSettings, saveSettings, currentSkin, SIZES } from './progress.js';
-import { GEM_KEYS } from '../data/skins.js';
+import { GEM_KEYS, skinUnlocked } from '../data/skins.js';
 
 const fmt = (n) => Number(n || 0).toLocaleString('de-CH');
 
@@ -115,14 +115,22 @@ export function showStats() {
 export function skinPicker(onChange) {
   const wrap = h('div.skin-picker');
   const render = () => {
-    const cur = getSettings().skin;
+    const cur = currentSkin().id;
+    const stars = totalStars();
     wrap.replaceChildren(...skins.map((sk) => {
-      const b = h('button.skin-opt' + (sk.id === cur ? '.active' : ''), { type: 'button', 'aria-label': sk.title },
+      const open = skinUnlocked(sk, stars);
+      const b = h('button.skin-opt' + (sk.id === cur ? '.active' : '') + (open ? '' : '.locked'), { type: 'button', 'aria-label': open ? sk.title : `${sk.title} (ab ${sk.unlock} Sternen)` },
         miniBoard(sk, ['0125', '3.46', '7r..'], 15),
         h('span', null, sk.title),
-        sk.id === cur ? h('i.skin-check', { html: icon('check', { size: 14 }) }) : null);
+        sk.id === cur ? h('i.skin-check', { html: icon('check', { size: 14 }) }) : null,
+        open ? null : h('i.skin-lock', { html: `${icon('star', { size: 12 })}${sk.unlock}` }));
       b.addEventListener('click', () => {
-        if (sk.id === getSettings().skin) return;
+        if (!open) {
+          toast(`Frei ab ${sk.unlock} Sternen im Abenteuer`);
+          b.classList.remove('sp-shake'); void b.offsetWidth; b.classList.add('sp-shake');
+          return;
+        }
+        if (sk.id === cur) return;
         saveSettings({ skin: sk.id });
         render();
         if (onChange) onChange(sk);

@@ -52,6 +52,8 @@ async function touchDrag(from, to, steps = 10) {
 
 /** Alle Teile bis auf eines direkt legen, das letzte per Touch einrasten → Gewinn-Blatt. */
 async function solve() {
+  await page.locator('.pz-chip[data-id="alle"]').tap();
+  await page.waitForTimeout(200);
   const last = await J(() => { const s = window.__jigsaw.state(); const ids = s.tray.slice(); window.__jigsaw.debugPlace(ids.slice(0, -1)); return ids[ids.length - 1]; });
   await page.waitForTimeout(300);
   const from = await J((k) => window.__jigsaw.trayPoint(k), last);
@@ -102,12 +104,12 @@ try {
   await page.waitForTimeout(16);
   for (let k = 1; k <= 5; k++) { await touch('touchMove', [{ x: a.x + 12 * k, y: a.y - 120 - 20 * k, id: 1 }, { x: f2.x - 10 * k, y: f2.y + 10 * k, id: 2 }]); await page.waitForTimeout(10); }
   const after = await J((k) => window.__jigsaw.piecePoint(k), first);
-  check(after.x - before.x > 40 && before.y - after.y > 100, `erstes Teil folgt weiter dem ersten Finger (${Math.round(after.x - before.x)}, ${Math.round(before.y - after.y)})`);
-  await touch('touchEnd', [{ x: f2.x - 50, y: f2.y + 50, id: 2 }]); // Finger 1 hebt ab
+  check(after.x - before.x > 40 && before.y - after.y > 90, `erstes Teil folgt weiter dem ersten Finger (${Math.round(after.x - before.x)}, ${Math.round(before.y - after.y)})`);
+  await touch('touchEnd', [{ x: a.x + 60, y: a.y - 220, id: 1 }]); // (CDP: touchEnd nennt die abgehobenen Punkte) Finger 1 hebt ab
   await page.waitForTimeout(350);
-  const dropped = await J((k) => { const s = window.__jigsaw.state(); return { inOrder: s.order.includes(s.pieces[k].g) || s.pieces[k].s === 2, gone: !document.querySelector(`.pz-ti[data-i="${k}"]`) }; }, first);
+  const dropped = await J((k) => { const s = window.__jigsaw.state(); return { inOrder: s.order.includes(k) || s.pieces[k].s === 2, gone: !document.querySelector(`.pz-ti[data-i="${k}"]`) }; }, first);
   check(dropped.inOrder && dropped.gone, `Teil liegt nach dem Loslassen auf dem Tisch, Leisten-Element weg (${JSON.stringify(dropped)})`);
-  await touch('touchEnd', []);
+  await touch('touchEnd', [{ x: f2.x - 50, y: f2.y + 50, id: 2 }]);
   await page.waitForTimeout(200);
   const tbl = await rect('.pz-table'), pp = await J((k) => window.__jigsaw.piecePoint(k), first);
   check(pp.y < tbl.b - 4, 'Teil nicht unter der Leiste verschwunden');

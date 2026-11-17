@@ -99,12 +99,15 @@ gespeichert. Löschen über «Meine Fotos» → «Bearbeiten».
 ## Teilezahlen
 
 Stufen 12 / 24 / 48 / 70 / 108 (`TIERS` in `logic.js`). Im 3:4-Format passen sie genau
-(3×4, 4×6, 6×8, 7×10, 9×12); quadratische Bilder aus «Farbenzauber» bekommen die nächstliegende Zahl.
+(3×4, 4×6, 6×8, 7×10, 9×12). Andere Formate (z. B. quadratische Bilder aus «Farbenzauber») treffen die
+Stufe ebenfalls genau, solange die Teile dabei höchstens 1.45 : 1 werden (`gridFor`); nur wo das nicht geht
+(24 Teile auf einem quadratischen Bild → 5×5 = 25), gibt es die nächstliegende Zahl mit fast quadratischen Teilen.
 
 ## Prüfen
 
 ```sh
-node --test jigsaw/tests/                       # Logik, Lösbarkeit, Inhalte (malt jedes Bild mit einer Attrappe)
+node --test jigsaw/tests/*.test.mjs             # Logik, Lösbarkeit, Inhalte (malt jedes Bild mit einer Attrappe)
 python3 -m http.server 8223 --bind 127.0.0.1   # aus dem Repo-Wurzelverzeichnis
 node jigsaw/tests/e2e.mjs                       # Ablauf im iPhone-Browser (Screenshots in tests/out/)
+node jigsaw/tests/qa.mjs                        # Detailprüfungen auf schmalem iPhone (Leiste, Mehrfinger, Uhr, Gewinn)
 ```

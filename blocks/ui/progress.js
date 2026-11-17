@@ -1,7 +1,7 @@
 // Speichern: Einstellungen, Spielstände, Fortschritt und Statistik (localStorage über shared/storage.js).
 
 import { store, reportSummary } from '../../shared/storage.js';
-import { skins } from '../data/skins.js';
+import { skins, skinUnlocked } from '../data/skins.js';
 
 const K = {
   settings: 'blocks.settings',
@@ -29,7 +29,8 @@ export function saveSettings(patch) {
 
 export function currentSkin() {
   const id = getSettings().skin;
-  return skins.find((k) => k.id === id) || skins[0];
+  const sk = skins.find((k) => k.id === id) || skins[0];
+  return skinUnlocked(sk, totalStars()) ? sk : skins[0];
 }
 
 // ---------- Abenteuer-Fortschritt ----------

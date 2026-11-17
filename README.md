@@ -47,8 +47,8 @@ automatisch erscheint und jederzeit über **?** erreichbar ist.
 
 > **Ziel: 100 Spiele.** Welche Spiele noch kommen, steht im [Fahrplan](ROADMAP.md).
 >
-> **Stand:** Die App wird laufend ausgebaut. Juwelen, Blasenzauber und Puzzle sind noch im Bau, und
-> der einheitliche Startbildschirm wird Spiel für Spiel eingebaut. Was neu dazukommt, steht im
+> **Stand:** Alle 16 ersten Spiele sind spielbar und getestet; der einheitliche Startbildschirm und
+> der Spass-Check werden Spiel für Spiel eingebaut, neue Wellen kommen laufend dazu. Was neu dazukommt, steht im
 > [Versionsverlauf](CHANGELOG.md).
 
 ## Auf dem iPhone installieren

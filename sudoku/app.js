@@ -4,6 +4,7 @@ import { store, reportSummary, todayKey, markDailyDone, isDailyDone, dailyStreak
 import { sfx } from '../shared/sfx.js';
 import { icon } from './ui/icons.js';
 import { Play } from './ui/play.js';
+import { openTutorial, firstTutorial } from './ui/tutorial.js';
 import { Game } from './logic/game.js';
 import { parse } from './logic/board.js';
 import { difficulties, difficultyById, DAILY_DIFFICULTY } from './data/difficulties.js';
@@ -82,6 +83,29 @@ function onProgress(game) {
   if (pct !== lastPct) { lastPct = pct; updateSummary(); }
 }
 
+/**
+ * Verbucht einen Sieg genau einmal (Statistik, Tagesrätsel-Häkchen) – sofort beim Lösen,
+ * nicht erst beim Sieg-Blatt. So geht nichts verloren, wenn man während der Feier geht.
+ * @returns {{ newBest: boolean, stats: object } | null}  null, wenn schon verbucht
+ */
+function countWin(game, slot) {
+  if (!game || !game.done || game.counted) return null;
+  const info = recordWin(statsKey(game), { time: game.elapsed, mistakes: game.mistakes, hints: game.hints });
+  if (slot === 'daily' && game.meta.day) markDailyDone(ID, game.meta.day);
+  game.counted = true;
+  saveGameJSON(slot, game.toJSON());
+  updateSummary();
+  return info;
+}
+
+/** Gelöste, aber (z.B. durch Schliessen der App) nicht verbuchte Spiele nachtragen. */
+function recoverWins() {
+  for (const slot of ['game', 'daily']) {
+    const g = loadGame(slot);
+    if (g && g.done && !g.counted) countWin(g, slot);
+  }
+}
+
 /** Beendet die aktive Spielansicht (speichert dabei den Stand). */
 function leavePlay() {
   if (play) { play.destroy(); play = null; }
@@ -123,7 +147,10 @@ function renderMenu() {
   if (!difficulties.some((d) => d.id === diff)) diff = difficulties[0].id;
   const stats = loadStats();
 
-  const top = h('header.topbar', null, backButton('../'), h('div.title.center', null, 'Sudoku'), soundButton());
+  const helpBtn = h('button.icon-btn', { type: 'button', 'aria-label': 'So geht’s' });
+  helpBtn.innerHTML = '<span class="gm-q">?</span>';
+  helpBtn.addEventListener('click', () => { sfx.play('click'); openTutorial(); });
+  const top = h('header.topbar', null, backButton('../'), h('div.title.center', null, 'Sudoku'), helpBtn, soundButton());
 
   // Laufendes Spiel
   let cont = null;
@@ -218,7 +245,7 @@ function renderMenu() {
   };
   const row = h('div.mini-row', null,
     small('chart', 'Statistik', () => go('#stats')),
-    small('help', 'So geht’s', () => showHelp()),
+    small('help', 'So geht’s', () => openTutorial()),
     small('settings', 'Einstellungen', () => openSettings()));
 
   const body = h('main.menu-body', null, cont, newCard, dailyCard, row,
@@ -226,7 +253,7 @@ function renderMenu() {
   const el = h('div.screen.menu', null, top, h('div.scroll', null, body));
   setScreen(el, 'menu');
   updateSummary();
-  if (!store.get(KEYS.helpSeen, false)) setTimeout(() => showHelp(), 350);
+  setTimeout(() => { if (screen === 'menu') firstTutorial(); }, 350);
   // Im Leerlauf frische Rätsel vorbereiten
   setTimeout(() => topUpFresh(), 1500);
 }
@@ -272,6 +299,8 @@ function openGame(slot) {
   }
   const isDaily = slot === 'daily';
   const spec = difficultyById(game.meta.diff);
+  if (game.done && !game.counted) countWin(game, slot);
+  const lastDiff = () => (difficulties.some((d) => d.id === store.get(KEYS.lastDiff)) ? store.get(KEYS.lastDiff) : 'leicht');
   play = new Play({
     game,
     settings,
@@ -282,33 +311,35 @@ function openGame(slot) {
     onSave: (g) => saveGameJSON(slot, g.toJSON()),
     onProgress,
     onSettings: () => openSettings(),
-    onNext: () => startNew(game.meta.diff),
+    // Tagesrätsel gelöst: weiter mit dem freien Spiel (laufendes Spiel oder neues Rätsel)
+    onNext: isDaily ? () => (regularInProgress() ? go('#play') : startNew(lastDiff())) : () => startNew(game.meta.diff),
+    nextLabel: isDaily ? () => (regularInProgress() ? 'Weiterspielen' : 'Neues Rätsel') : null,
     onMenu: () => go('#'),
+    onHelp: () => openTutorial(),
+    coach: !store.get(KEYS.coachDone, false),
+    onCoachDone: () => store.set(KEYS.coachDone, true),
+    onSolved: (g) => countWin(g, slot),
     onGiveUp: () => {
       recordAbandon(statsKey(game));
       if (isDaily) { game.restart(); saveGameJSON('daily', game.toJSON()); go('#daily'); }
       else startNew(game.meta.diff);
     },
-    onWin: (g) => winSheet(g, slot),
+    onWin: (g, info) => winSheet(g, slot, info),
   });
   setScreen(play.el, 'play');
   lastPct = -1;
   onProgress(game);
-  if (!store.get(KEYS.helpSeen, false)) setTimeout(() => showHelp(), 350);
+  // Allererster Start direkt im Spiel (z.B. Tagesrätsel von der Startseite): erst das Tutorial
+  const p = play;
+  setTimeout(() => { if (play === p && !p.destroyed) p.openModal(() => firstTutorial()); }, 350);
 }
 
 const CHEERS = ['Geschafft!', 'Wunderbar!', 'Super gelöst!', 'Bravo!', 'Toll gemacht!'];
 
-async function winSheet(game, slot) {
+async function winSheet(game, slot, counted = null) {
   const isDaily = slot === 'daily';
   const key = statsKey(game);
-  let info = { newBest: false, stats: loadStats()[key] };
-  if (!game.counted) {
-    info = recordWin(key, { time: game.elapsed, mistakes: game.mistakes, hints: game.hints });
-    if (isDaily) markDailyDone(ID, game.meta.day);
-    game.counted = true;
-    saveGameJSON(slot, game.toJSON());
-  }
+  const info = counted || countWin(game, slot) || { newBest: false, stats: loadStats()[key] };
   updateSummary();
   celebrate(themeColors());
 
@@ -435,30 +466,6 @@ function renderStats() {
   setScreen(h('div.screen.stats', null, top, h('div.scroll', null, body)), 'stats');
 }
 
-// ---------- So geht's ----------
-
-async function showHelp() {
-  store.set(KEYS.helpSeen, true);
-  const row = (ic, html) => {
-    const r = h('div.help-row');
-    r.innerHTML = `<span class="hi">${ic}</span><p>${html}</p>`;
-    return r;
-  };
-  const demo = h('div.help-demo');
-  const demoVals = [5, 3, 0, 6, 7, 8, 9, 1, 2];
-  demoVals.forEach((v, k) => demo.append(h('span', { class: v ? '' : 'gap' }, v ? String(v) : '4')));
-  const content = h('div.help', null,
-    demo,
-    row('<b class="num">1–9</b>', 'Jede <b>Reihe</b>, jede <b>Spalte</b> und jeder <b>3×3-Block</b> enthält die Zahlen 1 bis 9 genau einmal.'),
-    row(icon('grid', { size: 22 }), 'Tippe auf ein Feld und dann unten auf eine Zahl. Unter jeder Zahl siehst du, wie viele noch fehlen.'),
-    row(icon('pencil', { size: 22 }), 'Mit <b>Notizen</b> merkst du dir mögliche Zahlen. <b>Alle Notizen</b> füllt sie automatisch aus.'),
-    row(icon('hint', { size: 22 }), 'Steckst du fest? Der <b>Tipp</b> erklärt dir den nächsten logischen Schritt.'),
-    row(icon('clock', { size: 22 }), 'Die Uhr lässt sich pausieren. Dein Spiel wird automatisch gespeichert.'));
-  if (play) play.modalOpen = true;
-  await showModal({ title: 'So geht’s', content, buttons: [{ label: 'Los geht’s', value: true, primary: true }] });
-  if (play) { play.modalOpen = false; play._lastTick = performance.now(); }
-}
-
 // ---------- Einstellungen ----------
 
 async function openSettings() {
@@ -516,6 +523,7 @@ async function openSettings() {
 
 function route() {
   leavePlay();
+  recoverWins();
   const hash = (location.hash || '').replace(/^#/, '');
   if (hash === 'play') openGame('game');
   else if (hash === 'daily') openGame('daily');

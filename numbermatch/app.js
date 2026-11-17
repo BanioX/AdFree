@@ -92,10 +92,13 @@ function menuArt() {
   // Live-Vorschau: die ersten Reihen des laufenden Levels (oder ein hübsches Beispiel)
   const st = loadSlot('level');
   const cells = st && !st.done && st.cells.length >= 18 ? st.cells.slice(0, 27)
-    : '419286537826347195173'.split('').map((d, k) => ({ v: +d, x: [2, 3, 9, 13, 14].includes(k), s: k === 16 }));
+    : '419286537826347195173468291'.split('').map((d, k) => ({ v: +d, x: [2, 3, 9, 13, 14, 22].includes(k), s: k === 16 }));
   const el = h('div.nm-art');
   const grid = h('div.nm-art-grid');
-  cells.slice(0, Math.min(27, cells.length)).forEach((c) => grid.append(h('span' + (c.x ? '.x' : '') + (c.s ? '.s' : ''), null, String(c.v))));
+  for (let k = 0; k < 27; k++) {
+    const c = cells[k];
+    grid.append(c ? h('span' + (c.x ? '.x' : '') + (c.s ? '.s' : ''), null, String(c.v)) : h('span'));
+  }
   el.append(grid);
   return el;
 }
@@ -241,7 +244,13 @@ function showGame(slot) {
   let busy = false;
   let sel = -1;
   let hint = null;
-  const save = () => { st.elapsed = clock ? clock.elapsed : st.elapsed; saveSlot(slot, st); };
+  const save = () => {
+    st.elapsed = clock ? clock.elapsed : st.elapsed;
+    // nie ein inzwischen neu begonnenes Spiel im selben Platz überschreiben
+    const cur = store.get(K.game(slot), null);
+    if (cur && cur.created && cur.created !== st.created) return;
+    saveSlot(slot, st);
+  };
 
   // --- DOM ---
   const title = slot === 'daily' ? 'Tagesrätsel' : slot === 'endless' ? 'Endlos' : `Level ${st.level}`;
@@ -255,11 +264,12 @@ function showGame(slot) {
   const goalSide = h('span.nm-goal-side');
   const goalEl = h('div.nm-goal.nx-card', null, goalIcon, h('div.nm-goal-mid', null, goalText, h('div.nm-bar', null, goalBar)), goalSide);
 
-  const grid = new CellGrid({ cols: COLS, count: 0, className: 'nm-grid', gap: 1 });
+  const grid = new CellGrid({ cols: COLS, count: 0, className: 'nm-grid', gap: 0 });
   const scroller = h('div.nm-scroll', null, grid.el);
   const card = h('div.nm-board.nx-card', null, scroller);
   const coach = coachBubble('');
-  const area = h('div.nx-board-area.nm-area', null, card, coach.el);
+  const stack = h('div.nm-stack', null, card, coach.el);
+  const area = h('div.nx-board-area.nm-area', null, stack);
 
   const hintBtn = toolButton({ icon: 'bulb', label: 'Tipp', onClick: () => doHint() });
   const addBtn = toolButton({ icon: 'plusRows', label: 'Hinzufügen', onClick: () => doAdd(), className: 'nm-add' });
@@ -323,7 +333,7 @@ function showGame(slot) {
     const w = area.clientWidth - 16;
     if (w <= 0) return;
     grid.fit(w, 0, { min: 30, max: 54 });
-    card.style.maxHeight = area.clientHeight + 'px';
+    stack.style.maxHeight = area.clientHeight + 'px';
   }
   const ro = new ResizeObserver(() => layout());
   ro.observe(area);
@@ -432,8 +442,7 @@ function showGame(slot) {
     if (st.lost) return lost();
     if (!findPairs(st.cells).length) {
       addBtn.pulse();
-      coach.show('Keine Paare mehr – füge Zahlen hinzu');
-      setTimeout(() => { if (!coachOn) coach.hide(); }, 2600);
+      toast('Keine Paare mehr – füge Zahlen hinzu', 2400);
     }
   }
 
@@ -536,7 +545,7 @@ function showGame(slot) {
     const v = await winSheet({
       title: isDaily ? 'Tagesrätsel gelöst!' : ['Geschafft!', 'Super!', 'Wunderbar!'][st.level % 3],
       stars: isDaily ? null : starsN,
-      badge: isDaily ? '📅' : null,
+      badge: isDaily ? '🗓️' : null,
       tiles,
       note: isDaily ? `Serie: ${dailyStreak(ID)} ${dailyStreak(ID) === 1 ? 'Tag' : 'Tage'} · Morgen wartet ein neues Feld.` : `Level ${st.level}: ${goalLong(st.goal)} ✓`,
       colors: COLORS,

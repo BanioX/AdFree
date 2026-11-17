@@ -122,7 +122,7 @@ function renderLoading() {
 
 function renderError() {
   app.replaceChildren(h('div.topbar', null, backButton('#', () => goMenu()), h('div.title', null, 'Wortrate')),
-    h('div.menu', null, h('p.tagline', null, 'Die Wortliste konnte nicht geladen werden.'),
+    h('div.load-error', null, h('p', null, 'Die Wortliste konnte nicht geladen werden.'),
       h('button.btn.primary.block', { type: 'button', onclick: () => route() }, 'Nochmals versuchen')));
 }
 
@@ -163,9 +163,9 @@ function fmtCountdown(ms) {
   const p = (n) => String(n).padStart(2, '0');
   return `${p(Math.floor(s / 3600))}:${p(Math.floor((s % 3600) / 60))}:${p(s % 60)}`;
 }
-function countdownEl() {
+function countdownEl(label = 'Nächstes Tageswort in') {
   const b = h('b');
-  const el = h('div.countdown', null, 'Nächstes Tageswort in', b);
+  const el = h('div.countdown', null, label, b);
   const tick = () => {
     if (!el.isConnected && el.dataset.started) { clearInterval(timer); return; }
     el.dataset.started = '1';
@@ -821,11 +821,11 @@ function openResult(g, key) {
   shareBtn.append('Teilen');
   shareBtn.addEventListener('click', () => { shareResult(g); });
   const content = h('div.sheet', null,
-    h('p.center', null, won ? `Erraten in ${n} ${n === 1 ? 'Versuch' : 'Versuchen'}${g.hard ? ' · schwerer Modus' : ''}` : 'Diesmal hat es nicht gereicht. Das Wort war:'),
+    h('p.center', null, won ? `Erraten in ${n} ${n === 1 ? 'Versuch' : 'Versuchen'}${g.hard ? ' · schwerer Modus' : ''}` : 'Das gesuchte Wort war'),
     wordTiles(g.answer, won ? 'correct' : 'present', 'mini-row.res-word'),
     statBlock(st, key),
     distBlock(st, won ? n : 0),
-    h('div.share-row', null, shareBtn, g.mode === 'daily' ? countdownEl() : null));
+    h('div.share-row', null, shareBtn, g.mode === 'daily' ? countdownEl('Neues Wort in') : null));
   const buttons = g.mode === 'daily'
     ? [{ label: 'Endlos spielen', value: 'next', primary: true, icon: 'play' }, { label: 'Zum Menü', value: 'menu', ghost: true }]
     : [{ label: 'Nächstes Wort', value: 'next', primary: true, icon: 'play' }, { label: 'Zum Menü', value: 'menu', ghost: true }];
@@ -833,7 +833,7 @@ function openResult(g, key) {
 }
 
 function openStats(initial = 'e5') {
-  const tabs = [['daily', 'Tageswort'], ['e4', '4 Buchst.'], ['e5', '5 Buchst.'], ['e6', '6 Buchst.']];
+  const tabs = [['daily', 'Tageswort'], ...L.LENGTHS.map((n) => ['e' + n, LEN_NAMES[n]])];
   let cur = initial;
   const body = h('div');
   const tabBar = h('div.tabs', { role: 'tablist' });
@@ -841,7 +841,7 @@ function openStats(initial = 'e5') {
     const st = getStats(cur);
     for (const b of tabBar.children) b.classList.toggle('active', b.dataset.key === cur);
     body.replaceChildren(statBlock(st, cur), distBlock(st),
-      cur === 'daily' ? h('p.center', { style: { fontSize: '14px', margin: '10px 0 0' } }, 'Jeden Tag ein neues Wort – für alle gleich.') : null);
+      h('p.center.stats-note', null, cur === 'daily' ? 'Jeden Tag ein neues Wort – für alle gleich.' : `Endlos mit ${cur.slice(1)} Buchstaben`));
   };
   for (const [k, label] of tabs) {
     const b = h('button.chip', { type: 'button', role: 'tab', 'data-key': k }, label);

@@ -9,7 +9,7 @@ export const KEYS = {
   daily: 'sudoku.daily',
   seq: 'sudoku.seq',
   fresh: 'sudoku.fresh',
-  helpSeen: 'sudoku.helpSeen',
+  coachDone: 'sudoku.coachDone',
   lastDiff: 'sudoku.lastDiff',
   salt: 'sudoku.salt',
 };

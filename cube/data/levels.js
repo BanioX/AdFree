@@ -28,6 +28,8 @@ export const SPECIAL_EVERY = 10;
 
 /**
  * Spezial-Level, der Reihe nach (Level 10 = erstes, 20 = zweites, …, dann von vorn).
+ * Texte: `text` erscheint zu Beginn des Levels; `textMax` (optional) statt dessen, wenn der Würfel
+ * schon die Höchstgrösse 10 hat und `grow` darum nichts mehr bewirkt.
  * Mögliche Regler (alle optional):
  *   grow        Würfel um so viele Zellen grösser (max. 10)
  *   maxN        Würfel höchstens so gross
@@ -37,6 +39,7 @@ export const SPECIAL_EVERY = 10;
  *   minLen      kürzeste Pfeillänge (Zellen)
  *   maxLen      längste Pfeillänge zusätzlich: +/- Wert (Ergebnis max. 12)
  *   turn        Abbiege-Freude 0..1 (fester Wert)
+ *   maxTurns    höchstens so viele Kurven pro Pfeil (0 = nur gerade; über Kanten gerade weiter zählt nicht)
  *   mustCross   true = jeder Pfeil muss über eine Würfelkante laufen
  */
 export const SPECIALS = [
@@ -48,6 +51,7 @@ export const SPECIALS = [
   {
     id: 'big', title: 'Riesenwürfel', emoji: '🧊',
     text: 'Ein Stück grösser und dicht gepackt.',
+    textMax: 'Volle Grösse, extra dicht – mit einem Herz weniger.',
     grow: 1, density: 0.04, hearts: -1,
   },
   {
@@ -63,7 +67,7 @@ export const SPECIALS = [
   {
     id: 'straight', title: 'Gerade Wege', emoji: '📏',
     text: 'Fast nur gerade Pfeile – aber dicht an dicht.',
-    turn: 0.06, density: 0.05, minLen: 3,
+    turn: 0.04, maxTurns: 0, density: 0.05, minLen: 3,
   },
 ];
 

@@ -20,7 +20,7 @@ page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
 page.on('pageerror', (e) => errors.push(String(e)));
 process.on('exit', (code) => { if (code && errors.length) console.error('Seitenfehler:\n' + errors.join('\n')); });
 const shot = (name) => page.screenshot({ path: OUT + name + '.png' });
-const log = (...a) => console.log('·', ...a);
+const log = (...a) => console.log('·', ...a, errors.length ? `[${errors.length} Fehler]` : '');
 
 const cdp = await ctx.newCDPSession(page);
 async function swipe(x1, y1, x2, y2) {
@@ -89,6 +89,8 @@ await page.waitForSelector('.m3-intro');
 await shot('03-intro');
 await page.waitForSelector('.m3-intro', { state: 'detached', timeout: 6000 });
 assert.ok(await page.$('.m3-coach'), 'Coach-Mark in Level 1');
+await page.waitForTimeout(700);
+await shot('03b-coach');
 const fits = await page.evaluate(() => {
   const el = document.querySelector('.m3-play');
   const tools = document.querySelector('.m3-tools').getBoundingClientRect();
@@ -152,11 +154,10 @@ await page.locator('.m3-bar a.icon-btn').first().tap();
 await page.waitForSelector('.gm-primary');
 assert.match(await page.textContent('.gm-primary'), /Weiterspielen/);
 assert.match(await page.textContent('.gm-primary'), /Level 2/);
+await page.waitForTimeout(450); // Doppeltipp-Schutz von setupPage()
 
 // ---------- 5) Levelkarte ----------
-await shot('dbg-before-map');
 await page.locator('.gm-sec', { hasText: 'Levelkarte' }).tap();
-await page.waitForTimeout(800); await shot('dbg-after-map'); console.log('DBG', await page.evaluate(() => location.hash + ' nodes=' + document.querySelectorAll('.m3-node').length + ' cur=' + document.querySelectorAll('.m3-node.cur').length + ' html=' + document.querySelector('.gm-sec')?.outerHTML.slice(0, 120)));
 await page.waitForSelector('.m3-node.cur');
 await page.waitForTimeout(300);
 await shot('07-map');
@@ -164,9 +165,11 @@ const nodes = await page.$$eval('.m3-node', (n) => n.length);
 assert.ok(nodes >= 150, `mind. 150 Level auf der Karte (${nodes})`);
 await page.locator('.m3-map .topbar a.icon-btn').first().tap();
 await page.waitForSelector('.gm-primary');
+await page.waitForTimeout(450);
 
 // ---------- 6) Entspannt-Modus ----------
 await page.locator('.gm-seg button', { hasText: 'Entspannt' }).tap();
+await page.waitForTimeout(450);
 await page.locator('.gm-primary').tap();
 await page.waitForFunction(() => location.hash === '#zen' && window.__m3.cur && window.__m3.cur.n === 0);
 for (let k = 0; k < 3; k++) { await settle(); await playMove(k); }
@@ -187,6 +190,37 @@ for (const n of [20, 44, 80]) {
   await settle();
   await shot('09-level' + n);
 }
+
+// ---------- 8) Züge aus → freundliches Blatt mit «+5 Züge» ----------
+await page.goto(BASE + '/match3/#level/3');
+await page.waitForFunction(() => window.__m3 && window.__m3.cur && window.__m3.cur.n === 3);
+await page.locator('.m3-intro').tap().catch(() => {});
+await settle();
+await page.evaluate(() => { window.__m3.cur.game.movesLeft = 1; });
+await playMove(0, true);
+assert.equal(await settle(), 'modal');
+await page.waitForTimeout(500);
+await shot('10-lose');
+assert.match(await modalText(), /\+5 Züge/);
+await clickModal(/\+5 Züge/);
+assert.equal(await settle(), 'ready');
+assert.equal(await page.evaluate(() => window.__m3.cur.game.movesLeft), 5, '+5 Züge geschenkt');
+log('Niederlage-Blatt mit +5 Züge funktioniert');
+
+// ---------- 9) Kleines iPhone (375×667) ----------
+await page.setViewportSize({ width: 375, height: 667 });
+await page.goto(BASE + '/match3/#level/44');
+await page.waitForFunction(() => window.__m3 && window.__m3.cur && window.__m3.cur.n === 44);
+await page.locator('.m3-intro').tap().catch(() => {});
+await settle();
+const small = await page.evaluate(() => ({
+  cs: window.__m3.cur.board.cs,
+  tools: document.querySelector('.m3-tools').getBoundingClientRect().bottom <= innerHeight + 1,
+  scroll: document.documentElement.scrollHeight <= innerHeight + 1 && document.documentElement.scrollWidth <= innerWidth,
+}));
+log('375×667', JSON.stringify(small));
+assert.ok(small.tools && small.scroll && small.cs >= 36, 'passt auf kleine iPhones');
+await shot('11-small');
 
 await browser.close();
 if (errors.length) { console.error('Konsolenfehler:\n' + errors.join('\n')); process.exit(1); }

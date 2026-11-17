@@ -117,6 +117,16 @@ export class BoardView {
       sx.roundRect(ox + c * cs - pad, oy + r * cs - pad, cs + 2 * pad, cs + 2 * pad, cs * 0.3);
       sx.fill();
     }
+    // Löcher ausschneiden, damit sie klar als Lücken erkennbar sind
+    sx.globalCompositeOperation = 'destination-out';
+    for (let i = 0; i < game.size; i++) {
+      if (game.mask[i]) continue;
+      const [r, c] = this.rc(i);
+      sx.beginPath();
+      sx.roundRect(ox + c * cs + 2, oy + r * cs + 2, cs - 4, cs - 4, cs * 0.22);
+      sx.fill();
+    }
+    sx.globalCompositeOperation = 'source-over';
     const [bg, bx] = mk();
     bx.save();
     bx.setTransform(1, 0, 0, 1, 0, 0);
@@ -638,6 +648,9 @@ export class BoardView {
     };
     cv.addEventListener('pointerup', up);
     cv.addEventListener('pointercancel', () => { this.drag = null; });
+    // Schnelles Wischen nacheinander ist hier gewollt: Doppeltipp-Schutz der Seite nicht anwenden
+    // (touch-action: none verhindert das Zoomen auf dem Brett ohnehin).
+    cv.addEventListener('touchend', (e) => e.stopPropagation(), { passive: true });
   }
 
   _requestSwap(a, b) {

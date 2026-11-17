@@ -155,10 +155,19 @@ export function mountPlay(root, levelNum, nav) {
     }
     activeSince = document.visibilityState === 'visible' && !destroyed ? performance.now() : 0;
   }
+  let hasSave = !!saved;
   function saveNow() {
     flushTime();
     if (ended) return;
-    saveCurrent({ level: levelNum, ...game.serialize(), q: view.q.map((v) => +v.toFixed(5)) });
+    // Unberührtes Level: kein Spielstand (ein frischer Start soll nichts überschreiben oder belegen)
+    if (!game.removedCount && !game.mistakes) {
+      if (hasSave) { clearCurrent(levelNum); hasSave = false; }
+      return;
+    }
+    hasSave = true;
+    // Während einer Kamerafahrt (Intro, Tipp, Ansicht) die Zielansicht speichern, nicht die Zwischenpose
+    const q = viewAnim ? viewAnim.q1 : view.q;
+    saveCurrent({ level: levelNum, ...game.serialize(), q: q.map((v) => +v.toFixed(5)) });
   }
   function saveSoon() {
     clearTimeout(saveTimer);
@@ -411,6 +420,13 @@ export function mountPlay(root, levelNum, nav) {
     if (locked) return;
     const id = renderer.hitTest(x, y, skip);
     if (id < 0) return;
+    // Schneller zweiter Tipp auf einen Pfeil, der gerade hinausgleitet oder anstösst:
+    // liegt der Finger näher an diesem Pfeil als am Kandidaten, nichts tun (sonst trifft es den Nachbarn)
+    if (hidden.size) {
+      const tf = renderer.faceAt(x, y);
+      const d = renderer.arrowDist(id, x, y, tf);
+      for (const j of hidden) if (renderer.arrowDist(j, x, y, tf) <= d) return;
+    }
     tapArrow(id);
   }
 
@@ -468,7 +484,8 @@ export function mountPlay(root, levelNum, nav) {
     if (left <= 0) {
       locked = true;
       ended = true; // nichts mehr speichern – «Nochmal» startet frisch
-      clearCurrent();
+      clearCurrent(levelNum);
+      hasSave = false;
       an.after = () => setTimeout(showLose, 250);
     } else {
       saveNow();
@@ -500,6 +517,8 @@ export function mountPlay(root, levelNum, nav) {
     flushTime();
     const res = completeLevel(levelNum, stars);
     recordWin(stars);
+    // Neuladen auf dem Gewinn-Blatt soll weitergehen, nicht das gelöste Level wiederholen
+    nav.solved?.(levelNum);
     setTimeout(() => showWin(stars, res), 720);
   }
 
@@ -664,11 +683,12 @@ export function mountPlay(root, levelNum, nav) {
   if (sp && fresh) {
     bubbleTimer = setTimeout(() => {
       if (destroyed || tutorial) return;
-      showBubble('special', `${sp.title}: ${sp.text}`);
+      // «Riesenwürfel» auf schon maximaler Grösse: passender Text
+      const txt = sp.grow && !level.grew && sp.textMax ? sp.textMax : sp.text;
+      showBubble('special', `${sp.title}: ${txt}`);
       bubbleTimer = setTimeout(() => { if (tutorial === 'special') hideBubble(true); }, 3400);
     }, 650);
   }
-  if (!saved) saveNow();
 
   back.addEventListener('click', () => { sfx.play('click'); saveNow(); nav.menu(); });
 
@@ -696,6 +716,8 @@ export function mountPlay(root, levelNum, nav) {
       return { x: r.left + p.x, y: r.top + p.y };
     },
     hitTest(clientX, clientY) { const r = canvas.getBoundingClientRect(); return renderer.hitTest(clientX - r.left, clientY - r.top, skip); },
+    /** Wie hitTest, aber Pfeil `without` zählt als schon weg (Nachbar in Reichweite?). */
+    hitTestWithout(clientX, clientY, without) { const r = canvas.getBoundingClientRect(); return renderer.hitTest(clientX - r.left, clientY - r.top, (i) => i === without || skip(i)); },
     tap: (i) => tapArrow(i),
     setTimeScale,
     get highlightCount() { return highlights.size; },

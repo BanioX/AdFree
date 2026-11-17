@@ -1,0 +1,106 @@
+/* Zahlensummen – eigene Styles (Basis: shared/style.css + lib/numbers/numbers.css) */
+
+:root {
+  --accent: #7b5ea7;
+  --accent-2: #c7b5e6;
+  --ns-tile: #f4eee6;
+}
+
+/* ---------- Brett ---------- */
+
+.ns-stack { position: relative; }
+.ns-stack .nx-coach { top: calc(100% + 12px); bottom: auto; }
+.ns-card { padding: 12px 14px 14px 12px; }
+.ns-board {
+  --cs: 44px; --ss: 34px;
+  display: grid; grid-template-columns: var(--ss) auto; grid-template-rows: var(--ss) auto; gap: 5px;
+}
+.ns-colsums { display: flex; gap: 3px; }
+.ns-rowsums { display: flex; flex-direction: column; gap: 3px; }
+.ns-colsums .ns-sum { width: var(--cs); height: var(--ss); }
+.ns-rowsums .ns-sum { width: var(--ss); height: var(--cs); }
+.ns-sum {
+  display: grid; place-items: center; border-radius: 10px; background: var(--nx-soft);
+  color: var(--nx-deep); font-weight: 900; font-size: calc(var(--cs) * .4); font-variant-numeric: tabular-nums;
+  transition: background .35s, color .35s;
+}
+.ns-sum span { position: relative; }
+.ns-sum.done { background: transparent; color: #c2b8ad; }
+.ns-sum.done span::after {
+  content: ''; position: absolute; left: -3px; right: -3px; top: 52%; height: 2.5px; border-radius: 2px; background: currentColor;
+}
+.ns-sum.just { animation: ns-just .7s var(--ease-out); }
+@keyframes ns-just { 0% { background: #c9ecd3; color: #2f8a4c; transform: scale(1.18); } 100% { transform: scale(1); } }
+.ns-sum.hl { animation: ns-hl 1.6s ease-in-out; }
+@keyframes ns-hl { 0%, 100% { box-shadow: none; } 30%, 70% { box-shadow: 0 0 0 3px #ffd36b; } }
+
+.ns-grid { touch-action: none; }
+.ns-cell {
+  border-radius: 11px; background: var(--rg, var(--ns-tile)); cursor: pointer;
+  font-size: calc(var(--cs) * .5); transition: background .3s, opacity .3s;
+}
+.ns-d { position: relative; z-index: 1; transition: opacity .28s var(--ease-out), transform .28s var(--ease-out), color .2s; }
+.ns-cell::before {
+  content: ''; position: absolute; inset: 12%; border-radius: 50%; border: 3px solid var(--accent);
+  opacity: 0; transform: scale(.6); transition: opacity .2s, transform .3s var(--ease-spring);
+}
+.ns-cell.kept::before { opacity: 1; transform: scale(1); }
+.ns-cell.kept .ns-d { color: var(--nx-deep); }
+.ns-cell.gone { background: color-mix(in srgb, var(--rg, var(--ns-tile)) 45%, #fff); cursor: default; }
+.ns-cell.gone .ns-d { opacity: 0; transform: scale(.4); }
+.ns-cell.kept { cursor: default; }
+.ns-cell.wrong { background: #f8c9cf; }
+.ns-cell.wrong .ns-d { color: #c7364a; }
+.ns-cell.hinted { animation: ns-hint 1.5s ease-out; }
+@keyframes ns-hint { 0% { box-shadow: 0 0 0 0 #ffd36b; } 30% { box-shadow: 0 0 0 5px #ffd36b; } 100% { box-shadow: 0 0 0 0 transparent; } }
+.ns-cell.ng-coach::after { inset: 2px; border-radius: 11px; }
+/* Bereichsgrenzen: feine Linie in der Bereichsfarbe an den Aussenkanten */
+.has-regions .ns-cell {
+  --rl: color-mix(in srgb, var(--ri) 55%, transparent);
+  --sbt: 0 0 transparent; --sbb: 0 0 transparent; --sbl: 0 0 transparent; --sbr: 0 0 transparent;
+  box-shadow: var(--sbt), var(--sbb), var(--sbl), var(--sbr);
+}
+.has-regions .ns-cell.bt { --sbt: inset 0 2px 0 var(--rl); }
+.has-regions .ns-cell.bb { --sbb: inset 0 -2px 0 var(--rl); }
+.has-regions .ns-cell.bl { --sbl: inset 2px 0 0 var(--rl); }
+.has-regions .ns-cell.br { --sbr: inset -2px 0 0 var(--rl); }
+.has-regions .ns-cell.gone { --rl: color-mix(in srgb, var(--ri) 25%, transparent); }
+.ns-cell.lab .ns-d { translate: 10% 12%; }
+
+.ns-rlabel {
+  position: absolute; top: 3px; left: 3px; z-index: 2; min-width: 14px; padding: 0 3px; border-radius: 6px;
+  font-size: max(9.5px, calc(var(--cs) * .23)); line-height: 1.3; font-weight: 900; color: var(--ri, var(--text-2));
+  background: rgba(255, 255, 255, .85); transition: opacity .3s;
+}
+.ns-rlabel.done { opacity: .35; text-decoration: line-through; }
+.ns-rlabel.just { animation: ns-just .7s var(--ease-out); }
+.ns-rlabel.hl { animation: ns-hl 1.6s ease-in-out; }
+
+/* ---------- Werkzeuge ---------- */
+
+.ns-toolbar { align-items: center; }
+.ns-toolseg { display: flex; gap: 4px; padding: 4px; border-radius: 22px; background: var(--surface-2); box-shadow: inset 0 1px 2px rgba(70, 45, 20, .08); }
+.ns-tool {
+  border: 0; background: transparent; min-width: 88px; min-height: 62px; border-radius: 18px; padding: 6px 8px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+  color: var(--text-2); font-weight: 800; font-size: 13px; transition: background .2s, color .2s, box-shadow .2s, transform .15s;
+}
+.ns-tool svg { width: 26px; height: 26px; }
+.ns-tool:active { transform: scale(.95); }
+.ns-tool.on { background: var(--surface); color: var(--nx-deep); box-shadow: 0 3px 10px rgba(70, 45, 20, .14); }
+.ns-tool.on svg { color: var(--accent); }
+
+/* ---------- Tutorial ---------- */
+
+.ns-demo { flex-direction: column; gap: 12px; display: flex; align-items: center; justify-content: center; }
+.ns-demo .ns-board { background: #fff; padding: 10px; border-radius: 18px; box-shadow: var(--shadow); }
+.ns-demo-tools { display: flex; gap: 4px; padding: 3px; border-radius: 16px; background: rgba(255, 255, 255, .7); }
+.ns-demo-tool { width: 44px; height: 34px; border-radius: 13px; display: grid; place-items: center; color: var(--text-2); transition: background .2s, color .2s; }
+.ns-demo-tool svg { width: 22px; height: 22px; }
+.ns-demo-tool.on { background: #fff; color: var(--accent); box-shadow: 0 2px 6px rgba(70, 45, 20, .14); }
+.ns-demo-hearts span { width: 22px; height: 22px; }
+
+@media (max-height: 640px) {
+  .ns-tool { min-height: 54px; min-width: 80px; }
+  .ns-card { padding: 10px; }
+}

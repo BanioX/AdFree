@@ -327,27 +327,31 @@ function xyzWing(s) {
 
 /** Technik-Finder in der Reihenfolge, in der ein Mensch sie anwenden würde. */
 const FINDERS = [
-  [1, fullHouse],
-  [1, hiddenSingle],
-  [1, nakedSingle],
-  [2, pointing],
-  [2, claiming],
-  [2, (s) => nakedSubset(s, 2)],
-  [2, (s) => hiddenSubset(s, 2)],
-  [3, (s) => nakedSubset(s, 3)],
-  [3, (s) => hiddenSubset(s, 3)],
-  [3, (s) => fish(s, 2, 'xWing')],
-  [4, xyWing],
-  [4, xyzWing],
-  [4, (s) => fish(s, 3, 'swordfish')],
-  [4, (s) => nakedSubset(s, 4)],
-  [4, (s) => hiddenSubset(s, 4)],
+  [1, fullHouse, 'fullHouse'],
+  [1, hiddenSingle, 'hiddenSingle'],
+  [1, nakedSingle, 'nakedSingle'],
+  [2, pointing, 'pointing'],
+  [2, claiming, 'claiming'],
+  [2, (s) => nakedSubset(s, 2), 'nakedPair'],
+  [2, (s) => hiddenSubset(s, 2), 'hiddenPair'],
+  [3, (s) => nakedSubset(s, 3), 'nakedTriple'],
+  [3, (s) => hiddenSubset(s, 3), 'hiddenTriple'],
+  [3, (s) => fish(s, 2, 'xWing'), 'xWing'],
+  [4, xyWing, 'xyWing'],
+  [4, xyzWing, 'xyzWing'],
+  [4, (s) => fish(s, 3, 'swordfish'), 'swordfish'],
+  [4, (s) => nakedSubset(s, 4), 'nakedQuad'],
+  [4, (s) => hiddenSubset(s, 4), 'hiddenQuad'],
 ];
 
-/** Nächster logischer Schritt (einfachste Technik zuerst) oder null. */
-export function findStep(s, maxTier = 4) {
-  for (const [tier, fn] of FINDERS) {
+/**
+ * Nächster logischer Schritt (einfachste Technik zuerst) oder null.
+ * exclude: optional Liste von Technik-IDs, die nicht verwendet werden dürfen.
+ */
+export function findStep(s, maxTier = 4, exclude = null) {
+  for (const [tier, fn, tech] of FINDERS) {
     if (tier > maxTier) break;
+    if (exclude && exclude.includes(tech)) continue;
     const st = fn(s);
     if (st) return st;
   }
@@ -355,17 +359,17 @@ export function findStep(s, maxTier = 4) {
 }
 
 /**
- * Löst ein Rätsel nur mit Techniken bis maxTier und stuft es ein.
+ * Löst ein Rätsel nur mit Techniken bis maxTier (ohne die in `exclude`) und stuft es ein.
  * @returns {{ solved, tier, score, steps, counts, values }}
  */
-export function grade(values, maxTier = 4, { keepSteps = false } = {}) {
+export function grade(values, maxTier = 4, { keepSteps = false, exclude = null } = {}) {
   const s = makeState(values);
   const counts = {};
   const steps = keepSteps ? [] : null;
   let tier = 0, score = 0, n = 0;
   if (hasContradiction(s)) return { solved: false, tier: Infinity, score: 0, steps, counts, values: Array.from(s.v) };
   while (!isSolvedState(s)) {
-    const st = findStep(s, maxTier);
+    const st = findStep(s, maxTier, exclude);
     if (!st) return { solved: false, tier: Infinity, score, steps, counts, values: Array.from(s.v), stuckAt: n };
     applyStep(s, st);
     n++;

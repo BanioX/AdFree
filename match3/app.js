@@ -295,7 +295,7 @@ function playScreen({ title, sub, theme, zen }) {
     h('div.title.m3-title', null, h('span', null, title), sub ? h('small', null, sub) : null),
     helpBtn(), soundButton());
   const movesEl = h('b.m3-moves-n', null, '0');
-  const movesBox = h('div.m3-moves', null, movesEl, h('small', null, zen ? 'Punkte' : 'Züge'));
+  const movesBox = h('div.m3-moves' + (zen ? '.zen' : ''), null, movesEl, h('small', null, zen ? 'Punkte' : 'Züge'));
   const goalsEl = h('div.m3-goals');
   const scoreEl = h('b', null, '0');
   const fill = h('i.m3-fill');
@@ -593,7 +593,7 @@ function playZen() {
   const seed = (store.get(K.zen, {}) || {}).seed;
   const theme = worldInfo(2);
   const ui = playScreen({ title: 'Entspannt', sub: 'ohne Zuglimit', theme, zen: true });
-  ui.goalsEl.append(h('div.m3-zenmsg', null, 'Einfach spielen – kein Zuglimit, keine Eile.'));
+  ui.goalsEl.append(h('div.m3-zenmsg', null, 'Einfach geniessen – ohne Eile ✨'));
   ui.starMarks.forEach((s) => { s.style.display = 'none'; });
   ui.tHammer.badge.textContent = '∞';
   ui.tShuffle.badge.textContent = '∞';

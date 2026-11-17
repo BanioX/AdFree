@@ -71,8 +71,10 @@ export function levelParams(level) {
   let turn = L <= 2 ? 0.25 : 0.32 + 0.12 * Math.min(1, L / 50);
   if (sp && typeof sp.turn === 'number') turn = sp.turn;
   const mustCross = !!(sp && sp.mustCross);
+  // Höchstzahl Kurven pro Pfeil (auf einer Seite; über eine Kante gerade weiter zählt nicht)
+  const maxTurns = sp && Number.isInteger(sp.maxTurns) && sp.maxTurns >= 0 ? sp.maxTurns : Infinity;
 
-  return { level: L, N, density, hearts, special, grew, maxLen, minLen, maxFree, minFree, turn, mustCross };
+  return { level: L, N, density, hearts, special, grew, maxLen, minLen, maxFree, minFree, turn, maxTurns, mustCross };
 }
 
 function sampleLen(rng, minLen, maxLen) {
@@ -137,6 +139,7 @@ function buildOnce(geo, p, rng) {
       const cells = [head];
       let cur = head;
       let back = (d + 2) & 3; // Laufrichtung rückwärts (vom Kopf zum Schwanz)
+      let turns = 0;
       for (let i = 1; i < want; i++) {
         const straight = back;
         const left = (back + 1) & 3;
@@ -144,7 +147,7 @@ function buildOnce(geo, p, rng) {
         let opts;
         const r = rng.next();
         // Direkt hinter dem Kopf geht es immer gerade weiter (Spitze zeigt in Laufrichtung)
-        if (i === 1) opts = [straight];
+        if (i === 1 || turns >= p.maxTurns) opts = [straight];
         else if (r < p.turn / 2) opts = [left, straight, right];
         else if (r < p.turn) opts = [right, straight, left];
         else opts = rng.next() < 0.5 ? [straight, left, right] : [straight, right, left];
@@ -158,6 +161,7 @@ function buildOnce(geo, p, rng) {
           mark[nb] = stamp;
           cells.push(nb);
           back = geo.nextDir[cur * 4 + o];
+          if (o !== straight) turns++;
           cur = nb;
           moved = true;
           break;
@@ -199,6 +203,10 @@ function buildOnce(geo, p, rng) {
     filled += cand.cells.length;
   };
 
+  // Nur-gerade-Level (maxTurns): gerade Pfeile blockieren sich selten – freie Pfeile hart begrenzen,
+  // sonst wird es zu leicht. Lieber etwas weniger dicht.
+  const tightFill = Number.isFinite(p.maxTurns);
+  const tooFree = (cand) => tightFill && freeCount >= p.maxFree && (cand.blockedSelf ? 0 : 1) - cand.blocks.size > 0;
   let fails = 0;
   const maxFails = 60 + count / 2;
   const K = p.N >= 6 ? 8 : 5;
@@ -207,6 +215,7 @@ function buildOnce(geo, p, rng) {
     for (let k = 0; k < K; k++) {
       const head = empties[Math.floor(rng.next() * nEmpty)];
       const cand = makeCandidate(head);
+      if (cand && tooFree(cand)) continue;
       if (cand && (!best || cand.score > best.score)) best = cand;
     }
     if (!best) { fails++; continue; }
@@ -224,7 +233,10 @@ function buildOnce(geo, p, rng) {
         const cand = makeCandidate(head);
         if (cand && (!best || cand.score > best.score)) best = cand;
       }
-      if (best) place(best);
+      if (!best) continue;
+      // Nur-gerade-Level: beim Auffüllen keine zusätzlichen freien Pfeile mehr (sonst wird es zu leicht)
+      if (tooFree(best)) continue;
+      place(best);
     }
   }
 

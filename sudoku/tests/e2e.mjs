@@ -21,7 +21,8 @@ const shot = async (page, name) => { await page.screenshot({ path: path.join(OUT
 
 function watch(page) {
   // Fehlende Icons anderer (noch im Bau befindlicher) Spiele auf der Startseite ignorieren
-  const foreign = (url) => /\/icons\/games\//.test(url || '') && !/sudoku\.svg/.test(url);
+  // sowie ready.json der Startseite (entsteht erst beim Build, lokal absichtlich 404)
+  const foreign = (url) => (/\/icons\/games\//.test(url || '') && !/sudoku\.svg/.test(url)) || /\/ready\.json$/.test(url || '');
   page.on('console', (m) => {
     if (m.type() !== 'error' && m.type() !== 'warning') return;
     if (foreign(m.location() && m.location().url)) return;
@@ -74,6 +75,14 @@ async function closeModal(page, label) {
   await page.waitForTimeout(400);
 }
 
+/** Wartet auf das Tutorial («So geht's») und schliesst es. */
+async function skipTutorial(page) {
+  await page.waitForSelector('.tut-backdrop.show .tut-skip');
+  await page.waitForTimeout(350);
+  await page.locator('.tut-skip').tap();
+  await page.waitForSelector('.tut-backdrop', { state: 'detached' });
+}
+
 async function main() {
   const browser = await chromium.launch();
   const ctx = await browser.newContext({ ...devices['iPhone 13'], deviceScaleFactor: 1 });
@@ -86,12 +95,20 @@ async function main() {
   await shot(page, '00-hub');
   await tapLoc(page, page.locator('a.tile[href="sudoku/"]'));
   await page.waitForURL(/sudoku\/$/);
-  await page.waitForSelector('.sp-modal h2');
-  assert.match(await page.locator('.sp-modal h2').textContent(), /So geht/);
-  await page.waitForTimeout(400);
-  await shot(page, '01-help-first-start');
-  await closeModal(page, 'Los geht');
+  // Tutorial beim ersten Start: 4 animierte Schritte
+  await page.waitForSelector('.tut-backdrop.show');
+  assert.match(await page.locator('.tut-kicker').textContent(), /So geht/);
+  assert.equal(await page.locator('.tut-dots span').count(), 4);
+  for (let k = 1; k <= 4; k++) {
+    await page.waitForTimeout(k === 2 ? 2600 : 1800);
+    assert.ok(await page.locator('.tut-stage .sdt-scene').count(), 'Demo-Szene ' + k);
+    await shot(page, `01-tutorial-${k}`);
+    await page.locator('.tut-next').tap();
+    await page.waitForTimeout(400);
+  }
+  await page.waitForSelector('.tut-backdrop', { state: 'detached' });
   await page.waitForSelector('.screen.menu');
+  assert.ok(await page.locator('.screen.menu .topbar .gm-q').count(), '«?» im Menü');
   await shot(page, '02-menu');
 
   // ---------- Neues Spiel (Leicht) ----------
@@ -100,7 +117,27 @@ async function main() {
   await page.waitForSelector('.screen.play');
   assert.equal(new URL(page.url()).hash, '#play');
   await page.waitForTimeout(400);
+  assert.equal(await page.locator('.coach-ring').count(), 1, 'Coach-Mark beim ersten Rätsel');
   await shot(page, '03-play-start');
+
+  // Zahlenfeld: Tasten breit genug, Lücken zwischen den Tasten reagieren
+  const keyInfo = await page.evaluate(() => {
+    const a = document.querySelector('.key[data-d="4"]').getBoundingClientRect();
+    const b = document.querySelector('.key[data-d="5"]').getBoundingClientRect();
+    const t = document.elementFromPoint((a.right + b.left) / 2, a.top + a.height / 2);
+    return { w: a.width, h: a.height, gap: b.left - a.right, hit: !!(t && t.closest('.key')) };
+  });
+  log('Taste', keyInfo);
+  assert.ok(keyInfo.hit, 'Lücke zwischen Tasten trifft eine Taste');
+  assert.ok(keyInfo.w >= 38 && keyInfo.h >= 44, 'Tasten gross genug');
+
+  // «?» im laufenden Spiel öffnet das Tutorial, die Uhr steht still
+  await tapSel(page, '.play-top button[aria-label="So geht’s"]');
+  await page.waitForSelector('.tut-backdrop.show');
+  const t0 = (await game(page)).elapsed;
+  await page.waitForTimeout(1200);
+  await skipTutorial(page);
+  assert.ok((await game(page)).elapsed - t0 < 400, 'Uhr pausiert während der Hilfe');
 
   // Kein Seiten-Scrollen, alles im Bild
   const fit = await page.evaluate(() => {
@@ -118,6 +155,7 @@ async function main() {
   // Feld wählen, falsche Zahl => Fehler
   const e0 = empties[0];
   await tapCell(page, e0);
+  assert.equal(await page.locator('.coach-ring').count(), 0, 'Coach-Mark verschwindet nach der ersten Aktion');
   assert.equal(await page.evaluate(() => window.__sudoku.selected()), e0);
   const wrong = ((+sol[e0]) % 9) + 1;
   await tapKey(page, wrong);
@@ -161,10 +199,15 @@ async function main() {
   log('Tipp:', hintTitle, '–', hintText);
   assert.ok(hintText.length > 10);
   await shot(page, '07-play-hint');
+  // Derselbe Tipp nochmals geöffnet zählt nicht doppelt
+  await tapSel(page, '.hint-ok');
+  await tapSel(page, '.tool[data-tool="hint"]');
+  await page.waitForSelector('.controls.hinting');
+  assert.equal(await page.locator('.hint-title').textContent(), hintTitle);
   await tapSel(page, '.hint-act');
   await page.waitForTimeout(300);
   g = await game(page);
-  assert.equal(g.hints, 1);
+  assert.equal(g.hints, 1, 'gleicher Tipp zählt einmal');
 
   // Pause
   await tapSel(page, '.timer-pill');
@@ -185,7 +228,9 @@ async function main() {
   });
   assert.ok(rest.length >= 1);
 
-  // Neuladen mitten im Spiel
+  // Neuladen mitten im Spiel (mit gewähltem Feld und Notizen-Modus)
+  await tapCell(page, rest[0]);
+  await tapSel(page, '.tool[data-tool="notes"]');
   const before = await game(page);
   await page.reload();
   await page.waitForSelector('.screen.play');
@@ -194,6 +239,9 @@ async function main() {
   assert.equal(after.values, before.values, 'Spielstand nach Neuladen gleich');
   assert.equal(after.mistakes, before.mistakes);
   assert.ok(after.elapsed >= before.elapsed - 1000, 'Zeit bleibt erhalten');
+  assert.equal(await page.evaluate(() => window.__sudoku.selected()), rest[0], 'Auswahl bleibt');
+  assert.ok(await page.locator('.tool[data-tool="notes"].on').count(), 'Notizen-Modus bleibt');
+  await tapSel(page, '.tool[data-tool="notes"]');
   log('Neuladen ok, Zeit', after.elapsed);
 
   // Rest füllen => Sieg
@@ -299,7 +347,12 @@ async function main() {
   await page.goto(BASE + 'sudoku/#daily');
   await page.waitForSelector('.screen.play.is-done');
   await shot(page, '20-daily-done-reload');
-  await tapSel(page, '.done-btns .btn');
+  // Hauptknopf führt ins freie Spiel (hier: laufendes Spiel), nicht ins Menü
+  assert.equal(await page.locator('.done-btns .btn.primary').textContent(), 'Weiterspielen');
+  await tapSel(page, '.done-btns .btn.primary');
+  await page.waitForSelector('.screen.play:not(.is-done)');
+  assert.equal(new URL(page.url()).hash, '#play');
+  await tapSel(page, '.play-top .icon-btn');
   await page.waitForSelector('.screen.menu');
 
   // Zurück zur Startseite: Tagesrätsel mit Haken
@@ -319,8 +372,7 @@ async function main() {
   const p3 = await ctx3.newPage();
   watch(p3);
   await p3.goto(BASE + 'sudoku/');
-  await p3.waitForSelector('.sp-modal');
-  await closeModal(p3, 'Los geht');
+  await skipTutorial(p3);
   await shot(p3, '22-se-menu');
   await tapLoc(p3, p3.locator('.seg button[data-id="experte"]'));
   await tapLoc(p3, p3.locator('.newgame .btn.big'));
@@ -335,6 +387,42 @@ async function main() {
   assert.ok(fit3.sh <= fit3.ih + 1 && fit3.pad <= fit3.ih, 'SE: kein Scrollen');
   log('SE: Brett', Math.round(fit3.board), 'px');
   await ctx3.close();
+
+  // ---------- Gehen während der Sieg-Feier: Sieg bleibt verbucht ----------
+  const ctx4 = await browser.newContext({ ...devices['iPhone 13'], deviceScaleFactor: 1 });
+  const p4 = await ctx4.newPage();
+  watch(p4);
+  await p4.goto(BASE + 'sudoku/');
+  await skipTutorial(p4);
+  await tapLoc(p4, p4.locator('.newgame .btn.big'));
+  await p4.waitForSelector('.screen.play');
+  const last = await fillByTaps(p4, 1);
+  const g4 = await game(p4);
+  await tapCell(p4, last[0]);
+  await tapKey(p4, +g4.solution[last[0]]);
+  await p4.waitForTimeout(450);
+  await tapSel(p4, '.play-top .icon-btn');            // Zurück mitten in der Welle
+  await p4.waitForSelector('.screen.menu');
+  const st4 = await p4.evaluate(() => JSON.parse(localStorage.getItem('spielpause.sudoku.stats')));
+  assert.equal(st4.leicht.won, 1, 'Sieg trotz Verlassen gezählt');
+  const sum4 = await p4.evaluate(() => JSON.parse(localStorage.getItem('spielpause.summary.sudoku')));
+  assert.match(sum4.text, /1 Rätsel gelöst/);
+  // Tagesrätsel: Neuladen 0.3 s nach der letzten Zahl
+  await tapLoc(p4, p4.locator('.card.daily'));
+  await p4.waitForSelector('.screen.play');
+  const lastD = await fillByTaps(p4, 1);
+  const gd = await game(p4);
+  await tapCell(p4, lastD[0]);
+  await tapKey(p4, +gd.solution[lastD[0]]);
+  await p4.waitForTimeout(300);
+  await p4.reload();
+  await p4.waitForSelector('.screen.play.is-done');
+  assert.equal(await p4.evaluate((t) => localStorage.getItem('spielpause.daily.sudoku.' + t), today), 'true', 'Tagesrätsel trotz Neuladen gelöst');
+  assert.equal(await p4.locator('.done-btns .btn.primary').textContent(), 'Neues Rätsel');
+  await tapSel(p4, '.done-btns .btn:not(.primary)');
+  await p4.waitForSelector('.card.daily.done');
+  log('Sieg während der Feier verlassen: verbucht ✓');
+  await ctx4.close();
 
   await browser.close();
   if (errors.length) {

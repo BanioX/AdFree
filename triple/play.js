@@ -374,9 +374,10 @@ export function mountPlay(root, ctx) {
     tickAt = now;
   }
   const tickTimer = setInterval(tick, 1000);
+  let discarded = false;
   function persist() {
     tick();
-    if (game.status === 'won') return;
+    if (game.status === 'won' || discarded) return;
     ctx.save(game.toJSON());
   }
   const onVis = () => { if (document.visibilityState === 'hidden') persist(); else tickAt = performance.now(); };
@@ -691,8 +692,14 @@ export function mountPlay(root, ctx) {
     if (v === 'stash') doStash(false);
     else if (v === 'undo') doUndo();
     else if (v === 'extra') doStash(true);
-    else if (v === 'restart') ctx.restart();
+    else if (v === 'restart') restart();
     else ctx.menu();
+  }
+
+  /** Neu beginnen: Spielstand verwerfen (destroy() darf ihn nicht wieder speichern). */
+  function restart() {
+    discarded = true;
+    ctx.restart();
   }
 
   async function onRestartClick() {
@@ -703,7 +710,7 @@ export function mountPlay(root, ctx) {
       text: 'Dieses Level startet nochmal von vorn.',
       buttons: [{ label: 'Neu beginnen', value: true, primary: true }, { label: 'Weiterspielen', value: false, ghost: true }],
     });
-    if (ok && alive) ctx.restart();
+    if (ok && alive) restart();
   }
 
   // ---------- Start ----------

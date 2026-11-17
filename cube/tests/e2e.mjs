@@ -151,7 +151,7 @@ async function main() {
   check(await page.locator('.win-star.on').count() === 3, '3 Sterne ohne Fehler');
   await shot(page, '03-win');
   const summary = await dbg(page, () => JSON.parse(localStorage.getItem('spielpause.summary.cube') || 'null'));
-  check(summary && summary.text === 'Level 2', 'reportSummary meldet «Level 2»');
+  check(summary && summary.text === 'Level 2 · 3 Sterne', 'reportSummary meldet «Level 2 · 3 Sterne»');
   const st1 = await dbg(page, () => JSON.parse(localStorage.getItem('spielpause.cube.stats') || '{}'));
   check(st1.arrows === total1 && st1.wins === 1 && st1.streak === 1, 'Statistik zählt Pfeile, Siege und Serie');
 
@@ -297,6 +297,98 @@ async function main() {
   const ms = await dbg(page, () => window.__cube.bench(60));
   console.log(`  Renderzeit Level 60 (N=10): ${ms.toFixed(2)} ms/Bild (Desktop-Chromium)`);
   check(ms < 8, 'Rendern schnell genug');
+
+  console.log('Spielstand pro Level und Verlauf (Wiederholen löscht nichts)');
+  await page.goto(BASE);
+  await wait(page, 900);
+  const h0 = await dbg(page, () => history.length);
+  await page.locator('.gm-primary').tap();
+  await wait(page, 1300);
+  check(page.url().endsWith('#play/60'), 'Hauptknopf öffnet das Front-Level 60');
+  const fr60 = await dbg(page, () => window.__cube.freeIds());
+  await dbg(page, (i) => window.__cube.tap(i), fr60[0]);
+  await wait(page, 800);
+  const rem60 = await dbg(page, () => window.__cube.remaining);
+  await page.locator('.topbar .icon-btn').first().tap();
+  await wait(page, 800);
+  check((await page.locator('.gm-primary').textContent()).includes('Weiterspielen'), 'Menü: «Weiterspielen» nach einem Zug');
+  await page.locator('.level-tile[data-level="5"]').tap();
+  await wait(page, 1300);
+  check(await dbg(page, () => window.__cube.level) === 5, 'altes Level 5 aus der Levelkarte geöffnet');
+  await page.locator('.topbar .icon-btn').first().tap();
+  await wait(page, 800);
+  check((await page.locator('.gm-primary').textContent()).includes('Weiterspielen'), 'Front-Level-Stand bleibt nach Wiederholung erhalten');
+  check(await dbg(page, () => history.length) === h0 + 1, `kein doppelter Menü-Eintrag im Verlauf (${await dbg(page, () => history.length)} statt ${h0 + 1})`);
+  await page.locator('.gm-primary').tap();
+  await wait(page, 1300);
+  check(await dbg(page, () => window.__cube.remaining) === rem60, 'Level 60 setzt beim alten Stand fort');
+
+  console.log('Schneller Doppeltipp trifft keinen Nachbarn');
+  // Wie in der QA: Tippstellen, an denen nach dem Entfernen ein Nachbar in Tipp-Reichweite liegt
+  let dblBad = 0, dblTried = 0;
+  for (let k = 0; k < 40 && dblTried < 6; k++) {
+    const spot = await dbg(page, () => {
+      const C = window.__cube;
+      for (const f of C.freeIds()) {
+        const p = C.tapPoint(f);
+        if (!p) continue;
+        for (let dy = -24; dy <= 24; dy += 4) for (let dx = -24; dx <= 24; dx += 4) {
+          const x = p.x + dx, y = p.y + dy;
+          if (C.hitTest(x, y) === f && C.hitTestWithout(x, y, f) >= 0) return { x, y };
+        }
+      }
+      return null;
+    });
+    if (!spot) { // keine passende Stelle sichtbar: zu einem anderen freien Pfeil drehen
+      await dbg(page, (n) => { const f = window.__cube.freeIds(); if (f.length) window.__cube.showArrow(f[n % f.length]); }, k);
+      await wait(page, 120);
+      continue;
+    }
+    const before = await dbg(page, () => ({ h: window.__cube.hearts, r: window.__cube.remaining }));
+    await page.touchscreen.tap(spot.x, spot.y);
+    await wait(page, 90);
+    await page.touchscreen.tap(spot.x, spot.y);
+    await wait(page, 900);
+    const after = await dbg(page, () => ({ h: window.__cube.hearts, r: window.__cube.remaining }));
+    dblTried++;
+    if (after.h !== before.h || after.r !== before.r - 1) dblBad++;
+  }
+  check(dblTried >= 3 && dblBad === 0, `Doppeltipps neben Nachbarn: ${dblTried} versucht, ${dblBad} falsch`);
+
+  console.log('Neu laden während der Startfahrt speichert die Grundansicht');
+  await page.goto(BASE + '#play/7');
+  await wait(page, 150);
+  await dbg(page, () => window.__cube.tap(window.__cube.freeIds()[0]));
+  await page.reload();
+  await wait(page, 300);
+  const qDot = await page.evaluate(async () => {
+    const { Q_DEFAULT } = await import('./view.js');
+    const s = JSON.parse(localStorage.getItem('spielpause.cube.saves') || '{}')[7];
+    return s && s.q ? Math.abs(s.q.reduce((a, v, i) => a + v * Q_DEFAULT[i], 0)) : 0;
+  });
+  check(qDot > 0.999, `gespeicherte Ansicht = Grundansicht (${qDot.toFixed(4)})`);
+
+  console.log('Tutorial-Blase verdeckt die Herzen nicht');
+  await page.goto(BASE + '#play/1');
+  await wait(page, 1300);
+  const bb = await page.locator('.bubble:not(.hidden)').boundingBox();
+  const pb = await page.locator('.pill').boundingBox();
+  const pillOp = await dbg(page, () => getComputedStyle(document.querySelector('.pill')).opacity);
+  check(bb && pb && bb.y >= pb.y + pb.height - 1 && pillOp === '1', 'Blase liegt unter der sichtbaren Herzen-Anzeige');
+  await shot(page, '13-level1-bubble');
+
+  console.log('Neu laden auf dem Gewinn-Blatt geht weiter');
+  await page.goto(BASE + '#play/3');
+  await wait(page, 1300);
+  for (let k = 0; k < 60 && await dbg(page, () => window.__cube && window.__cube.remaining > 0); k++) {
+    await dbg(page, () => { const f = window.__cube.freeIds(); if (f.length) window.__cube.tap(f[0]); });
+    await wait(page, 60);
+  }
+  await page.waitForSelector('.sp-modal', { timeout: 4000 }).catch(() => {});
+  check(page.url().endsWith('#play/4'), 'Adresse zeigt beim Gewinn schon aufs nächste Level');
+  await page.reload();
+  await wait(page, 1300);
+  check(await dbg(page, () => window.__cube.level) === 4 && await page.locator('.sp-modal').count() === 0, 'Neu laden öffnet Level 4 statt Level 3 erneut');
 
   console.log('Gesperrtes Level per URL, Zurück ins Menü');
   await page.goto(BASE + '#play/999');

@@ -5,7 +5,8 @@ import { NI } from '../lib/numbers/icons.js';
 /** Kleines Demo-Gitter (cols Spalten) aus einem Ziffern-String; '.' = gestrichen-Ziffer folgt. */
 function demoGrid(stage, cols, digits, { cs = 40 } = {}) {
   const wrap = h('div.nx-demo');
-  const grid = h('div.ng.nm-grid.nm-demo', { style: { '--cols': cols, '--cs': cs + 'px', '--gap': '1px' } });
+  const grid = h('div.ng.nm-grid.nm-demo');
+  setVars(grid, cols, cs);
   const cells = [];
   for (const ch of digits) {
     const c = h('div.ng-cell.nm-cell', null, h('span', null, ch.replace(/[a-i]/, (m) => String(m.charCodeAt(0) - 96))));
@@ -16,6 +17,12 @@ function demoGrid(stage, cols, digits, { cs = 40 } = {}) {
   wrap.append(grid);
   stage.append(wrap);
   return { grid, cells };
+}
+
+function setVars(el, cols, cs) {
+  el.style.setProperty('--cols', cols);
+  el.style.setProperty('--cs', cs + 'px');
+  el.style.setProperty('--gap', '0px');
 }
 
 const reset = (cells, digits) => cells.forEach((c, k) => {
@@ -96,7 +103,8 @@ export function tutorialSteps() {
       demo(stage, api) {
         const D = '1a6b' + 'c42d';
         const wrap = h('div.nx-demo.nm-demo-add');
-        const grid = h('div.ng.nm-grid.nm-demo', { style: { '--cols': 4, '--cs': '38px', '--gap': '1px' } });
+        const grid = h('div.ng.nm-grid.nm-demo');
+        setVars(grid, 4, 38);
         const btn = h('div.nm-demo-btn', { html: NI.plusRows });
         wrap.append(grid, btn);
         stage.append(wrap);

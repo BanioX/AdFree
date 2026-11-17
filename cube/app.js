@@ -13,15 +13,22 @@ setupPage();
 const root = document.getElementById('app');
 let screen = null;
 
+const urlFor = (hash) => location.pathname + location.search + (hash ? '#' + hash : '');
+
 const nav = {
-  menu() { go('', true); },
+  menu() {
+    // Kam das Spiel per Push aus dem Startbildschirm, zurückblättern statt einen zweiten Menü-Eintrag anzulegen
+    if (screen && screen.kind === 'play' && history.state && history.state.cubeFromMenu) history.back();
+    else go('', true);
+  },
   play(level) { go(`play/${level}`, !!(screen && screen.kind === 'play')); },
+  /** Level gelöst: Adresse schon aufs nächste Level setzen (Neuladen auf dem Gewinn-Blatt geht weiter). */
+  solved(level) { history.replaceState(history.state, '', urlFor(`play/${level + 1}`)); },
 };
 
 function go(hash, replace) {
-  const url = location.pathname + location.search + (hash ? '#' + hash : '');
-  if (replace) history.replaceState(null, '', url);
-  else history.pushState(null, '', url);
+  if (replace) history.replaceState(history.state, '', urlFor(hash));
+  else history.pushState({ cubeFromMenu: !!(screen && screen.kind === 'menu') }, '', urlFor(hash));
   route();
 }
 
@@ -34,7 +41,7 @@ function target() {
   if (level > unlocked) {
     // Noch nicht freigeschaltet → das höchste spielbare Level öffnen
     level = unlocked;
-    history.replaceState(null, '', `${location.pathname}${location.search}#play/${level}`);
+    history.replaceState(history.state, '', urlFor(`play/${level}`));
   }
   return { kind: 'play', level, key: 'play/' + level };
 }

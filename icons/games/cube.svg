@@ -1,15 +1,24 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-  <defs><linearGradient id="b" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff0cc"/><stop offset="1" stop-color="#ffcf70"/></linearGradient></defs>
+  <defs>
+    <linearGradient id="b" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff0cc"/><stop offset="1" stop-color="#ffcf70"/></linearGradient>
+    <linearGradient id="t" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fffdf7"/><stop offset="1" stop-color="#fbf0dc"/></linearGradient>
+  </defs>
   <rect width="100" height="100" fill="url(#b)"/>
-  <ellipse cx="50" cy="88" rx="26" ry="5" fill="#b07a20" opacity=".18"/>
-  <g stroke="#4a3418" stroke-width="1.8" stroke-linejoin="round">
-    <path d="M50 14l31 17-31 17-31-17z" fill="#fffaf0"/>
+  <g transform="translate(50 49) scale(1.13) translate(-50 -49)">
+  <ellipse cx="50" cy="86.5" rx="27" ry="4.6" fill="#b07a20" opacity=".2"/>
+  <g stroke="#4a3418" stroke-width="2" stroke-linejoin="round">
+    <path d="M50 14l31 17-31 17-31-17z" fill="url(#t)"/>
     <path d="M19 31l31 17v35L19 66z" fill="#f6ead2"/>
-    <path d="M81 31L50 48v35l31-17z" fill="#ecd6ad"/>
+    <path d="M81 31L50 48v35l31-17z" fill="#e9d2a6"/>
   </g>
-  <g fill="none" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M37 29l13 7 11-6" stroke="#e5484d"/><path d="M57 28l4 2-1 4.5" stroke="#e5484d"/>
-    <path d="M27 45v13l11 6v8" stroke="#3f8ef0"/><path d="M34.5 69l3.5 4 3.5-2" stroke="#3f8ef0"/>
-    <path d="M59 71V58l14-8" stroke="#34a86a"/><path d="M68.5 49.5l4.5 .5-1 4.5" stroke="#34a86a"/>
+  <path d="M75 44v15" stroke="#fff" stroke-opacity=".6" stroke-width="5.5" stroke-linecap="round"/>
+  <g fill="none" stroke="#4a3418" stroke-width="5.6" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M44.5 28l21 11.5V59"/>
+    <path d="M26.8 65V45.3l12.4 6.8"/>
+  </g>
+  <g fill="#4a3418" stroke="#4a3418" stroke-width="1.6" stroke-linejoin="round">
+    <path d="M65.5 67.5L60.7 61.1 70.3 55.9z"/>
+    <path d="M45.6 55.6L38.3 46.1V57.1z"/>
+  </g>
   </g>
 </svg>

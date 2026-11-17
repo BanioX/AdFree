@@ -282,6 +282,8 @@ try {
   await wait(200);
   await shot('18-levels');
   await page.locator('.tr-level').first().tap();
+  await wait(400);
+  if (await page.evaluate(() => location.hash) !== '#level/1') await page.locator('.tr-level').first().tap();
   await page.waitForFunction(() => location.hash === '#level/1' && window.__triple);
   await waitIdle(5000);
   await page.locator('.tr-top .icon-btn').first().tap();
@@ -302,6 +304,7 @@ try {
   step('«?» im Spiel zeigt die Anleitung');
   await page.locator('.tr-top .icon-btn[aria-label="So geht’s"]').tap();
   await page.locator('.tut-backdrop .tut-title').waitFor();
+  await wait(500); // Doppeltipp-Sperre von setupPage()
   await page.locator('.tut-skip').tap();
   await page.locator('.tut-backdrop').waitFor({ state: 'detached' });
 
@@ -318,8 +321,9 @@ try {
   const p2 = await small.newPage();
   p2.on('pageerror', (e) => problems.push('SE pageerror: ' + e.message));
   await p2.goto(BASE + 'triple/');
-  await p2.evaluate(() => localStorage.setItem('spielpause.triple.pref.helpSeen', 'true'));
+  await p2.evaluate(() => localStorage.setItem('spielpause.tutorial.triple', 'true'));
   await p2.goto(BASE + 'triple/#play');
+  await p2.reload();
   await p2.waitForFunction(() => window.__triple && !window.__triple.isBusy(), null, { timeout: 6000 });
   const overflow = await p2.evaluate(() => document.documentElement.scrollHeight > window.innerHeight + 1);
   assert.equal(overflow, false, 'Seite darf nicht scrollen');

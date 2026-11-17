@@ -4,6 +4,15 @@ Was in Spielpause neu dazukommt. Neueste Einträge oben.
 
 ## 17. November 2026 (Abend)
 
+### Neu
+- **Farbenzauber** fertig: 20 handgezeichnete Bilder (Blumen, Tiere, Landschaften, Essen, Winter),
+  Mandalas, Buntglas, Low Poly, eigene Fotos; neuer Startbildschirm mit «Weitermalen», animierte Anleitung.
+- **Pfeilwürfel** fertig: neuer Startbildschirm, animierte Anleitung, Modus «Entspannt», Statistik.
+
+### Behoben
+- Schnelle Taps gingen in allen Spielen manchmal verloren (jeder zweite Tap innerhalb von 0,3 s).
+- Unfertige Spiele öffneten einen Download-Dialog – jetzt «Bald»-Kachel und freundliche Hinweisseite.
+
 ### Verbessert
 - **Ton komplett neu:** viel leiser und sanfter (weiche Glockentöne statt Piepsen), Menü-Knöpfe sind
   stumm, schnelle Wiederholungen werden gedrosselt. Auf dem iPhone gilt jetzt der **Stumm-Schalter**,

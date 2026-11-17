@@ -15,10 +15,14 @@
 //   minGivens  so viele vorgegebene Zahlen bleiben mindestens stehen
 //   maxGivens  höchstens so viele vorgegebene Zahlen
 //   minScore   optional: Mindest-Punktzahl (Summe der Technik-Gewichte)
+//   forbid     optional: Techniken, die nie nötig sein dürfen (z.B. Leicht: immer geht es mit Suchen
+//              «nur hier möglich» weiter, nie muss man alle Kandidaten eines Feldes durchzählen)
+//   require    optional: { Technik: n } – Technik muss mindestens n-mal nötig sein
+//              (Mittel: mindestens zweimal «einzige Zahl», d.h. gerade kein versteckter Einer in Sicht)
 
 export const difficulties = [
-  { id: 'leicht', title: 'Leicht', blurb: 'Gemütlich zum Aufwärmen', minTier: 1, maxTier: 1, minGivens: 36, maxGivens: 40 },
-  { id: 'mittel', title: 'Mittel', blurb: 'Ein bisschen knobeln', minTier: 1, maxTier: 1, minGivens: 27, maxGivens: 31 },
+  { id: 'leicht', title: 'Leicht', blurb: 'Gemütlich zum Aufwärmen', minTier: 1, maxTier: 1, minGivens: 36, maxGivens: 40, forbid: ['nakedSingle'] },
+  { id: 'mittel', title: 'Mittel', blurb: 'Ein bisschen knobeln', minTier: 1, maxTier: 1, minGivens: 27, maxGivens: 31, require: { nakedSingle: 2 } },
   { id: 'schwer', title: 'Schwer', blurb: 'Mit Notizen, Paaren und Zeigern', minTier: 2, maxTier: 2, minGivens: 22, maxGivens: 32 },
   { id: 'experte', title: 'Experte', blurb: 'X-Wing, Drillinge & Co.', minTier: 3, maxTier: 4, minGivens: 20, maxGivens: 32 },
 ];

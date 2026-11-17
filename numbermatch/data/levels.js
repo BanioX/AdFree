@@ -42,5 +42,5 @@ export const GOAL_TEXT = {
   clear: { short: 'Feld leeren', long: 'Räume alle Zahlen ab' },
   stars: { short: 'Sterne', long: (n) => `Sammle ${n} Sterne` },
   rows: { short: 'Reihen', long: (n) => `Räume ${n} Reihen ab` },
-  score: { short: 'Endlos', long: 'So viele Punkte wie möglich' },
+  score: { short: 'Endlos', long: 'Punkte sammeln' },
 };

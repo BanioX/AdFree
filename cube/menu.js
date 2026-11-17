@@ -10,7 +10,7 @@ import { CubeRenderer } from './render.js';
 import { qMul, qAxisAngle, qNorm } from './math.js';
 import { CHAPTER_SIZE } from './data/levels.js';
 import {
-  loadProgress, loadAnyCurrent, totalStars, solvedCount, perfectCount, ensureSummary,
+  loadProgress, loadCurrent, totalStars, solvedCount, perfectCount, ensureSummary,
   loadStats, loadSettings, saveSettings,
 } from './progress.js';
 import { showHowto } from './howto.js';
@@ -34,7 +34,7 @@ export function showStats() {
     ['Perfekt (3 Sterne)', String(perfectCount(p))],
     ['Beste Serie ohne Fehler', `${s.bestStreak} Level`],
     ['Pfeile befreit', s.arrows.toLocaleString('de-CH')],
-    ['Anstösser', String(s.mistakes)],
+    ['Fehlversuche', String(s.mistakes)],
     ['Tipps genutzt', String(s.hints)],
     ['Spielzeit', fmtTime(s.playMs)],
   ];
@@ -46,8 +46,8 @@ export function mountMenu(root, nav) {
   const prog = loadProgress();
   ensureSummary();
   const next = prog.unlocked;
-  const cur = loadAnyCurrent();
-  const resume = cur && cur.level === next && Array.isArray(cur.removed) && cur.removed.length > 0;
+  const cur = loadCurrent(next);
+  const resume = cur && Array.isArray(cur.removed) && cur.removed.length > 0;
   const nextLevel = generateLevel(next);
   const sp = specialFor(next);
   const settings = loadSettings();
@@ -129,7 +129,7 @@ export function mountMenu(root, nav) {
         { id: 'classic', label: 'Klassisch', sub: 'mit Herzen' },
         { id: 'relax', label: 'Entspannt', sub: 'ohne Herzen' },
       ],
-      onChange(id) { saveSettings({ mode: id }); toast(id === 'relax' ? 'Entspannt: Anstossen kostet nichts' : 'Klassisch: mit Herzen'); },
+      onChange(id) { saveSettings({ mode: id }); toast(id === 'relax' ? 'Entspannt: ohne Herzen – Fehler kosten nur Sterne' : 'Klassisch: mit Herzen'); },
     },
     secondary: [
       { label: 'Levelkarte', icon: 'grid', onClick: scrollToMap },

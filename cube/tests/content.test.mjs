@@ -8,7 +8,7 @@ import { levelParams, specialFor, themeFor, generateLevel, solve } from '../gene
 import { makeCube } from '../geometry.js';
 
 const HEX = /^#[0-9a-f]{6}$/i;
-const SPECIAL_KEYS = new Set(['id', 'title', 'emoji', 'text', 'grow', 'maxN', 'density', 'maxDensity', 'hearts', 'minLen', 'maxLen', 'turn', 'mustCross']);
+const SPECIAL_KEYS = new Set(['id', 'title', 'emoji', 'text', 'grow', 'maxN', 'density', 'maxDensity', 'hearts', 'minLen', 'maxLen', 'turn', 'maxTurns', 'mustCross', 'textMax']);
 
 /** Schweizer Rechtschreibung: kein ß, typografische Anführungszeichen «». */
 function swiss(text, where) {
@@ -39,6 +39,8 @@ test('Spezial-Level: gültige Regler, eindeutige IDs, Texte', () => {
     assert.ok(sp.title && sp.title.length <= 18, `${sp.id}: kurzer Titel`);
     assert.ok(sp.text && sp.text.length <= 60, `${sp.id}: kurzer Satz`);
     swiss(sp.title + sp.text, sp.id);
+    if ('textMax' in sp) { assert.ok(sp.textMax.length <= 60, `${sp.id}: kurzer textMax`); swiss(sp.textMax, sp.id); }
+    if ('maxTurns' in sp) assert.ok(Number.isInteger(sp.maxTurns) && sp.maxTurns >= 0);
     if ('turn' in sp) assert.ok(sp.turn >= 0 && sp.turn <= 1);
     if ('maxN' in sp) assert.ok(sp.maxN >= 3 && sp.maxN <= 10);
     if ('minLen' in sp) assert.ok(sp.minLen >= 2 && sp.minLen <= 8);
@@ -57,6 +59,49 @@ test('Jeder Spezial-Typ erzeugt lösbare Level (mehrere Grössen)', () => {
       assert.ok(solve(makeCube(lv.N), lv.arrows), `L${L}: lösbar`);
     }
   }
+});
+
+/** Kurven pro Pfeil: Richtungswechsel innerhalb einer Seite (über eine Kante gerade weiter zählt nicht). */
+function turnsOf(a, N) {
+  const NN = N * N;
+  const f = (c) => (c / NN) | 0, u = (c) => c % N, v = (c) => ((c % NN) / N) | 0;
+  let t = 0;
+  for (let i = 2; i < a.cells.length; i++) {
+    const [p, q, r] = [a.cells[i - 2], a.cells[i - 1], a.cells[i]];
+    if (f(p) !== f(q) || f(q) !== f(r)) continue;
+    if (u(q) - u(p) !== u(r) - u(q) || v(q) - v(p) !== v(r) - v(q)) t++;
+  }
+  return t;
+}
+
+test('Spezial-Level halten, was ihr Text verspricht (Kurven, Kanten, Grösse)', () => {
+  const agg = {};
+  for (let L = 3; L <= 200; L++) {
+    const sp = specialFor(L);
+    const key = sp ? sp.id : 'normal';
+    const g = agg[key] || (agg[key] = { arrows: 0, straight: 0, turns: 0 });
+    const lv = generateLevel(L);
+    for (const a of lv.arrows) {
+      const t = turnsOf(a, lv.N);
+      g.arrows++; g.turns += t; if (t === 0) g.straight++;
+      if (sp && Number.isInteger(sp.maxTurns)) assert.ok(t <= sp.maxTurns, `L${L}: höchstens ${sp.maxTurns} Kurven`);
+    }
+    if (sp && sp.mustCross) {
+      const geo = makeCube(lv.N);
+      for (const a of lv.arrows) assert.ok(new Set(a.cells.map((c) => geo.faceOf(c))).size > 1, `L${L}: Pfeil über eine Kante`);
+    }
+    // «Riesenwürfel»: grösser als das Level davor – oder (bei Höchstgrösse) mit passendem Text
+    if (sp && sp.grow) {
+      const p = levelParams(L);
+      assert.ok(p.grew || (p.N === 10 && sp.textMax), `L${L}: grösser oder textMax`);
+    }
+  }
+  const rate = (k) => agg[k].turns / agg[k].arrows;
+  const straightShare = (k) => agg[k].straight / agg[k].arrows;
+  assert.ok(straightShare('straight') >= 0.9, `«Gerade Wege»: fast nur gerade (${straightShare('straight').toFixed(2)})`);
+  assert.ok(rate('straight') < rate('normal') / 3, '«Gerade Wege»: viel weniger Kurven als normal');
+  assert.ok(rate('twisty') > rate('normal') * 1.4, '«Kringel»: deutlich mehr Kurven als normal');
+  assert.ok(rate('long') > rate('normal'), '«Lange Schlangen»: kurvenreicher als normal');
 });
 
 test('Kapitel-Themen: gültige Farben, eindeutig, reihum', () => {

@@ -9,7 +9,7 @@ import {
 } from '../logic/board.js';
 import { solve, countSolutions, randomSolution } from '../logic/solver.js';
 import { grade, TECHNIQUES } from '../logic/human.js';
-import { generate, transform, solutionOf } from '../logic/generator.js';
+import { generate, transform, solutionOf, fitsSpec } from '../logic/generator.js';
 import { Game } from '../logic/game.js';
 import { findHint } from '../logic/hints.js';
 import { describeStep, techniqueTexts, hintTexts } from '../data/texts.js';
@@ -105,6 +105,7 @@ test('Vorrat: jedes Rätsel eindeutig, Stufe und Vorgaben passen, keine Doppelte
       assert.ok(g.solved && g.tier >= spec.minTier && g.tier <= spec.maxTier, `${spec.id}: Stufe ${g.tier} für ${p}`);
       const givens = v.filter(Boolean).length;
       assert.ok(givens >= spec.minGivens && givens <= spec.maxGivens, `${spec.id}: ${givens} Vorgaben`);
+      assert.ok(fitsSpec(g, givens, spec), `${spec.id}: Techniken passen nicht (${JSON.stringify(g.counts)})`);
     }
   }
 });
@@ -129,6 +130,7 @@ test('Generator: eindeutig, richtige Stufe, deterministisch', () => {
       assert.equal(countSolutions(v, 2), 1);
       assert.equal(solutionOf(r.puzzle), r.solution);
       assert.ok(r.tier >= spec.minTier && r.tier <= spec.maxTier, `${spec.id}: Stufe ${r.tier}`);
+      assert.ok(fitsSpec(grade(v, 4), r.givens, spec), `${spec.id}: Techniken passen`);
       assert.ok(r.givens >= spec.minGivens && r.givens <= spec.maxGivens);
       for (let i = 0; i < 81; i++) assert.equal(!!v[i], !!v[80 - i], 'punktsymmetrisch');
       checkSteps(r.puzzle, parse(r.solution));
@@ -245,4 +247,14 @@ test('Tipp-Texte: jede Technik erklärt, Schweizer Rechtschreibung', () => {
   }
   all.push(JSON.stringify(hintTexts), hintTexts.reveal(4).text);
   assert.ok(!all.join(' ').includes('ß'), 'kein ß');
+});
+
+test('Leicht und Mittel unterscheiden sich in der Technik, nicht nur in der Zahl der Vorgaben', () => {
+  // Leicht: immer gibt es ein Feld, das man durch Suchen findet (nie «einzige Zahl» nötig).
+  // Mittel: mindestens zweimal muss man alle Möglichkeiten eines Feldes durchzählen.
+  const nakedIn = (id) => pool[id].map((p) => grade(parse(p), 4).counts.nakedSingle || 0);
+  assert.ok(nakedIn('leicht').every((n) => n === 0), 'Leicht ohne nackte Einer');
+  assert.ok(nakedIn('mittel').every((n) => n >= 2), 'Mittel braucht nackte Einer');
+  assert.ok(grade(parse(pool.leicht[0]), 1, { exclude: ['nakedSingle'] }).solved, 'Leicht ohne nackte Einer lösbar');
+  assert.ok(!grade(parse(pool.mittel[0]), 1, { exclude: ['nakedSingle'] }).solved, 'Mittel braucht nackte Einer');
 });

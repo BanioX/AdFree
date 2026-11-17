@@ -456,7 +456,9 @@ function showGame(session, slot, { fresh = false } = {}) {
   let last = performance.now();
   const tick = () => {
     const now = performance.now();
-    if (!session.won && !busy && document.visibilityState === 'visible') session.elapsed += Math.min(5, (now - last) / 1000);
+    // Zeit läuft nur, wenn wirklich gespielt wird (kein Dialog, keine Anleitung offen)
+    const paused = busy || document.visibilityState !== 'visible' || document.querySelector('.sp-modal-backdrop, .tut-backdrop');
+    if (!session.won && !paused) session.elapsed += Math.min(5, (now - last) / 1000);
     last = now;
     renderHud();
   };

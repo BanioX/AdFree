@@ -27,7 +27,7 @@ export const tutorialSteps = [
     text: 'Wische ein Juwel auf ein Nachbarfeld – drei gleiche in einer Reihe verschwinden.',
     demo(stage, api) {
       const { el, cells } = miniGrid([[4, 3, 5, 3], [0, 0, 2, 0], [1, 5, 0, 4]]);
-      stage.append(el);
+      stage.append(h('div.m3t-wrap', null, el));
       return api.loop(async () => {
         const mover = cells[2][2], dest = cells[1][2];
         await api.finger.drag([pct(stage, mover), pct(stage, dest)], 520);
@@ -52,7 +52,7 @@ export const tutorialSteps = [
       const iceGoal = h('div.m3t-goal', null, h('img', { src: iceURL(72), alt: '' }), h('b', null, '✓'));
       const mv = h('div.m3t-moves', null, moves, h('small', null, 'Züge'));
       const stars = h('div.m3t-stars', null, ...[0, 1, 2].map(() => h('span', null, '★')));
-      stage.append(h('div.m3t-hud', null, mv, goal, iceGoal), stars);
+      stage.append(h('div.m3t-wrap', null, h('div.m3t-hud', null, mv, goal, iceGoal), stars));
       return api.loop(async () => {
         let n = 9, m = 12;
         count.textContent = n; moves.textContent = m;
@@ -75,7 +75,7 @@ export const tutorialSteps = [
     demo(stage, api) {
       const items = [['h3', '4 in Reihe'], ['b4', 'L oder T'], ['rainbow', '5 in Reihe']].map(([k, label]) =>
         h('div.m3t-special', null, h('img', { src: spriteURL(k, 96), alt: '' }), h('small', null, label)));
-      stage.append(h('div.m3t-specials', null, ...items));
+      stage.append(h('div.m3t-wrap', null, h('div.m3t-specials', null, ...items)));
       return api.loop(async () => {
         for (const it of items) {
           it.classList.add('m3t-glow');
@@ -96,7 +96,7 @@ export const tutorialSteps = [
       const hammer = h('div.m3t-tool', null, h('span', null, '🔨'), h('small', null, 'Hammer'));
       const shuffle = h('div.m3t-tool', null, h('span', null, '🔀'), h('small', null, 'Mischen'));
       const plus = h('div.m3t-tool', null, h('span', null, '+5'), h('small', null, 'Züge'));
-      stage.append(el, h('div.m3t-tools', null, hammer, shuffle, plus));
+      stage.append(h('div.m3t-wrap', null, el, h('div.m3t-tools', null, hammer, shuffle, plus)));
       return api.loop(async () => {
         await api.finger.tap(hammer, 500);
         hammer.classList.add('on');

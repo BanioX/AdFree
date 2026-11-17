@@ -64,7 +64,7 @@ function cubeScene(stage, api, level) {
     if (spin) {
       const p = clamp((t - spin.t0) / spin.dur, 0, 1);
       const e = p < 0 ? 0 : p * p * (3 - 2 * p);
-      view.q = qNorm(qMul(qAxisAngle(spin.axis, spin.angle * e), spin.q0));
+      view.q = qNorm(qMul(spin.q0, qAxisAngle(spin.axis, spin.angle * e)));
       if (p >= 1) spin = null;
     }
     const drawAnims = [];

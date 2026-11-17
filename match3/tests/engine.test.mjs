@@ -1,4 +1,4 @@
-// node --test match3/tests
+// node --test match3/tests/*.test.mjs
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { Game, parseLevel, SP, Rng, zenLevel } from '../engine.js';

@@ -1,0 +1,74 @@
+/* Zahlenschlange – eigene Styles (Basis: shared/style.css + lib/numbers/numbers.css) */
+
+:root {
+  --accent: #d9822b;
+  --accent-2: #f6c27a;
+  --hd-given: #f7e6cf;
+  --hd-line: rgba(217, 130, 43, .34);
+}
+
+/* ---------- Info-Leiste ---------- */
+
+.hd-info { flex: 0 0 auto; display: flex; align-items: center; gap: 12px; padding: 10px 16px; border-radius: 18px; }
+.hd-info-mid { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.hd-next { font-size: 16px; font-weight: 850; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hd-prog { font-size: 15px; font-weight: 850; color: var(--nx-deep); font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+/* ---------- Brett ---------- */
+
+.hd-stack { position: relative; }
+.hd-stack .nx-coach { top: calc(100% + 12px); bottom: auto; }
+.hd-card { padding: 12px; }
+.hd-board { position: relative; isolation: isolate; }
+/* Linie liegt über den Kacheln, aber unter den Zahlen */
+.hd-links { position: absolute; left: 0; top: 0; z-index: 2; pointer-events: none; overflow: visible; }
+.hd-links path { fill: none; stroke: var(--hd-line); stroke-linecap: round; stroke-linejoin: round; }
+.hd-grid { position: relative; }
+.hd-cell {
+  border-radius: 28%; background: rgba(255, 255, 255, .55); box-shadow: inset 0 0 0 1.5px #eadfd2;
+  cursor: pointer; transition: background .2s, box-shadow .2s, color .2s;
+}
+.hd-n { position: relative; z-index: 3; font-size: calc(var(--cs) * .44); font-weight: 850; }
+.hd-cell.hole { background: transparent; box-shadow: none; cursor: default; }
+.hd-cell.given { background: var(--hd-given); box-shadow: inset 0 -2px 0 rgba(150, 90, 30, .12); color: #4a3418; }
+.hd-cell.user { background: #fff; box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--accent) 45%, #fff); color: var(--nx-deep); }
+.hd-cell.empty { background: rgba(255, 255, 255, .7); }
+.hd-cell.end.given { background: var(--accent); color: #fff; box-shadow: 0 3px 8px color-mix(in srgb, var(--accent) 35%, transparent); }
+.hd-cell.active { box-shadow: 0 0 0 3px var(--accent), 0 4px 12px color-mix(in srgb, var(--accent) 30%, transparent); }
+.hd-cell.empty.active { background: #fff6ea; }
+.hd-cell.bad { color: #d23f4f; box-shadow: inset 0 0 0 2px #f2a3ac; background: #fff1f2; }
+.hd-cell.bad.active { box-shadow: 0 0 0 3px #e5484d; }
+.hd-cell.hinted { animation: hd-hint 1.5s ease-out; }
+@keyframes hd-hint { 0% { box-shadow: 0 0 0 0 #ffd36b; } 30% { box-shadow: 0 0 0 6px #ffd36b; } 100% { box-shadow: 0 0 0 0 transparent; } }
+.hd-cell.glow { animation: hd-glow .7s var(--ease-out); }
+@keyframes hd-glow { 0% { transform: scale(1); } 40% { transform: scale(1.16); background: #ffe2b8; } 100% { transform: scale(1); } }
+.hd-cell.ng-coach::after { inset: -2px; border-radius: 30%; }
+.hd-cell .ng-notes { color: var(--nx-deep); opacity: .8; }
+
+/* ---------- Menü-Titelbild ---------- */
+
+.hd-art { padding: 12px; border-radius: 26px; background: linear-gradient(160deg, #fff6ea, #fbe0bd); }
+.hd-art .hd-cell { cursor: default; }
+
+/* ---------- Tutorial ---------- */
+
+.hd-demo { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; }
+.hd-demo .hd-board { background: #fff; padding: 10px; border-radius: 20px; box-shadow: var(--shadow); box-sizing: content-box; }
+.hd-demo .hd-links { left: 10px; top: 10px; }
+.hd-demo .hd-cell { transition: background .2s, transform .3s var(--ease-spring); }
+.hd-demo-pad {
+  position: absolute; left: 50%; bottom: 14px; transform: translate(-50%, 8px); display: flex; gap: 6px; padding: 6px;
+  background: #fff; border-radius: 14px; box-shadow: var(--shadow-lg); opacity: 0; transition: opacity .2s, transform .25s var(--ease-spring);
+}
+.hd-demo-pad.show { opacity: 1; transform: translate(-50%, 0); }
+.hd-demo-pad span { width: 40px; height: 38px; border-radius: 11px; display: grid; place-items: center; background: var(--nx-soft); color: var(--nx-deep); font-weight: 850; font-size: 19px; }
+.hd-demo-tools { display: flex; gap: 14px; }
+.hd-demo-tools span { width: 40px; height: 40px; border-radius: 50%; background: #fff; display: grid; place-items: center; color: var(--nx-deep); box-shadow: var(--shadow); }
+.hd-demo-tools span svg { width: 21px; height: 21px; }
+.hd-demo-tools .bulb { color: var(--accent); }
+
+@media (max-height: 640px) {
+  .hd-info { padding: 7px 14px; }
+  .hd-card { padding: 9px; }
+}
+.hd-cell .ng-notes { z-index: 3; }

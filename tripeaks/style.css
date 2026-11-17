@@ -1,0 +1,30 @@
+/* Gipfel – eigene Styles (Basis: ../shared/style.css, ../lib/cards/cards.css) */
+
+:root { --accent: #2e8bc9; --accent-2: #9fd3f5; }
+
+.tp-stock .pslot-l { font-size: calc(var(--cw) * .22); }
+
+/* Serien-Anzeige rechts neben der Ablage */
+.tp-streak {
+  position: absolute;
+  z-index: 7000;
+  transform: translate(-50%, -50%);
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, .95);
+  color: #2b3a4a;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, .2);
+  pointer-events: none;
+  transition: background .3s, color .3s, opacity .3s;
+}
+.tp-streak b { font-size: 25px; line-height: 1; font-weight: 900; font-variant-numeric: tabular-nums; }
+.tp-streak small { font-size: 11px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; opacity: .7; margin-top: 1px; }
+.tp-streak.zero { opacity: .62; }
+.tp-streak.hot { background: linear-gradient(160deg, #ffd56b, #ff9f43); color: #5a2e00; }
+.tp-streak.bump { animation: tp-bump .38s var(--ease-spring); }
+@keyframes tp-bump { 0% { transform: translate(-50%, -50%) scale(1); } 40% { transform: translate(-50%, -50%) scale(1.18); } 100% { transform: translate(-50%, -50%) scale(1); } }

@@ -41,6 +41,9 @@ Jedes 10. Level (`SPECIAL_EVERY`) ist ein Spezial-Level. Die Einträge kommen de
 }
 ```
 
+`textMax` (optional) ersetzt `text`, wenn `grow` nichts mehr bewirkt, weil der Würfel schon die
+Höchstgrösse 10 hat (z.B. «Riesenwürfel» in späten Leveln).
+
 Regler (alle optional, beliebig kombinierbar):
 
 | Regler       | Wirkung                                                         |
@@ -53,7 +56,12 @@ Regler (alle optional, beliebig kombinierbar):
 | `minLen`     | kürzeste Pfeillänge in Zellen                                   |
 | `maxLen`     | längste Pfeillänge zusätzlich (max. 12)                         |
 | `turn`       | Abbiege-Freude 0 (fast gerade) … 1 (sehr kurvig)               |
+| `maxTurns`   | höchstens so viele Kurven pro Pfeil (0 = nur gerade, über Kanten gerade weiter zählt nicht); freie Pfeile werden dann streng begrenzt |
 | `mustCross`  | `true`: jeder Pfeil muss über eine Würfelkante laufen           |
+
+Der Test `Spezial-Level halten, was ihr Text verspricht` (in `tests/content.test.mjs`) prüft
+Kurven pro Pfeil, Kantenläufe und Grösse. Wer einen Spezial-Typ mit neuem Versprechen einführt,
+ergänzt dort eine passende Prüfung.
 
 ## 3. Grössen-Rampe (`SIZES`, `LATE_SIZES`, `HEARTS`)
 

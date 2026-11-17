@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <linearGradient id="b" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#e6f6e2"/><stop offset="1" stop-color="#a9dba2"/></linearGradient>
+    <linearGradient id="f" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fffefb"/><stop offset="1" stop-color="#f3ebdc"/></linearGradient>
+  </defs>
+  <rect width="100" height="100" fill="url(#b)"/>
+  <!-- Grün mit Loch -->
+  <ellipse cx="50" cy="80" rx="40" ry="11" fill="#6cbf5f" stroke="#3a2a2a" stroke-width="2"/>
+  <ellipse cx="62" cy="80" rx="6" ry="2.6" fill="#2e3a2b"/>
+  <!-- Fahne -->
+  <path d="M62 80V18" stroke="#3a2a2a" stroke-width="2.4" stroke-linecap="round"/>
+  <path d="M63 19l20 6.5-20 7z" fill="#e2475b" stroke="#3a2a2a" stroke-width="2" stroke-linejoin="round"/>
+  <!-- drei Karten im Fächer (eine Reihe) -->
+  <g stroke="#3a2a2a" stroke-width="2" stroke-linejoin="round">
+    <rect x="20" y="20" width="27" height="37" rx="4" fill="url(#f)"/>
+    <rect x="20" y="31" width="27" height="37" rx="4" fill="url(#f)"/>
+  </g>
+  <path d="M27.5 24c-1.9 2.4-4.6 3.9-4.6 6.2a2.2 2.2 0 0 0 3.6 1.6l-.6 2.2h3.3l-.6-2.2a2.2 2.2 0 0 0 3.6-1.6c0-2.3-2.7-3.8-4.7-6.2z" fill="#2c2a3a"/>
+  <path d="M33.5 62s-7.5-4.9-7.5-10c0-2.7 2-4.5 4.2-4.5 1.4 0 2.6.7 3.3 1.9.7-1.2 1.9-1.9 3.3-1.9 2.2 0 4.2 1.8 4.2 4.5 0 5.1-7.5 10-7.5 10z" fill="#e2475b" stroke="#3a2a2a" stroke-width="1.6"/>
+  <path d="M23 34q3.5-1.8 7-1" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" opacity=".9"/>
+  <!-- Ball -->
+  <circle cx="40" cy="78" r="5.2" fill="#fff" stroke="#3a2a2a" stroke-width="2"/>
+  <circle cx="38.6" cy="76.8" r=".9" fill="#c9c2b8"/><circle cx="41.4" cy="77.6" r=".9" fill="#c9c2b8"/>
+</svg>

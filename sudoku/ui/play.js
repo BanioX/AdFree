@@ -5,6 +5,7 @@ import { icon } from './icons.js';
 import { Board } from './board.js';
 import { UNITS, CELL_UNITS, PEERS, bit, candidatesFromValues } from '../logic/board.js';
 import { findHint } from '../logic/hints.js';
+import { makeState, findStep } from '../logic/human.js';
 import { describeStep, hintTexts } from '../data/texts.js';
 import { formatTime } from '../progress.js';
 
@@ -34,14 +35,22 @@ export class Play {
    * @param {Function} o.onMenu     () => void
    * @param {Function} o.onProgress (game) => void
    * @param {Function} o.onGiveUp   () => void   (Spiel nach 3 Fehlern beenden)
+   * @param {Function} o.onSolved   (game) => info  (sofort beim Lösen: Statistik, Tagesrätsel-Häkchen)
+   * @param {Function} o.onHelp     () => Promise<void>  («?»: So geht's)
+   * @param {Function} [o.nextLabel] () => string  Beschriftung des Hauptknopfs im Fertig-Feld
+   * @param {boolean}  [o.coach]    Coach-Mark am Brett zeigen (allererstes Rätsel)
+   * @param {Function} [o.onCoachDone] () => void
    */
   constructor(o) {
     this.o = o;
     this.game = o.game;
     this.settings = o.settings;
-    this.sel = this._firstEmpty();
-    this.focusDigit = 0;
-    this.notesMode = false;
+    // Auswahl und Notizen-Modus kommen nach dem Neuladen wieder
+    const m = this.game.meta;
+    const live = !this.game.done;
+    this.sel = live && Number.isInteger(m.sel) && m.sel >= 0 && m.sel < 81 ? m.sel : this._firstEmpty();
+    this.focusDigit = this.sel != null ? this.game.values[this.sel] || 0 : 0;
+    this.notesMode = live && !!m.notesMode;
     this.hint = null;
     this.locked = false;
     this.modalOpen = false;
@@ -63,6 +72,7 @@ export class Play {
     this._updateTimer();
     if (this.game.done) this._showDone(false);
     else if (this._strikeOut()) setTimeout(() => this._gameOver(), 300);
+    else if (o.coach && this.game.moves === 0) this._startCoach();
   }
 
   destroy() {
@@ -107,10 +117,15 @@ export class Play {
       this._updateTimer();
     });
 
+    const helpBtn = h('button.icon-btn', { type: 'button', 'aria-label': 'So geht’s' });
+    helpBtn.innerHTML = '<span class="gm-q">?</span>';
+    helpBtn.addEventListener('click', () => { sfx.play('click'); this.openModal(() => this.o.onHelp()); });
+
     const top = h('header.topbar.play-top', null,
       back,
       h('div.title-wrap', null, this.titleEl, this.subEl),
       this.timerBtn,
+      helpBtn,
       settingsBtn);
 
     // Pause-Schleier
@@ -235,7 +250,67 @@ export class Play {
 
   save() {
     if (this.destroyed) return;
+    const m = this.game.meta;
+    if (this.game.done) { delete m.sel; delete m.notesMode; } else { m.sel = this.sel; m.notesMode = this.notesMode; }
     this.o.onSave(this.game);
+  }
+
+  /** Öffnet ein Fenster über dem Spiel; die Uhr steht so lange still. */
+  async openModal(fn) {
+    if (this.modalOpen) return;
+    this._tick();
+    this.modalOpen = true;
+    try { await fn(); } finally {
+      this.modalOpen = false;
+      this._lastTick = performance.now();
+      if (!this.destroyed) { this.render(); this._updateTimer(); }
+    }
+  }
+
+  // ---------- Coach-Mark (allererstes Rätsel) ----------
+
+  _startCoach() {
+    const st = findStep(makeState(this.game.values), 1);
+    if (!st || !st.place) return;
+    this.coach = { cell: st.place.c, digit: st.place.d, stage: 1 };
+    this.sel = null;
+    this.focusDigit = 0;
+    this.notesMode = false;
+    this.coachRing = h('span.coach-ring');
+    this.board.cellEl(st.place.c).append(this.coachRing);
+    // Kurzer Hinweis in der Leiste über dem Brett (oder als Meldung, wenn sie keinen Platz hat)
+    setTimeout(() => { if (this.coach && this.coach.stage === 1 && !this.destroyed) this._coachMsg('Tippe auf das leuchtende Feld'); }, 400);
+  }
+
+  _coachMsg(text) {
+    this.stripLabel.textContent = text || this.o.label || '';
+    this.strip.classList.toggle('coaching', !!text);
+    if (text && this.strip.classList.contains('hidden') && !this.modalOpen) toast(text);
+  }
+
+  _coachStep(kind) {
+    const c = this.coach;
+    if (!c) return;
+    if (kind === 'cell' && c.stage === 1) {
+      if (this.coachRing) { this.coachRing.remove(); this.coachRing = null; }
+      c.stage = 2;
+      if (this.sel === c.cell) {
+        this.padBtns[c.digit - 1].b.classList.add('coach');
+        this._coachMsg('Jetzt unten die passende Zahl antippen');
+      } else this._endCoach();
+    } else if (kind === 'input') {
+      this._endCoach();
+    }
+  }
+
+  _endCoach() {
+    if (!this.coach) return;
+    if (this.coachRing) this.coachRing.remove();
+    this.coachRing = null;
+    this._coachMsg('');
+    for (const { b } of this.padBtns) b.classList.remove('coach');
+    this.coach = null;
+    if (this.o.onCoachDone) this.o.onCoachDone();
   }
 
   // ---------- Eingabe ----------
@@ -248,6 +323,7 @@ export class Play {
     this.focusDigit = this.game.values[i] || 0;
     if (kind === 'down') sfx.play('click');
     this.render();
+    if (this.coach) this._coachStep('cell');
   }
 
   input(d) {
@@ -281,6 +357,9 @@ export class Play {
     const s = this.settings;
     const r = g.setValue(i, d, { cleanup: s.autoClean, mistakeMode: s.showMistakes ? 'solution' : 'conflict' });
     if (!r || !r.changed) return;
+    if (this.coach) this._coachStep('input');
+    // Sieg sofort verbuchen (Statistik, Häkchen) – das Sieg-Blatt folgt nach der Feier-Welle
+    if (r.solved) this._winInfo = this.o.onSolved ? this.o.onSolved(g) : null;
     this.focusDigit = d;
     this.render();
     this.board.pop(i);
@@ -349,6 +428,7 @@ export class Play {
     this.notesMode = !this.notesMode;
     sfx.play('click');
     this.render();
+    this.save();
   }
 
   autoNotes() {
@@ -399,7 +479,9 @@ export class Play {
     if (this.hint) { this.closeHint(); return; }
     const hint = findHint(g);
     if (!hint) return;
-    g.hints++;
+    // Derselbe Tipp (nochmals geöffnet) zählt nur einmal
+    const key = hintKey(hint);
+    if (g.meta.lastHint !== key) { g.hints++; g.meta.lastHint = key; }
     sfx.play('sparkle');
     this.hint = hint;
     let title = '', text = '', action = null;
@@ -621,7 +703,7 @@ export class Play {
     this.locked = false;
     this._showDone(true);
     this.modalOpen = true;
-    await this.o.onWin(g);
+    await this.o.onWin(g, this._winInfo);
     this.modalOpen = false;
   }
 
@@ -629,8 +711,8 @@ export class Play {
     const g = this.game;
     const ic = h('span.done-ic');
     ic.innerHTML = icon('check', { size: 22, stroke: 3 });
-    const next = h('button.btn.primary', { type: 'button' }, this.o.isDaily ? 'Freies Spiel' : 'Nächstes Rätsel');
-    next.addEventListener('click', () => { sfx.play('click'); this.o.isDaily ? this.o.onMenu() : this.o.onNext(); });
+    const next = h('button.btn.primary', { type: 'button' }, this.o.nextLabel ? this.o.nextLabel() : 'Nächstes Rätsel');
+    next.addEventListener('click', () => { sfx.play('click'); this.o.onNext(); });
     const menu = h('button.btn', { type: 'button' }, 'Menü');
     menu.addEventListener('click', () => { sfx.play('click'); this.o.onMenu(); });
     this.donePanel.replaceChildren(
@@ -638,4 +720,13 @@ export class Play {
       h('div.done-btns', null, menu, next));
     this.el.classList.add('is-done');
   }
+}
+
+/** Kennung eines Tipps (gleicher Tipp => gleicher Schlüssel). */
+function hintKey(hint) {
+  if (hint.type === 'wrong') return `w${hint.cell}`;
+  if (hint.type === 'reveal') return `r${hint.cell}:${hint.digit}`;
+  const st = hint.step;
+  if (st.place) return `p${st.place.c}:${st.place.d}`;
+  return `e${st.tech}:` + st.elims.map(({ c, d }) => c * 10 + d).sort((a, b) => a - b).join(',');
 }

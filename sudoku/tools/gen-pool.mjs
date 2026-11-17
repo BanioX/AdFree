@@ -1,12 +1,14 @@
 // Erzeugt den Rätsel-Vorrat data/pool.js (sofortiger Start ohne Wartezeit).
 //   node sudoku/tools/gen-pool.mjs            (200 pro Stufe)
 //   node sudoku/tools/gen-pool.mjs 300        (300 pro Stufe)
+//   node sudoku/tools/gen-pool.mjs 200 mittel (nur diese Stufe(n) neu, Rest bleibt wie er ist)
 // Jedes Rätsel wird geprüft: genau eine Lösung, Stufe passt (menschlicher Löser).
 // Innerhalb einer Stufe sortiert nach Punktzahl: die ersten Rätsel sind die sanftesten.
 import { writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
-import { generate } from '../logic/generator.js';
+import { generate, fitsSpec } from '../logic/generator.js';
+import { pool as oldPool } from '../data/pool.js';
 import { grade } from '../logic/human.js';
 import { parse } from '../logic/board.js';
 import { countSolutions } from '../logic/solver.js';
@@ -14,10 +16,12 @@ import { difficulties } from '../data/difficulties.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const N = +process.argv[2] || 200;
+const only = process.argv[3] ? process.argv[3].split(',') : null;
 const out = {};
 const report = [];
 
 for (const spec of difficulties) {
+  if (only && !only.includes(spec.id)) { out[spec.id] = oldPool[spec.id] || []; continue; }
   const seen = new Set();
   const list = [];
   const t0 = Date.now();
@@ -27,7 +31,7 @@ for (const spec of difficulties) {
     const p = parse(r.puzzle);
     if (countSolutions(p, 2) !== 1) throw new Error('nicht eindeutig');
     const g = grade(p, 4);
-    if (!g.solved || g.tier < spec.minTier || g.tier > spec.maxTier) continue;
+    if (!fitsSpec(g, r.givens, spec)) continue;
     seen.add(r.puzzle);
     list.push({ p: r.puzzle, score: g.score, givens: r.givens, tier: g.tier });
   }

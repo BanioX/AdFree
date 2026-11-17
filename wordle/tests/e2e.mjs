@@ -183,14 +183,30 @@ try {
   assert.notEqual(e2, e1, 'kein Wort doppelt');
   const used = await page.evaluate(() => JSON.parse(localStorage.getItem('spielpause.wordle.used.5')));
   assert.ok(used.includes(e1) && used.includes(e2));
+  // ein Versuch, dann neu laden → gleiches Wort, gleicher Stand
+  await typeOnScreen('ZZZZZ');
+  await enter();
+  await waitIdle();
+  await page.reload();
+  await page.waitForSelector('.kbd');
+  g = await page.evaluate(() => window.__wordle.game);
+  assert.equal(g.answer, e2);
+  assert.deepEqual(g.guesses, ['ZZZZZ']);
 
-  // 5) Zurück: Spiel → Menü → Startseite-Link
+  // 5) Zurück: Spiel → Menü («Weiter») → Startseite-Link
   step('Navigation');
   await tap(page.locator('.topbar a[aria-label="Zurück"]'));
   await page.waitForSelector('.gm-primary');
+  assert.equal(new URL(page.url()).hash, '');
+  assert.match(await page.locator('.gm-primary').innerText(), /Weiter/);
   assert.equal(await page.locator('.gm-topbar a[aria-label="Zurück"]').getAttribute('href'), '../');
   const stats = await page.locator('.gm-stats').innerText();
   assert.match(stats, /1\s*Gespielt/);
+  await tap(page.locator('.gm-primary'));
+  await page.waitForSelector('.kbd');
+  assert.equal(await page.evaluate(() => window.__wordle.answer), e2, '«Weiter» setzt fort');
+  await tap(page.locator('.topbar a[aria-label="Zurück"]'));
+  await page.waitForSelector('.gm-primary');
 
   // 6) Andere Wortlänge lädt
   await tap(page.locator('.gm-seg button[data-id="6"]'));

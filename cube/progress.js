@@ -1,11 +1,15 @@
 // Fortschritt & Spielstand des Pfeilwürfels (localStorage über shared/storage.js).
 //   cube.progress = { unlocked: höchstes spielbares Level, stars: { "1": 3, ... } }
-//   cube.current  = { level, removed: [ids], hearts, mistakes, q: [x,y,z,w] }
+//   cube.saves    = { "<level>": { level, removed: [ids], hearts, mistakes, q: [x,y,z,w], t } }
+//                   Ein Spielstand pro Level: das freigeschaltete Level (Front) bleibt immer erhalten,
+//                   dazu die zuletzt wiederholten Level (höchstens MAX_REPLAYS).
 
 import { store, reportSummary, readSummary } from '../shared/storage.js';
 
 const KEY = 'cube.progress';
-const CUR = 'cube.current';
+const SAVES = 'cube.saves';
+const OLD_CUR = 'cube.current'; // früheres Format (nur ein Spielstand)
+const MAX_REPLAYS = 3;
 
 export function loadProgress() {
   const p = store.get(KEY, null) || {};
@@ -15,7 +19,8 @@ export function loadProgress() {
 }
 
 export function summaryText(p = loadProgress()) {
-  return `Level ${p.unlocked}`;
+  const st = totalStars(p);
+  return st > 0 ? `Level ${p.unlocked} · ${st} ${st === 1 ? 'Stern' : 'Sterne'}` : `Level ${p.unlocked}`;
 }
 
 /** Schreibt die Startseiten-Zusammenfassung (falls noch keine da ist oder sie veraltet ist). */
@@ -42,27 +47,45 @@ export function completeLevel(level, stars) {
   p.stars[level] = Math.max(prev, stars);
   p.unlocked = Math.max(p.unlocked, level + 1);
   store.set(KEY, p);
-  clearCurrent();
+  clearCurrent(level);
   reportSummary('cube', summaryText(p));
   return { progress: p, best: p.stars[level], improved: stars > prev };
 }
 
-export function loadCurrent(level) {
-  const c = store.get(CUR, null);
-  if (!c || c.level !== level) return null;
-  return c;
+function loadSaves() {
+  let saves = store.get(SAVES, null);
+  if (!saves || typeof saves !== 'object' || Array.isArray(saves)) saves = {};
+  const old = store.get(OLD_CUR, null);
+  if (old && Number.isInteger(old.level)) {
+    if (!saves[old.level]) saves[old.level] = old;
+    store.set(SAVES, saves);
+    store.remove(OLD_CUR);
+  }
+  return saves;
 }
 
-export function loadAnyCurrent() {
-  return store.get(CUR, null);
+/** Gespeicherter Zwischenstand von Level `level` – oder null. */
+export function loadCurrent(level) {
+  const c = loadSaves()[level];
+  return c && c.level === level ? c : null;
 }
 
 export function saveCurrent(data) {
-  store.set(CUR, data);
+  const saves = loadSaves();
+  saves[data.level] = { ...data, t: Date.now() };
+  // Aufräumen: das freigeschaltete Level nie, sonst nur die zuletzt gespielten Wiederholungen behalten
+  const front = loadProgress().unlocked;
+  const replays = Object.keys(saves).filter((k) => +k !== front)
+    .sort((a, b) => (saves[b].t || 0) - (saves[a].t || 0));
+  for (const k of replays.slice(MAX_REPLAYS)) delete saves[k];
+  store.set(SAVES, saves);
 }
 
-export function clearCurrent() {
-  store.remove(CUR);
+export function clearCurrent(level) {
+  const saves = loadSaves();
+  if (!(level in saves)) return;
+  delete saves[level];
+  store.set(SAVES, saves);
 }
 
 // ---------- Statistik ----------

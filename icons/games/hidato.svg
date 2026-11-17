@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <linearGradient id="b" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff3e2"/><stop offset="1" stop-color="#f8c58a"/></linearGradient>
+    <linearGradient id="s" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f0a04b"/><stop offset="1" stop-color="#d9822b"/></linearGradient>
+  </defs>
+  <rect width="100" height="100" fill="url(#b)"/>
+  <ellipse cx="50" cy="89" rx="31" ry="4.5" fill="#8a4a10" opacity=".16"/>
+  <rect x="13" y="13" width="74" height="74" rx="15" fill="#fffdf8" stroke="#3a2a2a" stroke-width="2.2"/>
+  <g fill="#f7ebdc">
+    <rect x="18" y="18" width="19" height="19" rx="6"/><rect x="40.5" y="18" width="19" height="19" rx="6"/><rect x="63" y="18" width="19" height="19" rx="6"/>
+    <rect x="18" y="40.5" width="19" height="19" rx="6"/><rect x="40.5" y="40.5" width="19" height="19" rx="6"/><rect x="63" y="40.5" width="19" height="19" rx="6"/>
+    <rect x="18" y="63" width="19" height="19" rx="6"/><rect x="40.5" y="63" width="19" height="19" rx="6"/><rect x="63" y="63" width="19" height="19" rx="6"/>
+  </g>
+  <path d="M27.5 27.5H72.5L50 50H27.5L50 72.5H72.5" fill="none" stroke="#3a2a2a" stroke-width="10.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M27.5 27.5H72.5L50 50H27.5L50 72.5H72.5" fill="none" stroke="url(#s)" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M27.5 27.5H72.5L50 50H27.5L50 72.5" fill="none" stroke="#ffd9a8" stroke-width="1.6" stroke-linecap="round" stroke-dasharray="1.5 6" opacity=".9"/>
+  <circle cx="27.5" cy="27.5" r="8.5" fill="#fffdf8" stroke="#3a2a2a" stroke-width="1.8"/>
+  <circle cx="50" cy="50" r="8.5" fill="#fffdf8" stroke="#3a2a2a" stroke-width="1.8"/>
+  <g transform="translate(73.5 72.5)">
+    <ellipse rx="10" ry="8.5" fill="url(#s)" stroke="#3a2a2a" stroke-width="2"/>
+    <circle cx="-2.5" cy="-2.6" r="2.4" fill="#fff"/><circle cx="4" cy="-2.6" r="2.4" fill="#fff"/>
+    <circle cx="-2.1" cy="-2.3" r="1.2" fill="#3a2a2a"/><circle cx="4.4" cy="-2.3" r="1.2" fill="#3a2a2a"/>
+    <path d="M-2 3q2.2 1.8 4.4 0" fill="none" stroke="#3a2a2a" stroke-width="1.4" stroke-linecap="round"/>
+    <path d="M9.5 0.5l4 -1.6M9.5 0.5l4 1.6" stroke="#e5484d" stroke-width="1.4" stroke-linecap="round"/>
+  </g>
+  <g font-family="ui-rounded,'SF Pro Rounded',-apple-system,'Segoe UI',sans-serif" font-weight="850" font-size="11" text-anchor="middle" fill="#3a2a2a">
+    <text x="27.5" y="31.4">1</text>
+    <text x="50" y="53.9">4</text>
+  </g>
+</svg>

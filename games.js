@@ -53,6 +53,7 @@ export const games = [
   { id: 'muehle', title: 'Mühle', title_en: 'Nine Men’s Morris', tile_en: 'Nine Men’s\u00A0Morris', subtitle: 'Drei in einer Linie, Stein weg', subtitle_en: 'Three in a row, take a stone', category: 'brett', color: '#8b5a2b', added: '2026-11-17' },
   { id: 'eile', title: 'Eile mit Weile', title_en: 'Ludo', tile: 'Eile mit\u00A0Weile', tile_en: 'Ludo', subtitle: 'Kurze Runde, vier Farben', subtitle_en: 'A short race, four colours', category: 'brett', color: '#e23d4a', added: '2026-11-17' },
   { id: 'schiffe', title: 'Schiffe versenken', title_en: 'Battleship', tile: 'Schiffe\u00A0versenken', tile_en: 'Battleship', subtitle: 'Flotte setzen, Treffer suchen', subtitle_en: 'Place a fleet, hunt the hits', category: 'brett', color: '#1f7aa8', added: '2026-11-17' },
+  { id: 'schach', title: 'Schach', title_en: 'Chess', subtitle: 'Weiss gegen den Computer', subtitle_en: 'White against the computer', category: 'brett', color: '#4a5568', added: '2026-11-17' },
 ];
 
 /** Titel/Untertitel/Kachelname in der aktuellen Sprache */

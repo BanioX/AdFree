@@ -14,6 +14,7 @@ Was in Spielpause neu dazukommt. Neueste Einträge oben.
 - **Mühle**: neun Steine, Mühle schliessen, fliegen mit drei Steinen, drei Stärken.
 - **Eile mit Weile**: kurze Runde mit zwei Figuren gegen drei Farben, drei Stärken.
 - **Schiffe versenken**: Flotte 5-4-3-3-2 ohne Berührung, Treffer gibt einen weiteren Schuss, drei Stärken. Deutsch und Englisch.
+- **Schach**: legale Züge mit Rochade, en passant und Umwandlung, drei Stärken. Deutsch und Englisch.
 
 ### Behoben (Grok)
 - **Vier in einer Reihe**: Tippen auf eine Reihe legt wieder einen Stein (iPhone). Der Tipp hebt die Reihe nur hervor.

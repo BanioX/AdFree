@@ -100,7 +100,7 @@ Mehrere KI-Agenten bauen parallel – Zuständigkeiten und Regeln stehen in [AGE
 | # | Spiel | Stand |
 |--:|---|:-:|
 | 58 | Minensucher | ✅ |
-| 59 | Brücken (Hashi) | 📋 |
+| 59 | Brücken (Hashi) | ✅ |
 | 60 | Binärrätsel | 📋 |
 | 61 | Sternenhimmel (Star Battle) | 📋 |
 | 62 | Zelte & Bäume | 📋 |

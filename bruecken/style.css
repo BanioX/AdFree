@@ -1,0 +1,9 @@
+.pz button.isle { border-radius: 50%; background: #1f7aa8; color: #fff; }
+.pz button.isle.on { outline: 3px solid #16324a; outline-offset: 1px; }
+.pz i { display: flex; align-items: center; justify-content: center; gap: 3px; }
+.pz i.h2, .pz i.v2 { }
+.pz i.v1, .pz i.v2 { flex-direction: column; }
+.pz i b { background: #1f7aa8; display: block; }
+.pz i.h1 b, .pz i.h2 b { height: 4px; width: 100%; }
+.pz i.v1 b, .pz i.v2 b { width: 4px; height: 100%; }
+.pz button.tip { outline: 3px solid #e6a317; }

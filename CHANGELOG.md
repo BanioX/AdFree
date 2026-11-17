@@ -27,6 +27,7 @@ Was in Spielpause neu dazukommt. Neueste Einträge oben.
 - **Emoji-Rätsel**: Bilder erraten mit eigenem Buchstabenkorb, deutsch und englisch je eigene Begriffe.
 - **Welle 3**: die Logikrätsel und Arcade-Spiele liegen bei Grok. Gemini ist raus.
 - **Minensucher**: Feld mit sicherem ersten Tipp, Fahne und Tipp, der nur markiert. Deutsch und Englisch.
+- **Brücken**: Inseln mit Zahl verbinden, einfach oder doppelt, ohne Kreuzung. Deutsch und Englisch.
 
 ### Behoben (Grok)
 - **Vier in einer Reihe**: Tippen auf eine Reihe legt wieder einen Stein (iPhone). Der Tipp hebt die Reihe nur hervor.

@@ -65,6 +65,7 @@ export const games = [
   { id: 'kreuzwort', title: 'Kreuzworträtsel', title_en: 'Mini Crossword', tile: 'Kreuzwort\u00ADrätsel', tile_en: 'Mini\u00A0Crossword', subtitle: 'Kleines Gitter, eigene Rätsel', subtitle_en: 'A small grid, its own puzzles', category: 'woerter', color: '#3a6ea5', added: '2026-11-17' },
   { id: 'emoji', title: 'Emoji-Rätsel', title_en: 'Emoji Riddle', tile: 'Emoji-Rätsel', tile_en: 'Emoji Riddle', subtitle: 'Bilder erraten, Buchstaben tippen', subtitle_en: 'Guess the picture, tap the letters', category: 'woerter', color: '#f0a020', added: '2026-11-17' },
   { id: 'minen', title: 'Minensucher', title_en: 'Minesweeper', tile: 'Minen\u00ADsucher', tile_en: 'Minesweeper', subtitle: 'Zahlen lesen, Minen meiden', subtitle_en: 'Read the numbers, avoid the mines', category: 'logik', color: '#3d7a4a', added: '2026-11-17' },
+  { id: 'bruecken', title: 'Brücken', title_en: 'Bridges', tile: 'Brücken', tile_en: 'Bridges', subtitle: 'Inseln verbinden, ohne Kreuzung', subtitle_en: 'Join the islands, no crossings', category: 'logik', color: '#1f7aa8', added: '2026-11-17' },
 ];
 
 /** Titel/Untertitel/Kachelname in der aktuellen Sprache */

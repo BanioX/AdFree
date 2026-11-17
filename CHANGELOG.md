@@ -35,6 +35,7 @@ Was in Spielpause neu dazukommt. Neueste Einträge oben.
 - **Kugelkette**: drei gleiche Kugeln weg tippen, die Lücke schliesst sich. Deutsch und Englisch.
 - **Farbklicker**: die Ecke nimmt die getippte Farbe an, bis das Feld einfarbig ist. Deutsch und Englisch.
 - **Farbkugeln**: Kugeln auf freiem Weg schieben, fünf in einer Linie räumen. Deutsch und Englisch.
+- **Schlängel**: Richtung tippen, Futter sammeln, am Rand weiter, kein Stoss in sich selbst. Deutsch und Englisch.
 
 ### Behoben (Grok)
 - **Vier in einer Reihe**: Tippen auf eine Reihe legt wieder einen Stein (iPhone). Der Tipp hebt die Reihe nur hervor.

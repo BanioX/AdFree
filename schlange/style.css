@@ -1,0 +1,7 @@
+.sn { position: relative; width: min(100%, 320px); aspect-ratio: 10 / 12; margin: 0 auto; background: #e7f6ea; border-radius: 18px; overflow: hidden; touch-action: none; }
+.sn i { position: absolute; width: 10%; height: 8.333%; border-radius: 7px; background: #3c8d4e; transition: transform .14s linear; }
+.sn i.head { background: #16331c; }
+.sn i.food { background: #e23d4a; border-radius: 50%; transition: none; }
+.sn-demo { display: flex; gap: 4px; }
+.sn-demo b { width: 16px; height: 16px; border-radius: 4px; background: #3c8d4e; }
+.sn-demo .food { background: #e23d4a; border-radius: 50%; }

@@ -31,6 +31,12 @@ async function noPageScroll() {
   assert.ok(m.sh <= m.hh, `page scrolls vertically ${m.sh} > ${m.hh}`);
 }
 
+// Hinweis: setupPage() verhindert Doppeltipp-Zoom – zwei Tipps innerhalb 320 ms erzeugen keinen Klick.
+async function tap(locator) {
+  await locator.tap();
+  await wait(360);
+}
+
 async function typeOnScreen(word) {
   for (const ch of word) await page.locator(`.kbd .key[data-k="${ch}"]`).tap();
 }
@@ -48,8 +54,8 @@ try {
   await page.waitForSelector('.tut-backdrop', { timeout: 5000 });
   await wait(1500);
   await shot('e2e-01-tutorial');
-  for (let i = 0; i < 3; i++) { await page.locator('.tut-backdrop button', { hasText: 'Weiter' }).last().tap(); await wait(350); }
-  await page.locator('.tut-backdrop button', { hasText: 'Los geht' }).tap();
+  for (let i = 0; i < 3; i++) { await tap(page.locator('.tut-backdrop button', { hasText: 'Weiter' }).last()); }
+  await tap(page.locator('.tut-backdrop button', { hasText: 'Los geht' }));
   await page.waitForSelector('.tut-backdrop', { state: 'detached' });
 
   // 2) Menü
@@ -63,7 +69,7 @@ try {
 
   // 3) Tageswort: falsches Wort, unbekanntes Wort, Neuladen, lösen
   step('Tageswort');
-  await page.locator('.gm-daily').tap();
+  await tap(page.locator('.gm-daily'));
   await page.waitForSelector('.kbd');
   assert.equal(new URL(page.url()).hash, '#daily');
   await noPageScroll();
@@ -129,14 +135,14 @@ try {
 
   // Teilen kopiert das Emoji-Raster
   await ctx.grantPermissions(['clipboard-read', 'clipboard-write'], { origin: new URL(BASE).origin });
-  await page.locator('#share').tap();
+  await tap(page.locator('#share'));
   await wait(300);
   const clip = await page.evaluate(() => navigator.clipboard.readText().catch(() => ''));
   if (clip) assert.match(clip, /Wortrate .* 2\/6\n\n.+\n🟩🟩🟩🟩🟩/u);
 
   // Zurück ins Menü → Tageswort abgehakt
   step('Menü zeigt gelöstes Tageswort');
-  await page.locator('.sp-modal-backdrop button', { hasText: 'Zum Menü' }).tap();
+  await tap(page.locator('.sp-modal-backdrop button', { hasText: 'Zum Menü' }));
   await page.waitForSelector('.gm-primary');
   await wait(400);
   assert.equal(await page.locator('.gm-daily.done').count(), 1);
@@ -145,19 +151,17 @@ try {
 
   // 4) Endlos: Wortlänge wählen, verlieren durch Aufgeben, nächstes Wort neu
   step('Endlos-Modus');
-  await page.locator('.gm-seg button[data-id="5"]').tap();
-  console.log('DEBUG0', await page.evaluate(() => { const r = document.querySelector('.gm-primary').getBoundingClientRect(); const e = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2); return e.outerHTML.slice(0, 120); }));
-  await page.locator('.gm-primary').tap();
+  await tap(page.locator('.gm-seg button[data-id="5"]'));
+  await tap(page.locator('.gm-primary'));
   await wait(500);
-  console.log('DEBUG', page.url(), await page.evaluate(() => [window.__wordle.view, document.querySelector('.app').innerText.slice(0, 80)]));
   await page.waitForSelector('.kbd');
   assert.equal(new URL(page.url()).hash, '#endlos/5');
   const e1 = await page.evaluate(() => window.__wordle.answer);
   assert.notEqual(e1, answer, 'Endlos-Wort ist nicht das Tageswort');
   // «Alle Wörter erlauben» einschalten → unbekanntes Wort wird angenommen
-  await page.locator('.topbar [aria-label="Einstellungen"]').tap();
-  await page.locator('.sp-modal-backdrop [data-setting="lenient"]').tap();
-  await page.locator('.sp-modal-backdrop button', { hasText: 'Fertig' }).tap();
+  await tap(page.locator('.topbar [aria-label="Einstellungen"]'));
+  await tap(page.locator('.sp-modal-backdrop [data-setting="lenient"]'));
+  await tap(page.locator('.sp-modal-backdrop button', { hasText: 'Fertig' }));
   await page.waitForSelector('.sp-modal-backdrop', { state: 'detached' });
   await typeOnScreen('QXQXQ');
   await enter();
@@ -166,13 +170,13 @@ try {
   assert.deepEqual(g.guesses, ['QXQXQ']);
   await shot('e2e-05-endless');
   // Aufgeben über «Neues Wort»
-  await page.locator('#newword').tap();
-  await page.locator('.sp-modal-backdrop button', { hasText: 'Aufgeben' }).tap();
+  await tap(page.locator('#newword'));
+  await tap(page.locator('.sp-modal-backdrop button', { hasText: 'Aufgeben' }));
   await page.waitForSelector('.reveal-banner.show');
   await page.waitForSelector('.sp-modal-backdrop', { timeout: 8000 });
   await wait(500);
-  assert.match(await page.locator('.sp-modal-backdrop').innerText(), new RegExp(e1));
-  await page.locator('.sp-modal-backdrop button', { hasText: 'Nächstes Wort' }).tap();
+  assert.ok((await page.locator('.sp-modal-backdrop').innerText()).replace(/\s+/g, '').includes(e1), 'Lösung wird gezeigt');
+  await tap(page.locator('.sp-modal-backdrop button', { hasText: 'Nächstes Wort' }));
   await page.waitForSelector('.kbd');
   await wait(400);
   const e2 = await page.evaluate(() => window.__wordle.answer);
@@ -182,15 +186,15 @@ try {
 
   // 5) Zurück: Spiel → Menü → Startseite-Link
   step('Navigation');
-  await page.locator('.topbar a[aria-label="Zurück"]').tap();
+  await tap(page.locator('.topbar a[aria-label="Zurück"]'));
   await page.waitForSelector('.gm-primary');
   assert.equal(await page.locator('.gm-topbar a[aria-label="Zurück"]').getAttribute('href'), '../');
   const stats = await page.locator('.gm-stats').innerText();
   assert.match(stats, /1\s*Gespielt/);
 
   // 6) Andere Wortlänge lädt
-  await page.locator('.gm-seg button[data-id="6"]').tap();
-  await page.locator('.gm-primary').tap();
+  await tap(page.locator('.gm-seg button[data-id="6"]'));
+  await tap(page.locator('.gm-primary'));
   await page.waitForSelector('.kbd');
   assert.equal(await page.locator('.row').first().locator('.tile').count(), 6);
   await noPageScroll();

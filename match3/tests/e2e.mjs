@@ -18,6 +18,7 @@ const page = await ctx.newPage();
 const errors = [];
 page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
 page.on('pageerror', (e) => errors.push(String(e)));
+process.on('exit', (code) => { if (code && errors.length) console.error('Seitenfehler:\n' + errors.join('\n')); });
 const shot = (name) => page.screenshot({ path: OUT + name + '.png' });
 const log = (...a) => console.log('·', ...a);
 
@@ -155,7 +156,7 @@ assert.match(await page.textContent('.gm-primary'), /Level 2/);
 // ---------- 5) Levelkarte ----------
 await shot('dbg-before-map');
 await page.locator('.gm-sec', { hasText: 'Levelkarte' }).tap();
-await page.waitForTimeout(800); await shot('dbg-after-map');
+await page.waitForTimeout(800); await shot('dbg-after-map'); console.log('DBG', await page.evaluate(() => location.hash + ' nodes=' + document.querySelectorAll('.m3-node').length + ' cur=' + document.querySelectorAll('.m3-node.cur').length + ' html=' + document.querySelector('.gm-sec')?.outerHTML.slice(0, 120)));
 await page.waitForSelector('.m3-node.cur');
 await page.waitForTimeout(300);
 await shot('07-map');

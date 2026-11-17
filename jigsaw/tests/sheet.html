@@ -1,0 +1,24 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Kontaktabzug</title>
+<style>body{margin:0;background:#333;font:11px sans-serif;color:#fff}#g{display:grid;grid-template-columns:repeat(var(--n,8),1fr);gap:4px;padding:4px}canvas{width:100%;display:block}</style>
+</head><body><div id="g"></div>
+<script type="module">
+// Hilfswerkzeug: alle Bilder (oder ?pack=id) als Kontaktabzug. Für Screenshots in tests/out/.
+import { builtinPacks } from '../images.js';
+const q = new URLSearchParams(location.search);
+const per = +(q.get('per') || 99), w = +(q.get('w') || 150);
+const only = q.get('pack');
+const g = document.getElementById('g');
+g.style.setProperty('--n', q.get('n') || 8);
+const t0 = performance.now();
+for (const p of builtinPacks()) {
+  if (only && p.id !== only) continue;
+  for (const d of p.images.slice(0, per)) {
+    const cv = await d.render(w);
+    const f = document.createElement('div');
+    f.append(cv, d.title);
+    g.append(f);
+  }
+}
+document.title = 'done ' + (performance.now() - t0).toFixed(0);
+</script></body></html>

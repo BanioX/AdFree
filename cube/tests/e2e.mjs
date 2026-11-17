@@ -1,13 +1,12 @@
 // End-to-End-Test für den Pfeilwürfel (Playwright, Chromium, iPhone 13).
 //   node cube/tests/e2e.mjs [ausgabeordner]
 // Startet bei Bedarf selbst einen statischen Server auf Port 8105 (und beendet ihn wieder).
-// Screenshots landen im Ausgabeordner (Standard: <tmp>/pfeilwuerfel-e2e).
+// Screenshots landen im Ausgabeordner (Standard: cube/tests/out, git-ignoriert).
 
 import { createRequire } from 'node:module';
 import { spawn } from 'node:child_process';
 import { mkdirSync } from 'node:fs';
 import path from 'node:path';
-import os from 'node:os';
 import { fileURLToPath } from 'node:url';
 
 const require = createRequire(import.meta.url);
@@ -15,7 +14,7 @@ const { chromium, devices } = require('playwright');
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const repo = path.resolve(here, '..', '..');
-const OUT = path.resolve(process.argv[2] || path.join(os.tmpdir(), 'pfeilwuerfel-e2e'));
+const OUT = path.resolve(process.argv[2] || path.join(here, 'out'));
 mkdirSync(OUT, { recursive: true });
 const PORT = 8105;
 const BASE = `http://127.0.0.1:${PORT}/cube/`;
@@ -113,7 +112,7 @@ async function pinch(page, cdp, cx, cy, d0, d1, steps = 10) {
 async function main() {
   await ensureServer();
   const browser = await chromium.launch();
-  const context = await browser.newContext({ ...devices['iPhone 13'] });
+  const context = await browser.newContext({ ...devices['iPhone 13'], deviceScaleFactor: 1 });
   const page = await context.newPage();
   const errors = [];
   page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
@@ -124,14 +123,19 @@ async function main() {
   await page.goto(BASE);
   await dbg(page, () => localStorage.clear());
   await page.goto(BASE);
-  await wait(page, 700);
-  check(await page.locator('.hero-title').textContent() === 'Level 1', 'Hero zeigt Level 1');
-  check((await page.locator('.level-tile').count()) >= 30, 'Levelraster mit mindestens 30 Kacheln');
-  check((await page.locator('.level-tile.locked').count()) >= 29, 'spätere Level gesperrt');
+  await wait(page, 1600);
+  check(await page.locator('.tut-next').count() === 1, '«So geht\'s» erscheint beim ersten Start');
+  await shot(page, '00-howto');
+  for (let i = 0; i < 4; i++) { await page.locator('.tut-next').tap(); await wait(page, i < 3 ? 700 : 500); }
+  check(await page.locator('.tut-next').count() === 0, 'Anleitung lässt sich durchblättern und schliessen');
+  check(await dbg(page, () => localStorage.getItem('spielpause.tutorial.cube')) === 'true', 'Anleitung als gesehen gemerkt');
+  check((await page.locator('.gm-primary').textContent()).includes('Level 1'), 'Hauptknopf zeigt Level 1');
+  check((await page.locator('.level-tile').count()) === 20, 'Levelkarte: zwei Kapitel à 10 Level');
+  check((await page.locator('.level-tile.locked').count()) === 19, 'spätere Level gesperrt');
   await shot(page, '01-start');
 
   console.log('Level 1 (Tutorial) durch echtes Antippen lösen');
-  await page.locator('.play-btn').tap();
+  await page.locator('.gm-primary').tap();
   await wait(page, 1300);
   check(page.url().endsWith('#play/1'), 'Hash-Route #play/1');
   check(await page.locator('.bubble:not(.hidden)').count() === 1, 'Tutorial-Blase sichtbar');
@@ -148,6 +152,8 @@ async function main() {
   await shot(page, '03-win');
   const summary = await dbg(page, () => JSON.parse(localStorage.getItem('spielpause.summary.cube') || 'null'));
   check(summary && summary.text === 'Level 2', 'reportSummary meldet «Level 2»');
+  const st1 = await dbg(page, () => JSON.parse(localStorage.getItem('spielpause.cube.stats') || '{}'));
+  check(st1.arrows === total1 && st1.wins === 1 && st1.streak === 1, 'Statistik zählt Pfeile, Siege und Serie');
 
   console.log('Weiter zu Level 2, drehen, zoomen, neu laden');
   await page.locator('.sp-modal .btn.primary').tap();
@@ -186,6 +192,13 @@ async function main() {
   const after = await dbg(page, () => ({ removed: window.__cube.removedIds, hearts: window.__cube.hearts, q: window.__cube.view.q }));
   check(JSON.stringify(after.removed) === JSON.stringify(before.removed) && after.hearts === before.hearts, 'Neu laden setzt genau dort fort');
   check(page.url().endsWith('#play/2'), 'Route bleibt nach Neuladen');
+  check(await page.locator('.tut-next').count() === 0, 'Anleitung kommt nicht erneut');
+  await page.locator('.help-btn').tap();
+  await wait(page, 600);
+  check(await page.locator('.tut-next').count() === 1, '«?» im Spiel öffnet die Anleitung');
+  await page.locator('.tut-skip').tap();
+  await wait(page, 500);
+  check(await page.locator('.tut-next').count() === 0, 'Anleitung schliesst wieder');
 
   console.log('Blockierter Pfeil, Herzverlust, Tipp (Level 15)');
   await dbg(page, () => localStorage.setItem('spielpause.cube.progress', JSON.stringify({ unlocked: 60, stars: { 1: 3 } })));
@@ -262,8 +275,20 @@ async function main() {
   await wait(page, 1200);
   check(await dbg(page, () => window.__cube.hearts) === 4 && await dbg(page, () => window.__cube.remaining) === await dbg(page, () => window.__cube.arrowCount), 'Nochmal startet das Level frisch');
 
+  console.log('Entspannt-Modus: Anstossen kostet kein Herz');
+  await dbg(page, () => localStorage.setItem('spielpause.cube.settings', JSON.stringify({ mode: 'relax' })));
+  await page.goto(BASE + '#play/16');
+  await wait(page, 1400);
+  check(await page.locator('.relax-chip').count() === 1, 'Herzen durch «Entspannt» ersetzt');
+  const relaxBlocked = await dbg(page, () => window.__cube.blockedIds());
+  let rb = false;
+  for (const id of relaxBlocked) { if (await tapArrow(page, id)) { rb = true; break; } }
+  await wait(page, 1000);
+  check(rb && await dbg(page, () => window.__cube.mistakes) === 1 && await page.locator('.sp-modal').count() === 0, 'Fehler gezählt, aber kein Herzverlust');
+  await dbg(page, () => localStorage.setItem('spielpause.cube.settings', JSON.stringify({ mode: 'classic' })));
+
   console.log('Weitere Level ansehen');
-  for (const L of [10, 20, 45, 60]) {
+  for (const L of [10, 20, 30, 40, 45, 60]) {
     await page.goto(BASE + '#play/' + L);
     await wait(page, 1500);
     await shot(page, `09-level${L}`);
@@ -279,9 +304,19 @@ async function main() {
   check(page.url().endsWith('#play/60'), 'gesperrtes Level → höchstes freigeschaltetes');
   await page.locator('.topbar .icon-btn').first().tap();
   await wait(page, 700);
-  check(await page.locator('.hero').count() === 1 && !page.url().includes('#play'), 'Zurück führt ins Menü');
+  check(await page.locator('.gm-primary').count() === 1 && !page.url().includes('#play'), 'Zurück führt ins Menü');
   check(await page.locator('.level-tile.current').count() === 1, 'aktuelles Level hervorgehoben');
+  check(await page.locator('.chapter').count() === 7, 'Levelkarte zeigt Kapitel bis eins nach dem aktuellen');
   await shot(page, '10-menu-progress');
+  await page.locator('.gm-sec', { hasText: 'Statistik' }).tap();
+  await wait(page, 500);
+  check(await page.locator('.cube-statrow').count() >= 8, 'Statistik-Blatt');
+  await shot(page, '11-stats');
+  await page.locator('.sp-modal .btn.primary').tap();
+  await wait(page, 400);
+  await page.locator('.gm-sec', { hasText: 'Levelkarte' }).tap();
+  await wait(page, 800);
+  await shot(page, '12-map');
 
   check(errors.length === 0, 'keine Konsolenfehler' + (errors.length ? ': ' + errors.join(' | ') : ''));
   await browser.close();

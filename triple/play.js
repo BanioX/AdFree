@@ -42,7 +42,7 @@ function onPress(el, fn) {
     down = false;
     const r = el.getBoundingClientRect();
     if (e.clientX >= r.left - 8 && e.clientX <= r.right + 8 && e.clientY >= r.top - 8 && e.clientY <= r.bottom + 8) {
-      swallowGhostClick();
+      swallowGhostClick(e.clientX, e.clientY);
       fn(e);
     }
   });
@@ -56,8 +56,11 @@ function onPress(el, fn) {
  * und träfe sonst das Element, das inzwischen an dieser Stelle liegt (z.B. den
  * Zurück-Knopf des Menüs → Startseite). Den nächsten click darum kurz abfangen.
  */
-function swallowGhostClick() {
-  const stop = (ev) => { ev.preventDefault(); ev.stopPropagation(); done(); };
+function swallowGhostClick(x, y) {
+  const stop = (ev) => {
+    if (Math.abs(ev.clientX - x) > 14 || Math.abs(ev.clientY - y) > 14) return; // anderer Tipp
+    ev.preventDefault(); ev.stopPropagation(); done();
+  };
   const done = () => { window.removeEventListener('click', stop, true); clearTimeout(t); };
   const t = setTimeout(done, 400);
   window.addEventListener('click', stop, true);

@@ -268,7 +268,7 @@ try {
   await shot('17-gerettet');
 
   step('Nochmal neu starten');
-  await page.locator('.tr-top .icon-btn').nth(1).tap();
+  await page.locator('.tr-top .icon-btn[aria-label="Neu beginnen"]').tap();
   await page.locator('.sp-modal .btn.primary', { hasText: 'Neu beginnen' }).tap();
   await page.waitForFunction(() => window.__triple && window.__triple.game.moves === 0);
   await waitIdle(6000);
@@ -276,6 +276,7 @@ try {
   // ---------- Übersichten ----------
   step('Levelübersicht und Statistik');
   await page.locator('.tr-top .icon-btn').first().tap();
+  await wait(400);
   await page.locator('.gm-sec', { hasText: 'Levels' }).tap();
   await page.locator('.tr-level-grid').waitFor();
   await wait(200);
@@ -284,6 +285,8 @@ try {
   await page.waitForFunction(() => location.hash === '#level/1' && window.__triple);
   await waitIdle(5000);
   await page.locator('.tr-top .icon-btn').first().tap();
+  await page.locator('.tr-stat-link').waitFor();
+  await wait(400);
   await page.locator('.tr-stat-link').tap();
   await page.locator('.sp-modal h2', { hasText: 'Statistik' }).waitFor();
   await wait(300);

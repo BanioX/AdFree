@@ -15,6 +15,7 @@ const SHOTS = process.env.SHOTS || path.join(path.dirname(new URL(import.meta.ur
 mkdirSync(SHOTS, { recursive: true });
 
 const errors = [];
+let inPinch = false;
 let step = 0;
 const log = (...a) => console.log(`[${String(++step).padStart(2, '0')}]`, ...a);
 function check(cond, msg) {
@@ -29,6 +30,9 @@ page.on('console', (m) => {
   // Fehlende Dateien anderer Spiele auf der Startseite gehören nicht zu Mahjong
   const url = (m.location() && m.location().url) || '';
   if (/Failed to load resource/.test(m.text()) && !/\/mahjong/.test(url)) return;
+  // CDP-Pinch hebt beide Finger gleichzeitig: Chromium meldet dann für den Doppeltipp-Schutz
+  // aus shared/ui.js eine «Intervention». Nur während dieser Emulation ignorieren.
+  if (inPinch && /Ignored attempt to cancel a touchend/.test(m.text())) return;
   errors.push(`console (Schritt ${step}): ${m.text()} ${url}`);
 });
 page.on('pageerror', (e) => errors.push('pageerror: ' + e.message));
@@ -250,6 +254,7 @@ try {
   const box = await page.locator('.board-wrap').boundingBox();
   const cx = box.x + box.width / 2, cy = box.y + box.height / 2;
   const tp = (d) => [{ x: cx - d, y: cy, id: 1 }, { x: cx + d, y: cy, id: 2 }];
+  inPinch = true;
   await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: tp(40) });
   for (let d = 40; d <= 110; d += 10) {
     await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: tp(d) });
@@ -257,6 +262,7 @@ try {
   }
   await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
   await wait(700);
+  inPinch = false;
   const zw = await mj(() => window.__mahjong.tileWidth());
   check(zw > tw * 1.4, 'Pinch-Zoom hat nicht vergrössert');
   check(await page.locator('.fit-btn.show').isVisible(), 'Einpassen-Knopf fehlt nach dem Zoomen');

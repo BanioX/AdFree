@@ -113,6 +113,11 @@
     .empty { text-align: center; color: var(--text-2); font-weight: 650; padding: 30px 10px; }
     .tile .fav { position: absolute; top: -5px; left: -5px; z-index: 2; width: 22px; height: 22px; border-radius: 50%;
       background: #ffd23f; color: #7a5a00; display: grid; place-items: center; font-size: 13px; box-shadow: 0 0 0 2px var(--bg); }
+    .tile.soon .ic { filter: grayscale(.55) opacity(.6); }
+    .tile.soon .name { color: var(--text-3); }
+    .tile .soon-badge { position: absolute; top: -6px; right: -6px; z-index: 2; padding: 2px 7px; border-radius: 999px;
+      background: var(--surface-3); color: var(--text-2); font-size: 10.5px; font-weight: 850; box-shadow: 0 0 0 2px var(--bg); }
+    .daily a.soon { opacity: .55; }
     .foot { margin: 30px 0 0; text-align: center; color: var(--text-3); font-size: 14px; font-weight: 600; }
     .foot .heart { color: #ff6f7d; }
 
@@ -167,7 +172,7 @@
 
   <script type="module">
     import { games, categories } from './games.js';
-    import { setupPage, soundButton, showModal, h } from './shared/ui.js';
+    import { setupPage, soundButton, showModal, h, toast } from './shared/ui.js';
     import { store, readSummary, isDailyDone, dailyStreak } from './shared/storage.js';
     import { sfx } from './shared/sfx.js';
 
@@ -181,6 +186,15 @@
     const isNew = (g) => g.added && g.added > firstVisit
       && (Date.now() - new Date(g.added + 'T00:00:00').getTime()) < NEW_DAYS * 864e5
       && !store.get('played.' + g.id, false);
+
+    // Fertige Spiele (ready.json kommt aus dem Build). Lokal ohne Build gelten alle als fertig.
+    let READY = null;
+    const isReady = (g) => !READY || READY.has(g.id);
+    function soonToast(e) {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      toast('Kommt bald – wird gerade gebaut');
+    }
 
     function iconEl(g, cls = '') {
       const img = h('img', { src: `icons/games/${g.id}.svg`, alt: '', draggable: 'false', class: cls, loading: 'lazy' });
@@ -200,6 +214,12 @@
       const a = h('a.tile', { href: `${g.id}/`, 'aria-label': `${g.title} – ${g.subtitle}` },
         h('div.ic', null, iconEl(g)),
         h('span.name', null, g.tile || g.title));
+      if (!isReady(g)) {
+        a.classList.add('soon');
+        a.append(h('span.soon-badge', null, 'Bald'));
+        a.addEventListener('click', soonToast, { capture: true });
+        return a;
+      }
       if (badges && isNew(g)) a.append(h('span.new', null, 'Neu'));
       if (badges && store.get('favorites', []).includes(g.id)) a.append(h('span.fav', null, '★'));
       a.addEventListener('click', () => { sfx.play('tap'); rememberPlay(g); });
@@ -239,11 +259,13 @@
       });
     }
 
-    // Tagesrätsel
-    const dailies = games.filter((g) => g.daily);
-    if (dailies.length) {
-      document.getElementById('daily-wrap').classList.remove('hidden');
+    // Tagesrätsel (nur fertige Spiele)
+    function renderDaily() {
+      const dailies = games.filter((g) => g.daily && isReady(g));
+      const wrap = document.getElementById('daily-wrap');
       const box = document.getElementById('daily');
+      wrap.classList.toggle('hidden', !dailies.length);
+      box.replaceChildren();
       const sorted = [...dailies].sort((a, b) => isDailyDone(a.id) - isDailyDone(b.id));
       for (const g of sorted) {
         const done = isDailyDone(g.id);
@@ -257,6 +279,7 @@
         box.append(a);
       }
     }
+    renderDaily();
 
     // ---------- Favoriten ----------
     const favs = () => store.get('favorites', []);
@@ -318,6 +341,16 @@
     q.addEventListener('input', render);
     qClear.addEventListener('click', () => { q.value = ''; render(); q.blur(); });
     render();
+
+    fetch('ready.json', { cache: 'no-cache' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((list) => {
+        if (!Array.isArray(list)) return;
+        READY = new Set(list);
+        render();
+        renderDaily();
+      })
+      .catch(() => {});
 
     // Scrollposition merken (zurück aus einem Spiel)
     const scroller = document.getElementById('scroll');

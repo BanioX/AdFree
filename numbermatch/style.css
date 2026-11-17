@@ -1,0 +1,96 @@
+/* Zahlenpaare – eigene Styles (Basis: shared/style.css + lib/numbers/numbers.css) */
+
+:root {
+  --accent: #3c8dbc;
+  --accent-2: #9fd0ee;
+  --nm-line: #ece4d9;
+  --nm-sel: #d7ebf8;
+  --nm-gold: #f5b82e;
+}
+
+/* ---------- Menü-Titelbild ---------- */
+
+.nm-art { padding: 10px; background: linear-gradient(160deg, #f1f8fd, #dcedf8); border-radius: 24px; }
+.nm-art-grid {
+  display: grid; grid-template-columns: repeat(9, 26px); grid-auto-rows: 28px; gap: 1px;
+  background: var(--nm-line); border-radius: 12px; overflow: hidden; box-shadow: 0 1px 0 rgba(255, 255, 255, .8), 0 6px 16px rgba(30, 80, 120, .12);
+}
+.nm-art-grid span { background: #fff; display: grid; place-items: center; font-weight: 850; font-size: 15px; color: var(--nx-ink); }
+.nm-art-grid span.x { color: #d8cfc4; }
+.nm-art-grid span.s { background: radial-gradient(circle, #ffe7a6 0 45%, #fff 46%); }
+
+/* ---------- Ziel-Leiste ---------- */
+
+.nm-goal { flex: 0 0 auto; display: flex; align-items: center; gap: 12px; padding: 9px 14px 9px 10px; border-radius: 18px; }
+.nm-goal-ic { width: 38px; height: 38px; border-radius: 12px; display: grid; place-items: center; background: var(--nx-soft); color: var(--nx-deep); flex: 0 0 auto; }
+.nm-goal-ic svg { width: 22px; height: 22px; }
+.nm-goal-ic.star { background: #fff3d2; color: var(--nm-gold); }
+.nm-goal-mid { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.nm-goal-txt { font-size: 16px; font-weight: 850; }
+.nm-bar { height: 7px; border-radius: 4px; background: var(--surface-2); overflow: hidden; }
+.nm-bar i { display: block; height: 100%; width: 0; border-radius: 4px; background: var(--accent); transition: width .5s var(--ease-out); }
+.nm-goal-side { font-size: 13.5px; font-weight: 750; color: var(--text-2); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.nm-score { min-width: 64px; justify-content: center; }
+.nm-score svg { color: var(--nm-gold); }
+
+/* ---------- Brett ---------- */
+
+.nm-area { align-items: flex-start; }
+.nm-board { position: relative; padding: 8px; max-height: 100%; display: flex; flex-direction: column; overflow: hidden; }
+.nm-scroll {
+  overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; overscroll-behavior: contain;
+  max-height: 100%; border-radius: 12px; scrollbar-width: none;
+}
+.nm-scroll::-webkit-scrollbar { display: none; }
+.nm-grid { touch-action: pan-y; background: var(--nm-line); border-radius: 12px; overflow: hidden; }
+.nm-cell { background: #fff; font-size: calc(var(--cs) * .56); cursor: pointer; transition: background .15s, color .25s; }
+.nm-cell > span { position: relative; z-index: 1; transition: transform .2s var(--ease-out); }
+.nm-cell.x { color: #d9d0c5; cursor: default; }
+.nm-cell.sel { background: var(--nm-sel); color: var(--nx-deep); }
+.nm-cell.sel > span { transform: scale(1.12); }
+.nm-cell.sel::before {
+  content: ''; position: absolute; inset: 3px; border-radius: 30%; border: 2.5px solid var(--accent); z-index: 0;
+}
+.nm-cell.hint { background: #fff1c4; animation: nm-hint 1.1s ease-in-out infinite; }
+@keyframes nm-hint { 50% { background: #ffe08a; } }
+.nm-cell.star::after {
+  content: ''; position: absolute; inset: 8%; z-index: 0;
+  background: no-repeat center / contain url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 2.2l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.1l-5.9 3.1 1.2-6.5L2.5 9.1l6.6-.9z' fill='%23ffd76b' stroke='%23f0b43a' stroke-width='1.2' stroke-linejoin='round'/%3E%3C/svg%3E");
+  transition: opacity .4s, transform .4s var(--ease-spring);
+}
+.nm-cell.star.x::after { opacity: .18; }
+.nm-cell.star.got::after { animation: nm-star .7s var(--ease-out); }
+@keyframes nm-star { 0% { transform: scale(1); opacity: 1; } 40% { transform: scale(1.5) rotate(20deg); opacity: 1; } 100% { transform: scale(1); opacity: .18; } }
+.nm-cell.nm-gone { animation: nm-gone .34s var(--ease-out) forwards; }
+@keyframes nm-gone { to { transform: scaleY(.1); opacity: 0; } }
+.nm-cell.nm-new { animation: nm-new .36s var(--ease-spring) both; }
+@keyframes nm-new { from { transform: scale(.4); opacity: 0; } }
+.nm-cell.ng-shake { background: #fde4e4; }
+
+.nm-float {
+  position: absolute; z-index: 5; transform: translate(-50%, 0); pointer-events: none;
+  font-weight: 900; font-size: 17px; color: var(--accent); text-shadow: 0 1px 0 #fff, 0 0 6px #fff;
+  animation: nm-float .9s var(--ease-out) forwards;
+}
+@keyframes nm-float { from { opacity: 0; transform: translate(-50%, 4px); } 25% { opacity: 1; } to { opacity: 0; transform: translate(-50%, -30px); } }
+
+.nm-add .nx-tool-ic { width: 58px; height: 58px; background: var(--accent); color: #fff; box-shadow: 0 8px 18px color-mix(in srgb, var(--accent) 38%, transparent); }
+.nm-add .nx-tool-ic svg { width: 28px; height: 28px; }
+.nm-add .nx-badge { background: #fff; color: var(--nx-deep); box-shadow: 0 0 0 2.5px var(--accent); }
+.nm-add .nx-tool-lbl { color: var(--nx-deep); }
+
+/* ---------- Tutorial ---------- */
+
+.nm-demo { background: var(--nm-line); border-radius: 12px; overflow: hidden; box-shadow: var(--shadow); touch-action: auto; }
+.nm-demo .nm-cell { transition: background .2s, color .3s, transform .3s, opacity .3s; }
+.nm-demo-add { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; }
+.nm-demo-btn { width: 50px; height: 50px; border-radius: 50%; background: var(--accent); color: #fff; display: grid; place-items: center; box-shadow: var(--shadow); }
+.nm-demo-btn svg { width: 26px; height: 26px; }
+
+@media (max-height: 640px) {
+  .nm-goal { padding: 6px 12px 6px 8px; }
+  .nm-goal-ic { width: 32px; height: 32px; }
+  .nx-tool { min-height: 56px; }
+  .nx-tool-ic { width: 44px; height: 44px; }
+  .nm-add .nx-tool-ic { width: 50px; height: 50px; }
+}

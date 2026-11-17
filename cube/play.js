@@ -75,9 +75,10 @@ export function mountPlay(root, levelNum, nav) {
   const heartsEl = h('div.hearts' + (relax ? '.relax' : ''), { 'aria-label': 'Herzen' });
   const helpBtn = h('button.icon-btn.help-btn', { type: 'button', 'aria-label': 'So geht’s', html: '<span class="gm-q">?</span>' });
   helpBtn.addEventListener('click', () => { sfx.play('click'); saveNow(); showHowto(); });
-  const top = h('header.topbar', null, back, title, h('div.spacer'), heartsEl, helpBtn, soundButton());
+  const top = h('header.topbar', null, back, title, h('div.spacer'), helpBtn, soundButton());
   const canvas = h('canvas.cube-canvas', { 'aria-label': 'Würfel mit Pfeilen' });
-  const pill = h('div.pill');
+  const pillText = h('span.pill-text');
+  const pill = h('div.pill', null, heartsEl, pillText);
   const bubble = h('div.bubble.hidden');
   const stage = h('div.stage', null, canvas, pill, bubble);
   const mkTool = (cls, ic, label, onClick) => {
@@ -124,13 +125,13 @@ export function mountPlay(root, levelNum, nav) {
   function renderHearts(lostIndex = -1) {
     heartsEl.innerHTML = '';
     if (relax) {
-      heartsEl.append(h('span.relax-chip', { html: `${icon('heart', { size: 16, fill: true })}<span>Entspannt</span>` }));
+      heartsEl.append(h('span.relax-chip', { html: `${icon('heart', { size: 15, fill: true })}<span>Entspannt</span>` }));
       heartsEl.setAttribute('aria-label', 'Entspannt – ohne Herzen');
       return;
     }
     for (let i = 0; i < game.maxHearts; i++) {
       const full = i < game.hearts;
-      const el = h('span.heart' + (full ? '.full' : ''), { html: icon('heart', { size: 22, fill: full }) });
+      const el = h('span.heart' + (full ? '.full' : ''), { html: icon('heart', { size: 18, fill: full }) });
       if (i === lostIndex) el.classList.add('lost');
       heartsEl.append(el);
     }
@@ -138,7 +139,7 @@ export function mountPlay(root, levelNum, nav) {
   }
   function updatePill(pop = false) {
     const r = game.remaining;
-    pill.textContent = r === 0 ? 'Alle Pfeile draussen!' : r === 1 ? 'Noch 1 Pfeil' : `Noch ${r} Pfeile`;
+    pillText.textContent = r === 0 ? 'Alle Pfeile draussen!' : r === 1 ? 'Noch 1 Pfeil' : `Noch ${r} Pfeile`;
     if (pop) { pill.classList.remove('pop'); void pill.offsetWidth; pill.classList.add('pop'); }
   }
   renderHearts();

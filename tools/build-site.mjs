@@ -59,10 +59,19 @@ for (const f of files) {
   if (rel.endsWith('/index.html')) urls.push('./' + rel.slice(0, -'index.html'.length));
   urls.push('./' + rel);
 }
+urls.push('./ready.json');
 const swPath = path.join(out, 'sw.js');
 let sw = await readFile(swPath, 'utf8');
 sw = sw.replace(/const VERSION = '[^']*';/, `const VERSION = '${version}';`);
 sw = sw.replace(/const PRECACHE = \[[\s\S]*?\];/, `const PRECACHE = ${JSON.stringify(urls, null, 2).replace(/"/g, "'")};`);
 await writeFile(swPath, sw);
 await writeFile(path.join(out, '.nojekyll'), '');
+
+// Welche Spiele sind fertig (haben eine index.html)? Die Startseite zeigt die übrigen als «Bald».
+const { pathToFileURL } = await import('node:url');
+const { games } = await import(pathToFileURL(path.join(root, 'games.js')).href);
+const { existsSync } = await import('node:fs');
+const ready = games.filter((g) => existsSync(path.join(root, g.id, 'index.html'))).map((g) => g.id);
+await writeFile(path.join(out, 'ready.json'), JSON.stringify(ready));
+console.log(`ready.json: ${ready.length} von ${games.length} Spielen fertig`);
 console.log(`dist/: ${files.length} Dateien, ${(bytes / 1024 / 1024).toFixed(1)} MB, Cache-Version ${version}`);

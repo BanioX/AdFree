@@ -159,17 +159,15 @@
 }
 .help-btn .gm-q { font-weight: 900; font-size: 20px; line-height: 1; }
 .hearts.relax { color: var(--heart); }
-.relax-chip {
-  display: inline-flex; align-items: center; gap: 4px; padding: 5px 10px 5px 8px; border-radius: 999px;
-  background: var(--surface); box-shadow: var(--shadow); color: var(--text-2); font-size: 13px; font-weight: 800;
-}
+.relax-chip { display: inline-flex; align-items: center; gap: 4px; color: var(--text-2); font-size: 14px; font-weight: 800; }
 .relax-chip svg { color: var(--heart); }
 .lvl-title .special svg { width: 13px; height: 13px; }
 
 .hearts { display: flex; align-items: center; gap: 1px; color: var(--heart); }
-.hearts .heart { display: grid; width: 22px; height: 22px; color: #e7d9c8; }
+.hearts::after { content: ''; width: 1.5px; height: 16px; margin-left: 8px; border-radius: 1px; background: rgba(70, 45, 20, .14); }
+.hearts .heart { display: grid; width: 18px; height: 18px; color: #e7d9c8; }
 .hearts .heart.full { color: var(--heart); filter: drop-shadow(0 1px 1.5px rgba(200, 40, 60, .25)); }
-.hearts .heart svg { width: 22px; height: 22px; }
+.hearts .heart svg { width: 18px; height: 18px; }
 .hearts .heart.lost { animation: heart-lost .6s var(--ease-out) both; }
 @keyframes heart-lost {
   0% { transform: scale(1); color: var(--heart); }
@@ -188,7 +186,8 @@
 .pill {
   position: absolute; top: 4px; left: 50%;
   transform: translateX(-50%);
-  padding: 5px 13px; border-radius: 999px;
+  display: flex; align-items: center; gap: 9px;
+  padding: 5px 14px 5px 10px; border-radius: 999px;
   background: rgba(255, 255, 255, .78);
   color: var(--text-2); font-weight: 750; font-size: 14px;
   box-shadow: 0 1px 4px rgba(70, 45, 20, .10);

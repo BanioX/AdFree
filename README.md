@@ -88,7 +88,9 @@ unter <https://baniox.github.io/AdFree/>.
 
 ## Erweitern
 
-Die App ist darauf ausgelegt, stetig zu wachsen:
+Die App ist darauf ausgelegt, stetig zu wachsen. Mehrere KI-Agenten bauen parallel daran
+(Claude: bestehende Spiele + Welle 1, Grok: Welle 2, Gemini: Welle 3) – die gemeinsamen Regeln
+stehen in [`AGENTS.md`](AGENTS.md), Probleme in fremden Spielen in [`HINWEISE.md`](HINWEISE.md).
 
 - **Neues Spiel:** Ordner `/<id>/` anlegen, Kachel-Icon `/icons/games/<id>.svg` zeichnen, Eintrag in
   [`games.js`](games.js) ergänzen – die Startseite zeigt es automatisch (14 Tage mit «Neu»-Abzeichen).
@@ -116,6 +118,7 @@ manifest.webmanifest  PWA-Manifest
 tools/                Werkzeuge: build-site.mjs (baut dist/), make-icons.mjs, demo-menu.html
 wrangler.jsonc        Cloudflare-Konfiguration
 DEV.md                Entwickler-Leitfaden (Regeln, Datenformate, Tests)
+AGENTS.md             Regeln und Zuständigkeiten für alle KI-Agenten
 CHANGELOG.md          Versionsverlauf
 ROADMAP.md            Fahrplan zu 100 Spielen
 ```

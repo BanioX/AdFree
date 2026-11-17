@@ -3,6 +3,8 @@
 import { store, reportSummary, todayKey, markDailyDone, isDailyDone, dailyStreak } from '../shared/storage.js';
 import { sfx } from '../shared/sfx.js';
 import { icon, h, toast, showModal, confirmDialog, celebrate, setupPage, soundButton, backButton, sleep } from '../shared/ui.js';
+import { gameMenu, menuSection } from '../shared/gamemenu.js';
+import { showTutorial, maybeShowTutorial, tutorialSeen, markTutorialSeen } from '../shared/tutorial.js';
 import { liquids, hiddenLiquid } from './data/colors.js';
 import { praise, tips, howTo, featureIntro, stuck } from './data/texts.js';
 import { chapterOf, parTarget, starsFor, dailyParams } from './logic/levels.js';
@@ -10,6 +12,7 @@ import { applyPour, undoPour, pourAmount, isSolved, hasUsefulMove, isComplete, c
 import { solve, solveBest } from './logic/solver.js';
 import { Board } from './view/board.js';
 import { audio } from './view/audio.js';
+import { tutorialSteps } from './view/tutorial.js';
 import { engine } from './engine.js';
 
 setupPage();
@@ -17,6 +20,7 @@ setupPage();
 const ID = 'sort';
 const ACCENT = '#22a9b7';
 const SPEEDS = { gemuetlich: 1.35, normal: 1, flott: 0.62 };
+const SYMBOL_OFFER_COLORS = 11; // ab so vielen Farben werden die Farbsymbole einmal angeboten
 const K = {
   progress: 'sort.progress', stats: 'sort.stats', settings: 'sort.settings', seen: 'sort.seen',
   run: (mode) => `sort.run.${mode}`,
@@ -79,60 +83,24 @@ function starsHtml(n, size = 14) {
   return s;
 }
 
-let mini = 0;
-/** Kleine SVG-Illustration eines Glases (für Hilfe & Karten). */
-function miniTube(x, y, cols, { cork = false, cap = 4, lift = 0 } = {}) {
-  const w = 16, lh = 9, top = 5, H = top + cap * lh + 2.5;
-  const id = 'mt' + (++mini);
-  let s = `<g transform="translate(${x},${y - lift})">`;
-  s += `<clipPath id="${id}"><path d="M1.6 0 V${H - w / 2} a6.4 6.4 0 0 0 12.8 0 V0 Z"/></clipPath>`;
-  s += `<path d="M1.6 0 V${H - w / 2} a6.4 6.4 0 0 0 12.8 0 V0 Z" fill="#ffffff" fill-opacity=".75"/>`;
-  s += `<g clip-path="url(#${id})">`;
-  cols.forEach((c, i) => {
-    const y1 = H - 1.2 - i * lh;
-    s += `<rect x="0" y="${y1 - lh}" width="${w}" height="${lh + (i === 0 ? 4 : 0.4)}" fill="${c}"/>`;
-  });
-  s += `<rect x="3.4" y="${top + 3}" width="2.4" height="${H - top - 12}" rx="1.2" fill="#fff" opacity=".55"/></g>`;
-  s += `<path d="M0.8 1.5 V${H - w / 2} a7.2 7.2 0 0 0 14.4 0 V1.5" fill="none" stroke="#6f8aa0" stroke-opacity=".7" stroke-width="1.3"/>`;
-  s += `<rect x="-0.8" y="-1" width="17.6" height="3" rx="1.5" fill="#fff" stroke="#6f8aa0" stroke-opacity=".7" stroke-width="1"/>`;
-  if (cork) s += `<path d="M2.5 -4 h11 l-1 6.5 h-9 z" fill="#d9a46b" stroke="#8a5a2e" stroke-width="1"/>`;
-  s += '</g>';
-  return s;
-}
-
-const L = (id) => liquids.find((x) => x.id === id).color;
-
-function howToArt(kind) {
-  const r = L('rot'), b = L('blau'), y = L('gelb'), g = L('gruen');
-  let body = '';
-  if (kind === 'tap') {
-    body = miniTube(14, 14, [b, y, r], { lift: 7 }) + miniTube(54, 14, [g, r]) +
-      `<path d="M30 6 Q44 -4 58 6" fill="none" stroke="${ACCENT}" stroke-width="2.4" stroke-linecap="round"/><path d="M53 3 l5 3 -5.4 2.6" fill="none" stroke="${ACCENT}" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>`;
-  } else if (kind === 'rule') {
-    body = miniTube(8, 14, [b, r]) + miniTube(34, 14, [g, r]) + miniTube(60, 14, [r, b]) +
-      `<circle cx="42" cy="66" r="5.5" fill="#34a86a"/><path d="M39.5 66 l1.8 1.8 3.4 -3.6" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>` +
-      `<circle cx="68" cy="66" r="5.5" fill="#e5484d"/><path d="M66 64 l4 4 M70 64 l-4 4" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/>`;
-  } else if (kind === 'goal') {
-    body = miniTube(10, 16, [r, r, r, r], { cork: true }) + miniTube(34, 16, [b, b, b, b], { cork: true }) + miniTube(58, 16, [y, y, y, y], { cork: true });
-  } else {
-    const ic = (x, name) => `<g transform="translate(${x},24)"><circle cx="12" cy="12" r="13" fill="#fff"/><g transform="translate(2.4,2.4) scale(.8)" fill="none" stroke="#2b2420" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">${icon(name).replace(/^<svg[^>]*>|<\/svg>$/g, '')}</g></g>`;
-    body = ic(4, 'undo') + ic(31, 'hint') + ic(58, 'plus');
-  }
-  return `<svg viewBox="0 0 86 74" width="86" height="74" aria-hidden="true">${body}</svg>`;
-}
-
 // ---------- Blätter ----------
 
-function showHelp() {
-  const content = h('div.howto');
-  for (const step of howTo) {
-    content.append(h('div.howto-step', null,
-      h('div.howto-art', { html: howToArt(step.art) }),
-      h('div.howto-text', null, h('b', null, step.title), h('span', null, step.text))));
+/** «So geht's»: gemeinsames, animiertes Tutorial (Schritte in data/texts.js → howTo). */
+let helpOpen = null;
+function openTutorial(show) {
+  if (!helpOpen) {
+    helpOpen = show({ id: ID, steps: tutorialSteps(howTo), accent: ACCENT })
+      .finally(() => { helpOpen = null; });
   }
-  seen.help = true;
-  saveSeen();
-  return showModal({ title: 'So geht’s', content, buttons: [{ label: 'Los geht’s', value: true, primary: true }] });
+  return helpOpen;
+}
+const showHelp = () => openTutorial(showTutorial);
+
+/** Beim allerersten Start (vor dem ersten Spiel) automatisch; wartet, falls es offen ist. */
+function firstHelp() {
+  if (seen.help && !tutorialSeen(ID)) markTutorialSeen(ID); // altes Hilfeblatt schon gesehen
+  if (tutorialSeen(ID)) return helpOpen || Promise.resolve(false);
+  return openTutorial(maybeShowTutorial);
 }
 
 function switchRow(label, sub, on, onChange) {
@@ -163,16 +131,15 @@ function showSettings(onChanged) {
     speedChips.append(b);
   }
   const reset = h('button.btn.ghost.danger', { type: 'button' }, 'Fortschritt zurücksetzen');
-  const help = h('button.btn.block', { type: 'button', html: icon('hint', { size: 20 }) + 'So geht’s' });
+  const help = h('button.btn.block', { type: 'button', html: '<span class="gm-q">?</span> So geht’s' });
   const content = h('div.settings',
     null,
     switchRow('Farbsymbole', 'Zeichen auf jeder Farbe – hilfreich bei ähnlichen Tönen', settings.symbols, (v) => {
       settings.symbols = v; saveSettings(); onChanged && onChanged();
     }),
-    switchRow('Ton', 'Giessen, Korken und Musik-Töne', !sfx.muted, (v) => { sfx.setMuted(!v); onChanged && onChanged(); }),
     h('div.set-row.col', null, h('div.set-label', null, h('b', null, 'Giess-Tempo')), speedChips),
     h('div.set-actions', null, help, reset));
-  const p = showModal({ title: 'Einstellungen', content, buttons: [{ label: 'Fertig', value: 'ok', primary: true }] });
+  const p = showModal({ title: 'Optionen', content, buttons: [{ label: 'Fertig', value: 'ok', primary: true }] });
   help.addEventListener('click', () => {
     sfx.play('click');
     document.querySelector('.sp-modal-backdrop .sp-modal-buttons .btn')?.click();
@@ -312,21 +279,14 @@ function menuScreen() {
   const first = progress.level === 1 && !hasRun;
   const today = todayKey();
   const dp = dailyParams(today);
-  const dailyDone = isDailyDone(ID);
-  const streak = dailyStreak(ID);
+  const inCh = progress.level - ch.first;
+  const chLen = ch.last - ch.first + 1;
 
-  const helpBtn = h('button.icon-btn', { type: 'button', 'aria-label': 'So geht’s', html: icon('hint') });
-  helpBtn.addEventListener('click', () => { sfx.play('click'); showHelp(); });
-  const top = h('header.topbar', null, backButton('../'), h('div.title', null, 'Farbfluss'), helpBtn, soundButton());
-
-  // Hero mit kleinem, selbst spielendem Regal
-  const heroCanvas = h('canvas');
-  const hero = h('div.hero', null,
-    h('div.hero-board', null, heroCanvas),
-    h('div.hero-tag', null, h('span', null, ch.emoji), ` Kapitel ${ch.index + 1} · ${ch.name}`));
+  // Titelbild: kleines, selbst spielendes Regal
+  const heroCanvas = h('canvas', { 'aria-hidden': 'true' });
+  const art = h('div.hero', null, h('div.hero-board', null, heroCanvas));
 
   // Fortschritt im Kapitel
-  const inCh = progress.level - ch.first;
   const dots = h('div.ch-dots');
   for (let n = ch.first; n <= ch.last; n++) {
     const d = h('span.dot');
@@ -334,43 +294,52 @@ function menuScreen() {
     if (n === progress.level) d.classList.add('cur');
     dots.append(d);
   }
-
-  const play = h('button.btn.primary.big-play', { type: 'button', id: 'play' },
-    h('span.bp-main', { html: icon('play', { size: 22 }) + (first ? 'Spielen' : 'Weiter') }),
-    h('span.bp-sub', null, `Level ${progress.level}${inCh >= 0 ? ` · ${inCh + 1}/${ch.last - ch.first + 1} im Kapitel` : ''}`));
-  play.addEventListener('click', () => { sfx.play('tap'); location.hash = 'play'; });
-
-  const [yy, mm, dd] = today.split('-').map(Number);
-  const daily = h('button.daily-card.card', { type: 'button', id: 'daily-card' },
-    h('div.cal', null, h('span.cal-top', null, MONTHS[mm - 1].slice(0, 3)), h('b', null, String(dd))),
-    h('div.dc-text', null,
-      h('b', null, 'Tagesrätsel'),
-      h('small', null, `${WEEKDAYS[new Date(yy, mm - 1, dd).getDay()]} · ${dp.name}`)),
-    h('div.dc-status', { html: dailyDone ? `<span class="ok">${icon('check', { size: 18 })}</span>${streak > 1 ? `<small>${streak} Tage</small>` : ''}` : `<span class="go">${icon('play', { size: 14 })}</span>${streak > 0 ? `<small>Serie ${streak}</small>` : ''}` }));
-  daily.classList.toggle('done', dailyDone);
-  daily.addEventListener('click', () => { sfx.play('tap'); location.hash = 'daily'; });
-
-  const tile = (ic, label, fn, id) => {
-    const b = h('button.menu-tile.card', { type: 'button', id }, h('span.mt-ic', { html: icon(ic) }), h('span', null, label));
-    b.addEventListener('click', () => { sfx.play('click'); fn(); });
-    return b;
-  };
-  const grid = h('div.menu-grid', null,
-    tile('grid', 'Levels', showLevelMap, 'btn-levels'),
-    tile('star', 'Statistik', showStats, 'btn-stats'),
-    tile('hint', 'So geht’s', showHelp, 'btn-help'),
-    tile('settings', 'Einstellungen', () => showSettings(), 'btn-settings'));
-
+  let chStars = 0;
+  for (let n = ch.first; n <= ch.last; n++) chStars += progress.stars[n] || 0;
+  const chLine = h('div.ch-line', null, dots, h('span.ch-stars', { html: `${chStars}/${chLen * 3} ${icon('star', { size: 15 })}` }));
   const tip = h('p.tip', null, '💡 ', tips[Math.floor(Math.random() * tips.length)]);
 
-  const menu = h('main.menu', null, hero, h('div.ch-line', null, dots, h('span.ch-stars', { html: `${totalStars()} ${icon('star', { size: 15 })}` })), play, daily, grid, tip);
-  app.replaceChildren(top, h('div.scroll', null, menu));
+  const play = async () => {
+    await firstHelp(); // Anleitung immer vor dem allerersten Spiel
+    if (screen && screen.kind === 'menu') location.hash = 'play';
+  };
+  const menu = gameMenu({
+    id: ID,
+    title: 'Farbfluss',
+    tagline: `${ch.emoji} Kapitel ${ch.index + 1} · ${ch.name}`,
+    accent: ACCENT,
+    art,
+    primary: {
+      label: first ? 'Spielen' : 'Weiterspielen',
+      sub: `Level ${progress.level}${inCh >= 0 ? ` · ${inCh + 1}/${chLen} im Kapitel` : ''}`,
+      onClick: play,
+    },
+    daily: {
+      done: isDailyDone(ID),
+      streak: dailyStreak(ID),
+      sub: dp.name,
+      onClick: async () => { await firstHelp(); if (screen && screen.kind === 'menu') location.hash = 'daily'; },
+    },
+    secondary: [
+      { label: 'Levels', icon: 'grid', onClick: showLevelMap },
+      { label: 'Statistik', icon: 'star', onClick: showStats },
+      { label: 'Optionen', icon: 'settings', onClick: () => showSettings() },
+    ],
+    stats: [
+      { label: 'Geschafft', value: progress.level - 1 },
+      { label: 'Sterne', value: totalStars() },
+      { label: 'Perfekt', value: stats.perfect },
+      { label: 'Serie', value: dailyStreak(ID) },
+    ],
+    sections: [menuSection('Dieses Kapitel', chLine), tip],
+    onHelp: showHelp,
+    backHref: '../',
+  });
+  app.replaceChildren(menu);
 
-  // Demo-Regal
   const demo = startDemo(heroCanvas, ch);
-
   report();
-  if (!seen.help) setTimeout(() => { if (screen && screen.kind === 'menu') showHelp(); }, 450);
+  firstHelp();
 
   return { kind: 'menu', destroy() { demo.stop(); } };
 }
@@ -390,7 +359,7 @@ function startDemo(canvas, ch) {
   };
   const sol = solve(start, { maxNodes: 20000, weight: 1.5 }).moves || [];
   const board = new Board(canvas, {
-    interactive: false, maxW: 30, shelf: true, padY: 4, vAlign: 1,
+    interactive: false, maxW: 27, shelf: true, padY: 6, topRoom: 2, vAlign: 1,
     shelfColor: ch.shelf, colorOf: (c) => cols[c], hiddenColor: hiddenLiquid.color,
     symbols: () => settings.symbols, speed: () => 1.15,
   });
@@ -467,13 +436,15 @@ function gameScreen({ mode, n }) {
   let stuckShown = false;
   let solving = false;
   let coachStep = 0;
+  let paused = false;
 
   // --- DOM ---
   const back = backButton('#', () => { sfx.play('click'); location.hash = ''; });
   const titleMain = h('b', null, mode === 'daily' ? 'Tagesrätsel' : `Level ${levelNo}`);
   const titleSub = h('small', null, '');
   const chips = h('div.feat');
-  const top = h('header.topbar.game-top', null, back, h('div.title-block', null, h('div.tb-row', null, titleMain, chips), titleSub), soundButton());
+  const helpBtn = h('button.icon-btn', { type: 'button', id: 'game-help', 'aria-label': 'So geht’s', html: '<span class="gm-q">?</span>' });
+  const top = h('header.topbar.game-top', null, back, h('div.title-block', null, h('div.tb-row', null, titleMain, chips), titleSub), helpBtn, soundButton());
   const canvas = h('canvas', { 'aria-label': 'Spielfeld' });
   const coach = h('div.coach.hidden');
   const loading = h('div.loading', null, h('div.spinner'), h('span', null, 'Gläser werden gefüllt …'));
@@ -510,7 +481,7 @@ function gameScreen({ mode, n }) {
   };
   const onVis = () => {
     if (document.hidden) { save(); tStart = 0; }
-    else if (run && !run.won) tStart = performance.now();
+    else if (run && !run.won && !paused) tStart = performance.now();
   };
   document.addEventListener('visibilitychange', onVis);
   window.addEventListener('pagehide', save);
@@ -601,7 +572,7 @@ function gameScreen({ mode, n }) {
       run.moves++;
       stats.pours++;
       board.select(-1);
-      board.pour(mv, st.tubes[mv.from].h);
+      board.pour(mv, st.tubes[mv.from].h, st.tubes[mv.to].h);
       sel = -1;
       coachStep++;
       save();
@@ -715,8 +686,9 @@ function gameScreen({ mode, n }) {
         board.setHint({ from: r.move.from, to: r.move.to });
         sfx.play('sparkle');
       } else if (r && r.exhausted) {
-        toast(run.extraUsed ? 'Sackgasse – mach ein paar Züge rückgängig.' : 'Sackgasse – Rückgängig oder «+1 Glas» hilft.');
         sfx.play('error');
+        if (!stuckShown) { stuckShown = true; await board.whenIdle(); if (!destroyed && run && !run.won) showStuck(); }
+        else toast(run.extraUsed ? 'Sackgasse – mach ein paar Züge rückgängig.' : 'Sackgasse – Rückgängig oder «+1 Glas» hilft.');
       } else {
         toast('Hm, schwierig! Versuch es mit Rückgängig.');
       }
@@ -732,6 +704,19 @@ function gameScreen({ mode, n }) {
   onPress(bRestart, () => { sfx.play('click'); restart(false); });
   onPress(bExtra, () => { addGlass(); });
   onPress(bHint, () => { sfx.play('click'); giveHint(); });
+
+  /** «So geht's» mitten im Spiel – die Zeit läuft solange nicht weiter. */
+  async function openHelp() {
+    if (paused) return;
+    flushTime();
+    paused = true;
+    tStart = 0;
+    try { await showHelp(); } finally {
+      paused = false;
+      if (!destroyed && run && !run.won && !document.hidden) tStart = performance.now();
+    }
+  }
+  onPress(helpBtn, () => { sfx.play('click'); openHelp(); });
 
   // --- Gewonnen ---
   async function onSolved() {
@@ -869,6 +854,12 @@ function gameScreen({ mode, n }) {
       stats.started++;
       save();
     }
+    // Allererster Start (z.B. direkt über #play): erst die Anleitung
+    if (!tutorialSeen(ID)) {
+      clearTimeout(showLoad);
+      await firstHelp();
+      if (destroyed) return;
+    }
     clearTimeout(showLoad);
     loading.remove();
     if (mode === 'daily') titleMain.textContent = 'Tagesrätsel';
@@ -901,6 +892,19 @@ function gameScreen({ mode, n }) {
       await sleep(500);
       if (!destroyed) await showModal({ title: featureIntro[intro].title, text: featureIntro[intro].text, buttons: [{ label: 'Verstanden', value: true, primary: true }] });
     }
+    // Viele Farben: einmal die Farbsymbole anbieten
+    if (!intro && !settings.symbols && !seen.symbols && run.colors.length >= SYMBOL_OFFER_COLORS && !run.won) {
+      seen.symbols = true;
+      saveSeen();
+      await sleep(500);
+      if (destroyed) return;
+      const v = await showModal({
+        title: featureIntro.symbols.title,
+        text: featureIntro.symbols.text,
+        buttons: [{ label: 'Farbsymbole an', value: 'on', primary: true }, { label: 'Nein, danke', value: 'off', ghost: true }],
+      });
+      if (v === 'on') { settings.symbols = true; saveSettings(); if (board) board.wake(); toast('Farbsymbole an – änderbar unter «Optionen»'); }
+    }
     if (run.tutorial) setTimeout(() => tutorialStep(), 700);
     if (!hasUsefulMove(run.state) && !run.won) onIdle();
   }
@@ -922,6 +926,8 @@ function gameScreen({ mode, n }) {
     get board() { return board; },
     tap,
     undo, restart: () => restart(true), addGlass, hint: giveHint,
+    /** Gespielte Zeit (ms) – für Tests. */
+    get elapsed() { flushTime(); return run ? run.elapsed : 0; },
   };
   if (window.__sort) window.__sort._game = api;
 

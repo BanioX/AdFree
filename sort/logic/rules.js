@@ -82,13 +82,26 @@ export function applyPour(s, from, to) {
   const a = s.tubes[from], b = s.tubes[to];
   const color = topColor(a);
   for (let i = 0; i < n; i++) b.l.push(a.l.pop());
+  // Ist das Zielglas damit vollständig (alle Schichten einer Farbe), werden seine
+  // verdeckten Schichten aufgedeckt – sonst gäbe es keinen Korken, obwohl alles stimmt.
+  const revealedDst = revealComplete(b, s.per);
   let revealed = -1;
   if (a.l.length && a.h > a.l.length - 1) {
     a.h = a.l.length - 1;
     revealed = a.l.length - 1;
   }
   if (!a.l.length) a.h = 0;
-  return { from, to, n, color, revealed };
+  return { from, to, n, color, revealed, revealedDst };
+}
+
+/**
+ * Deckt verdeckte Schichten eines Glases auf, das vollständig einfarbig ist
+ * (verändert t). Rückgabe: true, wenn etwas aufgedeckt wurde.
+ */
+export function revealComplete(t, per = PER_COLOR) {
+  if (!(t.h > 0) || t.l.length !== per || !isMono(t)) return false;
+  t.h = 0;
+  return true;
 }
 
 /** Macht einen Zug rückgängig. Aufgedeckte Schichten bleiben aufgedeckt. */
@@ -109,15 +122,26 @@ export function legalMoves(s) {
 }
 
 /**
- * Gibt es noch einen sinnvollen Zug? (Ein einfarbiges Glas komplett in ein leeres
- * Glas umzufüllen zählt nicht – das ändert nichts.)
+ * Bringt einen Zug etwas? Nicht sinnvoll sind:
+ *  - ein einfarbiges Glas komplett in ein leeres Glas umfüllen (ändert nichts),
+ *  - nur einen Teil der obersten Farbe umgiessen, weil das Ziel zu wenig Platz hat:
+ *    Dann liegt oben im Quellglas dieselbe Farbe wie vorher, man schiebt sie nur hin
+ *    und her. (Mit 4 Schichten pro Farbe öffnet so ein Teilzug nie einen neuen Weg,
+ *    ausser er deckt eine verdeckte Schicht auf.)
  */
-export function hasUsefulMove(s) {
-  for (const m of legalMoves(s)) {
-    const a = s.tubes[m.from], b = s.tubes[m.to];
-    if (!b.l.length && isMono(a) && a.l.length === m.n && b.cap >= a.cap) continue;
-    return true;
+export function isProgressive(s, m) {
+  const a = s.tubes[m.from], b = s.tubes[m.to];
+  if (!b.l.length && isMono(a) && a.l.length === m.n && b.cap >= a.cap) return false;
+  if (m.n < topRun(a)) {
+    const left = a.l.length - m.n;
+    return (a.h | 0) > left - 1; // deckt etwas auf
   }
+  return true;
+}
+
+/** Gibt es noch einen sinnvollen Zug (siehe isProgressive)? */
+export function hasUsefulMove(s) {
+  for (const m of legalMoves(s)) if (isProgressive(s, m)) return true;
   return false;
 }
 

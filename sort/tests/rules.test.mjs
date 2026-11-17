@@ -34,7 +34,7 @@ test('es fliesst nur so viel, wie Platz hat', () => {
   const s = S('abbb', 'aab', '');
   assert.equal(pourAmount(s, 0, 1), 1);
   const m = applyPour(s, 0, 1);
-  assert.deepEqual(m, { from: 0, to: 1, n: 1, color: 1, revealed: -1 });
+  assert.deepEqual(m, { from: 0, to: 1, n: 1, color: 1, revealed: -1, revealedDst: false });
   assert.deepEqual(s.tubes[0].l, [0, 1, 1]);
   assert.deepEqual(s.tubes[1].l, [0, 0, 1, 1]);
 });
@@ -112,4 +112,33 @@ test('cloneState ist tief', () => {
   const c = cloneState(s);
   c.tubes[0].l.push(5);
   assert.deepEqual(s.tubes[0].l, [0, 1]);
+});
+
+test('Hin-und-her-Teilzüge zählen nicht als sinnvoll', () => {
+  // a,b je mit «cc» oben und je einem freien Platz: nur Teilzüge möglich, die nichts ändern
+  const s = S('acc', 'bcc', 'dddb', 'aaab', { cap: 2, l: [1, 3], h: 0 });
+  assert.ok(legalMoves(s).length > 0);
+  assert.ok(!hasUsefulMove(s));
+  // ganzer Lauf passt → sinnvoll
+  assert.ok(hasUsefulMove(S('ac', 'bcc', 'dddb', 'aaab', { cap: 2, l: [1, 3], h: 0 })));
+});
+
+test('Teilzug, der eine verdeckte Schicht aufdeckt, ist sinnvoll', () => {
+  const s = { per: 4, tubes: [
+    { cap: 4, l: [0, 2, 2], h: 2 },
+    { cap: 4, l: [1, 2, 2], h: 0 },
+  ] };
+  assert.ok(hasUsefulMove(s));
+});
+
+test('vollständiges Glas deckt verdeckte Schichten auf', () => {
+  const s = { per: 4, tubes: [
+    { cap: 4, l: [0, 0], h: 1 },
+    { cap: 4, l: [1, 0, 0], h: 0 },
+  ] };
+  const mv = applyPour(s, 1, 0);
+  assert.equal(mv.n, 2);
+  assert.equal(s.tubes[0].h, 0);
+  assert.ok(mv.revealedDst);
+  assert.ok(isComplete(s.tubes[0], 4));
 });

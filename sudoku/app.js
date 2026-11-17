@@ -1,7 +1,8 @@
 // Sudoku – Spielpause. Menü, Routen (#play, #daily, #stats), Statistik, Einstellungen.
-import { setupPage, soundButton, backButton, h, showModal, confirmDialog, celebrate, toast, sleep } from '../shared/ui.js';
+import { setupPage, h, showModal, confirmDialog, celebrate, toast, sleep } from '../shared/ui.js';
 import { store, reportSummary, todayKey, markDailyDone, isDailyDone, dailyStreak } from '../shared/storage.js';
 import { sfx } from '../shared/sfx.js';
+import { gameMenu } from '../shared/gamemenu.js';
 import { icon } from './ui/icons.js';
 import { Play } from './ui/play.js';
 import { openTutorial, firstTutorial } from './ui/tutorial.js';
@@ -147,110 +148,88 @@ function renderMenu() {
   if (!difficulties.some((d) => d.id === diff)) diff = difficulties[0].id;
   const stats = loadStats();
 
-  const helpBtn = h('button.icon-btn', { type: 'button', 'aria-label': 'So geht’s' });
-  helpBtn.innerHTML = '<span class="gm-q">?</span>';
-  helpBtn.addEventListener('click', () => { sfx.play('click'); openTutorial(); });
-  const top = h('header.topbar', null, backButton('../'), h('div.title.center', null, 'Sudoku'), helpBtn, soundButton());
+  // Titelbild: Live-Vorschau des laufenden Spiels (sonst ein Beispiel-Rätsel)
+  const art = h('div.menu-art', null, miniBoard(inProgress, { sample: pool.leicht[0] }));
+  if (inProgress) art.append(h('span.menu-art-badge', null, `${Math.round(inProgress.progress() * 100)} %`));
 
-  // Laufendes Spiel
-  let cont = null;
-  if (inProgress) {
-    const g = inProgress;
-    const pct = Math.round(g.progress() * 100);
-    const btn = h('button.btn.primary.block.big', { type: 'button' });
-    btn.innerHTML = icon('play', { size: 22 });
-    btn.append('Weiter');
-    btn.addEventListener('click', () => { sfx.play('tap'); go('#play'); });
-    const bar = h('div.bar', null, h('i', { style: { width: pct + '%' } }));
-    cont = h('section.card.hero', null,
-      h('div.hero-row', null,
-        miniBoard(g),
-        h('div.hero-info', null,
-          h('div.kicker', null, 'Laufendes Spiel'),
-          h('div.hero-title', null, difficultyById(g.meta.diff).title),
-          h('div.hero-meta', null, `Rätsel Nr. ${g.meta.number || 1} · ${formatTime(g.elapsed)}`),
-          bar,
-          h('div.hero-meta.small', null, `${pct} % gelöst`))),
-      btn);
-  }
-
-  // Neues Spiel
-  const seg = h('div.seg', { role: 'tablist' });
-  const blurb = h('p.seg-blurb');
-  const playBtn = h('button.btn.block.big', { type: 'button', class: inProgress ? 'btn block big' : 'btn primary block big' });
-  const renderSeg = () => {
-    for (const b of seg.children) b.classList.toggle('active', b.dataset.id === diff);
-    const spec = difficultyById(diff);
-    const st = stats[diff];
-    blurb.replaceChildren(h('span', null, spec.blurb),
-      st.best ? h('span.best', null, ' · Bestzeit ' + formatTime(st.best)) : h('span.best', null, ` · Nr. ${nextNumber(diff)}`));
-    playBtn.innerHTML = icon(inProgress ? 'plus' : 'play', { size: 22 });
-    playBtn.append(inProgress ? `Neues Spiel` : 'Spielen');
-  };
-  difficulties.forEach((spec, k) => {
-    const dots = h('span.dots');
-    for (let j = 0; j < difficulties.length; j++) dots.append(h('i', { class: j <= k ? 'on' : '' }));
-    const b = h('button', { type: 'button', role: 'tab', 'data-id': spec.id }, h('span.lbl', null, spec.title), dots);
-    b.addEventListener('click', () => { diff = spec.id; store.set(KEYS.lastDiff, diff); sfx.play('click'); renderSeg(); });
-    seg.append(b);
-  });
-  playBtn.addEventListener('click', async () => {
-    sfx.play('tap');
+  const newGame = async () => {
     if (inProgress && inProgress.moves > 0) {
       const ok = await confirmDialog('Neues Spiel?', 'Dein laufendes Spiel wird dabei beendet.', 'Neues Spiel', 'Abbrechen');
       if (!ok) return;
       recordAbandon(inProgress.meta.diff);
     }
     startNew(diff);
-  });
-  renderSeg();
+  };
 
-  const won = totalWon();
-  const greet = inProgress ? null : h('div.hero-row', null,
-    miniBoard(null, { sample: pool.leicht[0] }),
-    h('div.hero-info', null,
-      h('div.kicker', null, won ? 'Schön, dass du da bist' : 'Willkommen'),
-      h('div.hero-title', null, 'Lust auf ein Rätsel?'),
-      h('div.hero-meta', null, won ? `${won} Rätsel gelöst` : 'Wähle eine Stufe und los geht’s.')));
-
-  const newCard = h('section.card.newgame', { class: inProgress ? 'card newgame' : 'card newgame hero' },
-    greet,
-    inProgress ? h('div.card-h', null, 'Neues Spiel') : null,
-    seg, blurb, playBtn);
+  const primary = () => {
+    if (inProgress) {
+      const g = inProgress;
+      return {
+        label: 'Weiterspielen',
+        sub: `${difficultyById(g.meta.diff).title} · ${Math.round(g.progress() * 100)} % · ${formatTime(g.elapsed)}`,
+        onClick: () => go('#play'),
+      };
+    }
+    const spec = difficultyById(diff);
+    return { label: `Spielen – ${spec.title}`, sub: `${spec.blurb} · Nr. ${nextNumber(diff)}`, onClick: () => startNew(diff) };
+  };
+  const secondary = () => [
+    inProgress ? { label: 'Neues Spiel', sub: difficultyById(diff).title, icon: 'plus', onClick: newGame } : null,
+    { label: 'Statistik', sub: totalWon() ? `${totalWon()} gelöst` : 'Zeiten & Serien', icon: 'star', onClick: () => go('#stats') },
+    { label: 'Einstellungen', sub: 'Farben, Hilfen', icon: 'settings', onClick: () => openSettings() },
+  ].filter(Boolean);
+  const statTiles = () => {
+    const s = stats[diff];
+    return [
+      { label: 'Gelöst', value: totalWon() },
+      { label: 'Bestzeit', value: s.best ? formatTime(s.best) : '–' },
+      { label: 'In Folge', value: s.streak || 0 },
+      { label: 'Tagesserie', value: dailyStreak(ID) },
+    ];
+  };
 
   // Tagesrätsel
-  const done = isDailyDone(ID);
-  const streak = dailyStreak(ID);
   const dg = loadGame('daily');
   const dailyRunning = dg && dg.meta.day === todayKey() && !dg.done;
-  const dIc = h('div.daily-ic');
-  dIc.innerHTML = `<span class="m">${MONTHS[new Date().getMonth()].slice(0, 3).toUpperCase()}</span><span class="d">${new Date().getDate()}</span>`;
-  const dState = h('div.daily-state', { class: done ? 'daily-state ok' : 'daily-state' });
-  dState.innerHTML = done ? icon('check', { size: 20, stroke: 3 }) : icon('back', { size: 20 });
-  const dailyCard = h('button.card.daily', { type: 'button', class: done ? 'card daily done' : 'card daily' },
-    dIc,
-    h('div.daily-info', null,
-      h('b', null, 'Tagesrätsel'),
-      h('span', null, longDate()),
-      h('small', null, done ? `Gelöst${streak > 1 ? ` · Serie: ${streak} Tage` : ' ✓'}` : dailyRunning ? `Weiter · ${formatTime(dg.elapsed)}` : `${difficultyById(DAILY_DIFFICULTY).title}${streak ? ` · Serie: ${streak} ${streak === 1 ? 'Tag' : 'Tage'}` : ' · für alle gleich'}`)),
-    dState);
-  dailyCard.addEventListener('click', () => { sfx.play('tap'); go('#daily'); });
+  const dailyTitle = difficultyById(DAILY_DIFFICULTY).title;
 
-  // Kleine Knöpfe
-  const small = (ic, label, fn) => {
-    const b = h('button.card.mini-btn', { type: 'button' });
-    b.innerHTML = `<span class="ic">${icon(ic, { size: 24 })}</span><span>${label}</span>`;
-    b.addEventListener('click', () => { sfx.play('click'); fn(); });
-    return b;
+  const el = gameMenu({
+    id: ID,
+    title: 'Sudoku',
+    tagline: 'Zahlen 1–9 logisch einsetzen',
+    accent: themeById(settings.theme).accent,
+    art,
+    primary: primary(),
+    daily: {
+      done: isDailyDone(ID),
+      streak: dailyStreak(ID),
+      sub: dailyRunning ? `${dailyTitle} · ${formatTime(dg.elapsed)}` : dailyTitle,
+      onClick: () => go('#daily'),
+    },
+    modes: {
+      label: inProgress ? 'Stufe für ein neues Spiel' : 'Schwierigkeit',
+      value: diff,
+      options: difficulties.map((d, k) => ({ id: d.id, label: d.title, sub: '•'.repeat(k + 1) })),
+      onChange(id) {
+        diff = id;
+        store.set(KEYS.lastDiff, id);
+        el.update({ primary: primary(), secondary: secondary(), stats: statTiles() });
+        markSecondary();
+      },
+    },
+    secondary: secondary(),
+    stats: statTiles(),
+    sections: [h('p.foot', null, `${Object.values(pool).reduce((a, x) => a + x.length, 0)} Rätsel im Vorrat – und unendlich viele neue.`)],
+    onHelp: () => openTutorial(),
+    backHref: '../',
+  });
+  el.classList.add('screen', 'menu');
+  // Drei Nebenknöpfe brauchen ein schmaleres Layout (Symbol über dem Text)
+  const markSecondary = () => {
+    const row = el.querySelector('.gm-secondary');
+    if (row) row.classList.toggle('three', row.children.length >= 3);
   };
-  const row = h('div.mini-row', null,
-    small('chart', 'Statistik', () => go('#stats')),
-    small('help', 'So geht’s', () => openTutorial()),
-    small('settings', 'Einstellungen', () => openSettings()));
-
-  const body = h('main.menu-body', null, cont, newCard, dailyCard, row,
-    h('p.foot', null, `${Object.values(pool).reduce((a, x) => a + x.length, 0)} Rätsel im Vorrat – und unendlich viele neue.`));
-  const el = h('div.screen.menu', null, top, h('div.scroll', null, body));
+  markSecondary();
   setScreen(el, 'menu');
   updateSummary();
   setTimeout(() => { if (screen === 'menu') firstTutorial(); }, 350);

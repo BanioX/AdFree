@@ -1,10 +1,10 @@
 // Levelkarte des Abenteuers: Welten mit je 20 Leveln, Sterne, Schlösser.
 
-import { h, icon, toast, soundButton, backButton } from '../../shared/ui.js';
+import { h, icon, toast, showModal, soundButton, backButton } from '../../shared/ui.js';
 import { sfx } from '../../shared/sfx.js';
 import { worldOf, goalTypeOf } from '../core/levels.js';
 import { worlds, LEVELS_PER_WORLD } from '../data/worlds.js';
-import { getAdv, totalStars, loadLevelSave } from './progress.js';
+import { getAdv, totalStars, loadLevelSave, saveLevelSave } from './progress.js';
 import { showAlbum } from './sheets.js';
 import { GOAL_EMOJI } from './menu.js';
 
@@ -48,9 +48,24 @@ export function mountMap(app, nav) {
         b.append(h('span.lv-goal', null, GOAL_EMOJI[goalTypeOf(n)]), h('span.lv-num', null, String(n)),
           h('span.lv-stars', { html: [1, 2, 3].map((k) => `<i class="${k <= st ? 'on' : ''}">${icon('star', { size: 11 })}</i>`).join('') }));
       }
-      b.addEventListener('click', () => {
+      b.addEventListener('click', async () => {
         if (isLocked) { sfx.play('tap'); toast(`Zuerst Level ${a.max} schaffen`); return; }
         sfx.play('click');
+        if (playing && n !== playing) {
+          // Es gibt nur einen Abenteuer-Spielstand: nicht stillschweigend überschreiben.
+          const v = await showModal({
+            title: `Level ${playing} ist angefangen`,
+            text: `Wenn du Level ${n} startest, geht dein Spielstand in Level ${playing} verloren.`,
+            buttons: [
+              { label: `Weiter mit Level ${playing}`, value: 'resume', primary: true, icon: 'play' },
+              { label: `Level ${n} starten`, value: 'start' },
+              { label: 'Abbrechen', value: 'cancel', ghost: true },
+            ],
+          });
+          if (v === 'resume') nav.level(playing);
+          else if (v === 'start') { saveLevelSave(null); nav.level(n); }
+          return;
+        }
         nav.level(n);
       });
       if (isCur) currentEl = b;

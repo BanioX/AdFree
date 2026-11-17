@@ -120,6 +120,16 @@ try {
   await page.screenshot({ path: OUT + '06-added.png' });
   await noPageScroll('Nach Hinzufügen');
 
+  // Rückgängig: «Hinzufügen» und ein Paar zurücknehmen
+  await tapBtn(page.locator('.nx-tool', { hasText: 'Zurück' }));
+  assert.equal(await page.evaluate(() => window.__nm.state.cells.length), n0, 'Hinzufügen zurückgenommen');
+  const pairs0 = await page.evaluate(() => window.__nm.state.pairs);
+  await tapBtn(page.locator('.nx-tool', { hasText: 'Zurück' }));
+  assert.equal(await page.evaluate(() => window.__nm.state.pairs), pairs0 - 1, 'Paar zurückgenommen');
+  await tapBtn(page.locator('.nm-add'));
+  await wait(700);
+  log('Rückgängig ok');
+
   // 5) Zurück ins Menü: Weiterspielen
   await tapBtn(page.locator('.nx-top a.icon-btn'));
   await page.waitForSelector('.gm-primary');

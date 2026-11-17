@@ -112,6 +112,31 @@ export function links(st) {
   return out;
 }
 
+/**
+ * Abschnitte zwischen zwei aufeinanderfolgenden gegebenen Zahlen, deren Lücke vollständig
+ * verbunden ist (für Lob/Leuchten). Nur echte Lücken (mindestens eine fehlende Zahl).
+ * Ergebnis: [{ key: 'a-b', a, b, cells: [Feld von a, …, Feld von b] }]
+ */
+export function closedSegments(st) {
+  const { w, sol, given } = st.puzzle;
+  const pos = positions(st);
+  const gv = [];
+  sol.forEach((v, i) => { if (v > 0 && given[i]) gv.push(v); });
+  gv.sort((x, y) => x - y);
+  const out = [];
+  for (let g = 0; g + 1 < gv.length; g++) {
+    const a = gv[g], b = gv[g + 1];
+    if (b - a < 2) continue;
+    let ok = true;
+    for (let k = a; k < b && ok; k++) ok = pos[k] >= 0 && pos[k + 1] >= 0 && touching(w, pos[k], pos[k + 1]);
+    if (!ok) continue;
+    const cells = [];
+    for (let k = a; k <= b; k++) cells.push(pos[k]);
+    out.push({ key: `${a}-${b}`, a, b, cells });
+  }
+  return out;
+}
+
 export function checkDone(st) {
   const { w, N } = st.puzzle;
   const pos = positions(st);

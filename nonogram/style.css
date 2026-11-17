@@ -239,22 +239,73 @@ button.card:active { transform: scale(.98); }
 .set-row input:checked + .switch { background: var(--good); }
 .set-row input:checked + .switch::after { transform: translateX(20px); }
 
-/* ---------- So geht's ---------- */
+/* ---------- So geht's (Tutorial-Szenen) ---------- */
 
-.help { text-align: left; }
-.ex-grid {
-  display: grid; grid-template-columns: auto repeat(5, 24px); grid-template-rows: auto repeat(5, 24px);
-  gap: 0; justify-content: center; margin: 0 auto 12px; font-weight: 800; font-size: 13px; color: var(--text);
+.nt-scene { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 8px; }
+.nt-board {
+  display: grid; grid-template-columns: auto repeat(5, var(--cs)); grid-template-rows: auto repeat(5, var(--cs));
+  font-weight: 850; font-size: 13px; color: #3a302a; background: #fff; padding: 6px; border-radius: 14px;
+  box-shadow: 0 6px 18px rgba(70, 45, 20, .14);
 }
-.ex-corner { }
-.ex-col { display: flex; flex-direction: column; justify-content: flex-end; align-items: center; padding-bottom: 3px; background: var(--surface-2); border-radius: 6px 6px 0 0; margin: 0 1px; }
-.ex-row { display: flex; justify-content: flex-end; align-items: center; gap: 6px; padding-right: 5px; background: var(--surface-2); border-radius: 6px 0 0 6px; margin: 1px 0; min-width: 34px; }
-.ex-cell { border: 1px solid #ebe1d4; background: #fff; position: relative; }
-.ex-cell.fill::after { content: ''; position: absolute; inset: 2px; border-radius: 4px; background: var(--ink); }
-.ex-cell.cross::after { content: '✕'; position: absolute; inset: 0; display: grid; place-items: center; color: #b7a999; font-size: 14px; }
-.help-list { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 5px; font-size: 14.5px; line-height: 1.35; }
-.help-list b { color: var(--text); }
-.help-foot { margin: 8px 0 0; font-size: 14px; color: var(--accent); font-weight: 700; }
+.nt-col { display: flex; flex-direction: column; justify-content: flex-end; align-items: center; padding: 3px 0 4px; background: #f9f2e8; border-radius: 6px 6px 0 0; margin: 0 1px; transition: color .25s, background .25s; }
+.nt-row { display: flex; justify-content: flex-end; align-items: center; gap: 7px; padding: 0 7px 0 6px; background: #f9f2e8; border-radius: 6px 0 0 6px; margin: 1px 0; min-width: 34px; transition: color .25s, background .25s; }
+.nt-col.done, .nt-row.done { color: #cdc2b6; }
+.nt-col.focus, .nt-row.focus { background: var(--accent-soft); color: var(--accent); }
+.nt-cell { border: 1px solid #ebe1d4; margin: 0 -1px -1px 0; background: #fff; position: relative; }
+.nt-cell::after {
+  content: ''; position: absolute; inset: 2px; border-radius: 5px; background: var(--ink);
+  transform: scale(0); transition: transform .2s var(--ease-spring), background .5s, border-radius .5s, inset .5s;
+}
+.nt-cell.fill::after { transform: scale(1); }
+.nt-cell.cross::before {
+  content: '✕'; position: absolute; inset: 0; display: grid; place-items: center; color: #b7a999; font-size: calc(var(--cs) * .5); font-weight: 900;
+  animation: sp-pop .25s var(--ease-out) both;
+}
+.nt-cell.bad::after { background: #e5484d; }
+.nt-cell.bad::before { content: '✕'; position: absolute; inset: 0; z-index: 1; display: grid; place-items: center; color: #fff; font-size: calc(var(--cs) * .45); font-weight: 900; }
+.nt-cell.hint { box-shadow: inset 0 0 0 3px #ffb000; z-index: 1; }
+.nt-board.reveal .nt-cell { border-color: transparent; transition: border-color .5s; }
+.nt-board.reveal .nt-cell.fill::after { background: var(--pc); inset: 0; border-radius: 2px; }
+.nt-board.reveal .nt-cell.cross::before { opacity: 0; transition: opacity .4s; animation: none; }
+.nt-board.reveal .nt-row, .nt-board.reveal .nt-col { opacity: .25; transition: opacity .5s; }
+.nt-board.reveal { animation: nt-glow 1.6s .3s var(--ease-out) both; }
+@keyframes nt-glow { 0% { transform: scale(1); } 30% { transform: scale(1.06); } 100% { transform: scale(1); } }
+.nt-tools { display: flex; gap: 14px; }
+.nt-tool { display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 11px; font-weight: 750; color: var(--text-2); }
+.nt-tool i { width: 42px; height: 36px; border-radius: 12px; background: #fff; box-shadow: var(--shadow); display: grid; place-items: center; color: var(--text); transition: transform .15s, background .2s; }
+.nt-tool[data-t="hint"] i { color: #e3a200; }
+.nt-tool.on i { transform: scale(.9); background: var(--accent-soft); }
+
+/* ---------- Coach-Mark (erstes Bild) ---------- */
+
+.coach {
+  position: absolute; left: 50%; z-index: 3; transform: translateX(-50%); width: max-content; max-width: calc(100% - 32px);
+  padding: 9px 14px; border-radius: 16px; background: var(--ink); color: #fff; font-size: 14.5px; font-weight: 700; line-height: 1.3;
+  text-align: center; box-shadow: var(--shadow); pointer-events: none; animation: sp-pop .35s var(--ease-out) both;
+  transition: opacity .3s, transform .3s;
+}
+.coach::before {
+  content: ''; position: absolute; left: 50%; top: -6px; width: 12px; height: 12px; margin-left: -6px; background: var(--ink); transform: rotate(45deg); border-radius: 2px;
+}
+.coach.gone { opacity: 0; transform: translate(-50%, 6px); }
+
+/* Meldungen im Spiel über der Werkzeugleiste statt über den Zahlen */
+body.nono-play .sp-toast { top: auto; bottom: calc(var(--safe-bottom) + 92px); transform: translate(-50%, 12px); }
+body.nono-play .sp-toast.show { transform: translate(-50%, 0); }
+
+/* ---------- Startbildschirm (gameMenu) ---------- */
+
+.nono-art {
+  position: relative; display: grid; place-items: center; width: 116px; height: 116px; background: #fff;
+  box-shadow: inset 0 0 0 2px var(--line); border-radius: 24px;
+}
+.nono-art canvas { width: 92px; height: 92px; image-rendering: pixelated; border-radius: 8px; }
+.nono-art .nono-pct {
+  position: absolute; right: 8px; bottom: 8px; padding: 2px 7px; border-radius: 9px; background: var(--accent); color: #fff;
+  font-size: 12px; font-weight: 850; font-variant-numeric: tabular-nums;
+}
+.gm-sections .packs { margin-top: 2px; }
+.gm-sections .endless { margin-top: 2px; }
 
 @media (max-height: 640px) {
   .tool .tl { display: none; }

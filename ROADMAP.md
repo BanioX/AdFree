@@ -6,6 +6,8 @@ jedes neue Spiel schneller und alle fühlen sich gleich hochwertig an.
 
 Legende: ✅ spielbar · 🔧 in Arbeit · 📋 geplant
 
+Mehrere KI-Agenten bauen parallel – Zuständigkeiten und Regeln stehen in [AGENTS.md](AGENTS.md).
+
 ## Bereits dabei (16)
 
 | # | Spiel | Familie | Stand |
@@ -27,7 +29,7 @@ Legende: ✅ spielbar · 🔧 in Arbeit · 📋 geplant
 | 15 | Juwelen – drei in einer Reihe | Kombinieren | 🔧 |
 | 16 | Blasenzauber – Bubble Shooter | Kombinieren | 🔧 |
 
-## Welle 1 – die beliebtesten Familien (in Arbeit)
+## Welle 1 – die beliebtesten Familien (in Arbeit · Claude)
 
 **Karten & Patience** (gemeinsame Karten-Darstellung)
 | # | Spiel | Stand |
@@ -63,7 +65,7 @@ Legende: ✅ spielbar · 🔧 in Arbeit · 📋 geplant
 | 37 | Ausparken – Autos aus dem Stau schieben | 🔧 |
 | 38 | Kuchen-Sortierung | 🔧 |
 
-## Welle 2
+## Welle 2 · Grok
 
 **Brettspiele gegen den Computer** (gemeinsames Brett + KI in drei Stärken)
 | # | Spiel | Stand |
@@ -92,7 +94,7 @@ Legende: ✅ spielbar · 🔧 in Arbeit · 📋 geplant
 | 56 | Kreuzworträtsel (Mini) | 📋 |
 | 57 | Emoji-Rätsel – Begriffe erraten | 📋 |
 
-## Welle 3
+## Welle 3 · Gemini
 
 **Logikrätsel** (gemeinsames Rätselgitter)
 | # | Spiel | Stand |
@@ -120,7 +122,7 @@ Legende: ✅ spielbar · 🔧 in Arbeit · 📋 geplant
 | 74 | Turmbau – Blöcke stapeln | 📋 |
 | 75 | Fallende Blöcke | 📋 |
 
-## Welle 4
+## Welle 4 · offen
 
 **Schieben & Verbinden**
 | # | Spiel | Stand |
@@ -169,7 +171,7 @@ Legende: ✅ spielbar · 🔧 in Arbeit · 📋 geplant
 - neue Themen für Wortsuche, neue Mahjong-Layouts, neue Kartenrücken und Tischfarben
 - saisonale Inhalte (Advent, Ostern, Sommer) und Tagesrätsel-Serien
 
-## Welle 5 – Retro-Ecke (nach den 100)
+## Welle 5 – Retro-Ecke (nach den 100) · offen
 
 Klassiker mit wenig Verzögerung, auf dem iPhone mit Touch-Steuerung **und** Bluetooth-Controller
 (Xbox/PlayStation über die Gamepad-Schnittstelle von Safari). Nur Open Source bzw. frei lizenzierte

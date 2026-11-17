@@ -11,7 +11,7 @@ import { miniBoard, showStats, showAlbum, skinPicker } from './sheets.js';
 import { showHelp } from './tutorial.js';
 import {
   getSettings, saveSettings, currentSkin, loadClassic, saveClassic, loadLevelSave, getAdv, totalStars,
-  getStats, recordClassicGame, updateSummary,
+  getStats, recordClassicGame, countedOf, updateSummary,
 } from './progress.js';
 import { Game } from '../core/game.js';
 
@@ -84,7 +84,7 @@ export function mountMenu(app, nav) {
           onClick: async () => {
             if (!(await confirmDialog('Neues Spiel?', 'Das angefangene Spiel wird beendet.', 'Neues Spiel'))) return;
             const g = Game.deserialize(raw);
-            if (g && !raw.counted) recordClassicGame(g);
+            if (g) recordClassicGame(g, countedOf(raw));
             saveClassic(size, null);
             nav.classic(size);
           },

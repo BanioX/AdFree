@@ -103,18 +103,40 @@ export function updateBest(size, score) {
   return false;
 }
 
-/** Ein klassisches Spiel ist zu Ende (oder wurde abgebrochen). */
-export function recordClassicGame(game) {
+/**
+ * Ein klassisches Spiel ist zu Ende (oder wurde abgebrochen). Gibt die gezählten Werte zurück.
+ * `prev` = beim letzten Mal gezählte Werte desselben Spiels (z.B. vor «Neue Teile – weiterspielen»):
+ * dann wird nur noch der Zuwachs addiert und das Spiel nicht doppelt gezählt.
+ */
+export function recordClassicGame(game, prev = null) {
   const s = getStats();
   const c = s.classic[game.size];
-  c.played += 1;
-  c.total += game.score;
-  c.lines += game.lines;
+  const p = prev && typeof prev === 'object' ? prev : null;
+  if (!p) c.played += 1;
+  c.total += Math.max(0, game.score - (p ? p.score | 0 : 0));
+  c.lines += Math.max(0, game.lines - (p ? p.lines | 0 : 0));
+  c.perfects += Math.max(0, game.perfects - (p ? p.perfects | 0 : 0));
   c.best = Math.max(c.best, game.score);
   c.bestCombo = Math.max(c.bestCombo, game.bestCombo);
   c.bestStreak = Math.max(c.bestStreak, game.bestStreak);
-  c.perfects += game.perfects;
   saveStats(s);
+  return { score: game.score, lines: game.lines, perfects: game.perfects };
+}
+
+/** Rekord nach «Rückgängig» auf `value` zurücksetzen (Aufrufer übergibt max(alter Rekord, Punkte)). */
+export function restoreBest(size, value) {
+  const s = getStats();
+  if (s.classic[size].best !== value) {
+    s.classic[size].best = Math.max(0, value | 0);
+    saveStats(s);
+  }
+}
+
+/** Bereits gezählte Werte eines gespeicherten Spiels (ältere Spielstände: `counted: true`). */
+export function countedOf(raw) {
+  if (!raw || !raw.counted) return null;
+  if (typeof raw.counted === 'object') return raw.counted;
+  return { score: raw.score | 0, lines: raw.lines | 0, perfects: raw.perfects | 0 };
 }
 
 export function bestScore(size) { return getStats().classic[size].best; }

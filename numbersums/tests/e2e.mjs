@@ -150,6 +150,7 @@ try {
   for (let k = 0; k < 3; k++) { await tapCell(k2); await wait(150); }
   await page.waitForSelector('.sp-modal');
   assert.match(await page.locator('.sp-modal h2').innerText(), /Keine Herzen/);
+  await wait(700);
   await page.screenshot({ path: OUT + '07-no-lives.png' });
   await tapBtn(page.locator('.sp-modal .btn.primary'));
   assert.equal(await page.evaluate(() => window.__ns.state.lives), 3);

@@ -78,8 +78,11 @@ export function showStats() {
   const a = getAdv();
   const tile = (label, value) => h('div.stat-tile', null, h('b', null, value), h('span', null, label));
   const sections = [];
+  const unplayed = [];
   for (const size of SIZES) {
     const c = s.classic[size];
+    // Nie gespielte Grössen nur als kurze Zeile (spart Platz auf kleinen Bildschirmen).
+    if (!c.played && !c.best && size !== 8) { unplayed.push(`${size}×${size}`); continue; }
     sections.push(h('div.stat-section', null,
       h('h3', null, `Klassisch ${size}×${size}`),
       h('div.stat-grid', null,
@@ -100,6 +103,7 @@ export function showStats() {
       tile('Edelsteine', fmt(a.gems)),
       tile('Siege', fmt(a.wins)),
       tile('Versuche', fmt(a.tries)))));
+  if (unplayed.length) sections.push(h('p.stat-note', null, `Klassisch ${unplayed.join(', ')}: noch nicht gespielt`));
   return showModal({ title: 'Statistik', content: h('div.stats', null, ...sections), buttons: [{ label: 'Schliessen', value: true, primary: true }] });
 }
 

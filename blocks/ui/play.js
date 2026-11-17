@@ -13,29 +13,42 @@ import { pictureById, pictureThumbUrl } from './picture.js';
 import { skinPicker } from './sheets.js';
 import { showHelp } from './tutorial.js';
 import {
-  currentSkin, loadClassic, saveClassic, loadLevelSave, saveLevelSave,
-  updateBest, bestScore, recordClassicGame, recordWin, recordTry, updateSummary, getStats,
+  currentSkin, loadClassic, saveClassic, loadLevelSave, saveLevelSave, getAdv,
+  updateBest, restoreBest, bestScore, recordClassicGame, countedOf, recordWin, recordTry, updateSummary, getStats,
 } from './progress.js';
 
 const fmt = (n) => Number(n || 0).toLocaleString('de-CH');
 const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
+
+/** Rückgängig: Klassisch 3× pro Spiel (nur der letzte Zug), Abenteuer beliebig oft bis 5 Züge zurück. */
+const UNDO_CLASSIC = 3;
+const UNDO_DEPTH_ADV = 5;
+/** Ab so viel Bewegung (px) gilt ein Tipp aufs Teil als Ziehen (sonst kein «Plumps»-Ton). */
+const DRAG_SLOP = 12;
 
 export function mountPlay(app, opts, nav) {
   const classic = opts.mode === 'classic';
   let skin = currentSkin();
   let level = null;
   let game = null;
-  let meta = {}; // zusätzliche Speicher-Infos (counted, recorded)
+  let meta = {}; // zusätzliche Speicher-Infos (counted, recorded, undosLeft)
+  let undoStack = []; // [{ game: serialize(), best }] – wird mitgespeichert
+  const undoDepth = classic ? 1 : UNDO_DEPTH_ADV;
+  const loadUndo = (raw) => (Array.isArray(raw.undo) ? raw.undo.filter((u) => u && u.game).slice(-undoDepth) : []);
 
   if (classic) {
     const raw = loadClassic(opts.size);
     const saved = raw ? Game.deserialize(raw) : null;
     if (saved && saved.mode === 'classic' && saved.size === opts.size) {
       game = saved;
-      meta = { counted: !!raw.counted, recordShown: !!raw.recordShown, startBest: raw.startBest ?? bestScore(opts.size) };
+      meta = {
+        counted: countedOf(raw), recordShown: !!raw.recordShown, startBest: raw.startBest ?? bestScore(opts.size),
+        undosLeft: Number.isFinite(raw.undosLeft) ? raw.undosLeft : UNDO_CLASSIC,
+      };
+      undoStack = loadUndo(raw);
     } else {
       game = Game.classic(opts.size, Date.now());
-      meta = { startBest: bestScore(opts.size) };
+      meta = { startBest: bestScore(opts.size), undosLeft: UNDO_CLASSIC };
     }
   } else {
     level = getLevel(opts.level);
@@ -44,6 +57,7 @@ export function mountPlay(app, opts, nav) {
     if (saved) {
       game = saved;
       meta = { recorded: !!raw.recorded };
+      undoStack = loadUndo(raw);
     } else {
       game = Game.fromLevel(level);
       recordTry();
@@ -53,13 +67,19 @@ export function mountPlay(app, opts, nav) {
   // ---------- DOM ----------
   app.className = `app blocks-play skin-${skin.id}`;
   app.innerHTML = '';
-  const title = classic ? `Klassisch ${game.size}×${game.size}` : `Level ${game.level}`;
+  const title = classic
+    ? h('div.title.center.two', null, h('small', null, 'Klassisch'), `${game.size}×${game.size}`)
+    : h('div.title.center', null, `Level ${game.level}`);
+  const undoBadge = h('span.undo-badge');
+  const undoBtn = h('button.icon-btn.undo-btn', { type: 'button', 'aria-label': 'Rückgängig', html: icon('undo') });
+  undoBtn.append(undoBadge);
+  const helpBtn = h('button.icon-btn.help-btn', { type: 'button', 'aria-label': 'So geht\'s', html: '<b aria-hidden="true">?</b>' });
   const hintBtn = h('button.icon-btn', { type: 'button', 'aria-label': 'Tipp', html: icon('hint') });
   const moreBtn = h('button.icon-btn', { type: 'button', 'aria-label': 'Pause', html: icon('pause') });
   const top = h('header.topbar', null,
     backButton('#', () => leave()),
-    h('div.title.center', null, title),
-    hintBtn, moreBtn);
+    title,
+    undoBtn, helpBtn, hintBtn, moreBtn);
 
   const hud = h('div.hud');
   const stage = h('div.stage');
@@ -169,7 +189,7 @@ export function mountPlay(app, opts, nav) {
 
   // ---------- Speichern ----------
   function save() {
-    const data = { ...game.serialize(), ...meta };
+    const data = { ...game.serialize(), ...meta, undo: undoStack };
     if (classic) saveClassic(game.size, data);
     else saveLevelSave(data);
   }
@@ -179,6 +199,8 @@ export function mountPlay(app, opts, nav) {
   // ---------- Eingabe ----------
   let locked = false;
   let pointerId = null;
+  let downAt = null; // Startpunkt des Fingers, um Tippen von Ziehen zu unterscheiden
+  let moved = 0;
 
   stage.addEventListener('pointerdown', (e) => {
     if (locked || game.over || game.won || pointerId != null) return;
@@ -189,11 +211,14 @@ export function mountPlay(app, opts, nav) {
     pointerId = e.pointerId;
     try { stage.setPointerCapture(e.pointerId); } catch { /* ignore */ }
     hideIntro();
+    downAt = { x: e.clientX, y: e.clientY };
+    moved = 0;
     view.startDrag(slot, p.x, p.y, e.pointerType);
     sfx.play('tap');
   });
   stage.addEventListener('pointermove', (e) => {
     if (e.pointerId !== pointerId || !view.drag) return;
+    if (downAt) moved = Math.max(moved, Math.hypot(e.clientX - downAt.x, e.clientY - downAt.y));
     const p = view.fromClient(e.clientX, e.clientY);
     view.updateDrag(p.x, p.y);
   });
@@ -203,16 +228,26 @@ export function mountPlay(app, opts, nav) {
     const d = view.drag;
     if (!d) return;
     if (!cancel && d.snap) commit(d.slot, d.snap.r, d.snap.c);
-    else { view.cancelDrag(); sfx.play('thud'); }
+    else {
+      view.cancelDrag();
+      // Nur wenn das Teil wirklich gezogen und daneben losgelassen wurde, ein weicher «Plumps».
+      if (!cancel && moved > DRAG_SLOP) sfx.play('thud');
+    }
   };
   stage.addEventListener('pointerup', (e) => finish(e, false));
   stage.addEventListener('pointercancel', (e) => finish(e, true));
   stage.addEventListener('lostpointercapture', (e) => { if (e.pointerId === pointerId) finish(e, true); });
 
   function commit(slot, r, c) {
+    const snap = { game: game.serialize(), best: classic ? bestScore(game.size) : 0 };
     const res = game.place(slot, r, c);
     view.endDrag();
     if (!res) { view.cancelDrag(); return null; }
+    if (!res.won) {
+      undoStack.push(snap);
+      if (undoStack.length > undoDepth) undoStack.splice(0, undoStack.length - undoDepth);
+    } else undoStack = [];
+    updateUndoBtn();
     save();
     sfx.play('place');
     if (navigator.vibrate) { try { navigator.vibrate(res.lines ? 18 : 8); } catch { /* ignore */ } }
@@ -243,6 +278,59 @@ export function mountPlay(app, opts, nav) {
     return res;
   }
 
+  // ---------- Rückgängig ----------
+  function canUndo() {
+    return undoStack.length > 0 && !game.won && (!classic || meta.undosLeft > 0);
+  }
+  function updateUndoBtn() {
+    const ok = canUndo();
+    undoBtn.classList.toggle('off', !ok);
+    undoBtn.setAttribute('aria-disabled', ok ? 'false' : 'true');
+    if (classic) {
+      undoBadge.textContent = String(Math.max(0, meta.undosLeft | 0));
+      undoBadge.classList.toggle('empty', !(meta.undosLeft > 0));
+    } else undoBadge.remove();
+  }
+
+  /** Letzten Zug zurücknehmen. Gibt true zurück, wenn es geklappt hat. */
+  function undo() {
+    if (!canUndo() || view.drag) return false;
+    const snap = undoStack.pop();
+    const g = Game.deserialize(snap.game);
+    if (!g) { updateUndoBtn(); return false; }
+    game = g;
+    if (classic) {
+      meta.undosLeft = Math.max(0, (meta.undosLeft | 0) - 1);
+      // Ein Rekord, der nur durch den zurückgenommenen Zug entstand, gilt nicht.
+      restoreBest(game.size, Math.max(snap.best | 0, game.score));
+    }
+    for (const k of Object.keys(shownGems)) delete shownGems[k];
+    Object.assign(shownGems, game.collected);
+    locked = false;
+    view.setGame(game);
+    save();
+    updateHud(true);
+    updateUndoBtn();
+    updateSummary();
+    sfx.play('whoosh');
+    return true;
+  }
+
+  undoBtn.addEventListener('click', () => {
+    if (locked || game.over || game.won) return;
+    if (!canUndo()) {
+      sfx.play('tap');
+      if (classic && meta.undosLeft <= 0 && game.moves > 0) toast('Rückgängig ist in diesem Spiel aufgebraucht');
+      else toast(game.moves > 0 ? 'Nur der letzte Zug lässt sich zurücknehmen' : 'Noch nichts zum Zurücknehmen');
+      undoBtn.classList.remove('sp-shake'); void undoBtn.offsetWidth; undoBtn.classList.add('sp-shake');
+      return;
+    }
+    hideIntro();
+    undo();
+  });
+
+  helpBtn.addEventListener('click', () => { sfx.play('click'); showHelp(); });
+
   // ---------- Tipp, Pause ----------
   hintBtn.addEventListener('click', () => {
     if (locked || game.over || game.won) return;
@@ -265,8 +353,8 @@ export function mountPlay(app, opts, nav) {
       content,
       buttons: [
         { label: 'Weiterspielen', value: 'resume', primary: true, icon: 'play' },
-        { label: 'Neu starten', value: 'restart', icon: 'refresh' },
         { label: 'So geht\'s', value: 'help', icon: 'hint' },
+        { label: 'Neu starten', value: 'restart', icon: 'refresh' },
         { label: 'Zum Menü', value: 'menu', ghost: true },
       ],
     });
@@ -283,7 +371,7 @@ export function mountPlay(app, opts, nav) {
 
   function restart() {
     if (classic) {
-      if (game.moves > 0 && !meta.counted) recordClassicGame(game);
+      if (game.moves > 0) recordClassicGame(game, meta.counted);
       saveClassic(game.size, null);
     } else {
       saveLevelSave(null);
@@ -373,9 +461,34 @@ export function mountPlay(app, opts, nav) {
       ],
     });
     saveLevelSave(null);
+    const w = worldOf(game.level);
+    if (rec.first && game.level === w.last && v !== 'again') await worldDone(w, v === 'next');
     if (v === 'next') nav.level(game.level + 1);
     else if (v === 'again') nav.level(game.level, true);
     else nav.map();
+  }
+
+  /** Letztes Level einer Welt zum ersten Mal geschafft: kleine Feier und Blick auf die neue Welt. */
+  async function worldDone(w, goingOn) {
+    const a = getAdv();
+    let stars = 0;
+    for (let i = w.first; i <= w.last; i++) stars += a.stars[i] | 0;
+    const nw = worldOf(w.last + 1);
+    sfx.play('complete');
+    celebrate([w.data.color, nw.data.color, '#ffd23f', '#ffffff']);
+    const content = h('div.world-done', { style: `--world:${w.data.color};--next:${nw.data.color};--tint:${nw.data.tint}` },
+      h('div.wd-emoji', null, w.data.emoji),
+      h('p.wd-line', null, `Alle ${w.last - w.first + 1} Level von «${w.title}» gelöst.`),
+      h('p.wd-stars', { html: `${icon('star', { size: 20 })}<b>${stars}</b> / ${(w.last - w.first + 1) * 3} Sterne` }),
+      h('div.wd-next', null,
+        h('span.wd-next-emoji', null, nw.data.emoji),
+        h('span.wd-next-txt', null, h('small', null, `Neu: Welt ${nw.index + 1}`), h('b', null, nw.title))));
+    await showModal({
+      title: 'Welt geschafft!',
+      content,
+      dismissible: false,
+      buttons: [{ label: goingOn ? `Auf nach «${nw.title}»` : 'Weiter', value: true, primary: true, icon: 'play' }],
+    });
   }
 
   async function overSequence(resumed) {
@@ -386,25 +499,38 @@ export function mountPlay(app, opts, nav) {
       view.shake(6);
       await sleep(900);
     }
+    const undoBtnDef = canUndo()
+      ? { label: classic ? `Letzten Zug zurück (${meta.undosLeft}×)` : 'Letzten Zug zurück', value: 'undo', icon: 'undo' }
+      : null;
     if (classic) {
-      const isRecord = game.score > 0 && game.score >= bestScore(game.size) && game.score > (meta.startBest || 0);
-      if (!meta.counted) {
-        recordClassicGame(game);
-        meta.counted = true;
+      const first = !(meta.startBest > 0);
+      const isRecord = !first && game.score > 0 && game.score >= bestScore(game.size) && game.score > meta.startBest;
+      // Zählt das Spiel (bzw. nach «Neue Teile» nur noch den Zuwachs) für die Statistik.
+      const prevCounted = meta.counted && typeof meta.counted === 'object' ? meta.counted : null;
+      const changed = !prevCounted || prevCounted.score !== game.score || prevCounted.lines !== game.lines || prevCounted.perfects !== game.perfects;
+      if (changed) {
+        meta.counted = recordClassicGame(game, prevCounted);
         save();
         updateSummary();
       }
       if (isRecord && !resumed) { celebrate(); sfx.play('complete'); }
+      let bestLine;
+      if (isRecord) bestLine = `${icon('star', { size: 16 })} Neuer Rekord!`;
+      else if (first && game.score > 0) bestLine = 'Dein erster Rekord – jetzt gilt es, ihn zu schlagen!';
+      else bestLine = `Rekord: ${fmt(bestScore(game.size))}`;
       const content = h('div.over', null,
         h('div.over-score', null, fmt(game.score)),
-        h('p.over-best', { html: isRecord ? `${icon('star', { size: 16 })} Neuer Rekord!` : `Rekord: ${fmt(bestScore(game.size))}` }),
+        h('p.over-best', { html: bestLine }),
         h('p.over-line', null, `${game.lines} Linien · beste Kombo ${game.bestCombo || 0} · Serie ${game.bestStreak || 0}×`));
       const buttons = [];
       if (game.rescues === 0) buttons.push({ label: 'Neue Teile – weiterspielen', value: 'rescue', primary: true, icon: 'refresh' });
+      if (undoBtnDef) buttons.push(undoBtnDef);
       buttons.push({ label: 'Neues Spiel', value: 'new', primary: game.rescues > 0, icon: 'play' });
       buttons.push({ label: 'Zum Menü', value: 'menu', ghost: true });
-      const v = await showModal({ title: isRecord ? 'Super gespielt!' : 'Keine Züge mehr', content, dismissible: false, buttons });
+      const heading = isRecord ? 'Super gespielt!' : first && game.score > 0 ? 'Erstes Spiel geschafft' : 'Keine Züge mehr';
+      const v = await showModal({ title: heading, content, dismissible: false, buttons });
       if (v === 'rescue') doRescue();
+      else if (v === 'undo') { if (!undo()) overSequence(true); }
       else if (v === 'new') { saveClassic(game.size, null); nav.reload(); }
       else { saveClassic(game.size, null); nav.menu('classic'); }
     } else {
@@ -419,10 +545,12 @@ export function mountPlay(app, opts, nav) {
         left.length ? h('p.over-line', null, `Es fehlen noch: ${left.join(', ')}`) : null);
       const buttons = [];
       if (game.rescues === 0) buttons.push({ label: 'Neue Teile (gratis)', value: 'rescue', primary: true, icon: 'refresh' });
-      buttons.push({ label: 'Nochmal versuchen', value: 'again', primary: game.rescues > 0, icon: 'play' });
+      if (undoBtnDef) buttons.push(undoBtnDef);
+      buttons.push({ label: 'Nochmal versuchen', value: 'again', primary: game.rescues > 0 && !undoBtnDef, icon: 'play' });
       buttons.push({ label: 'Levelkarte', value: 'map', ghost: true });
       const v = await showModal({ title: 'Kein Platz mehr', content, dismissible: false, buttons });
       if (v === 'rescue') doRescue();
+      else if (v === 'undo') { if (!undo()) overSequence(true); }
       else if (v === 'again') { saveLevelSave(null); nav.level(game.level, true); }
       else { saveLevelSave(null); nav.map(); }
     }
@@ -436,6 +564,7 @@ export function mountPlay(app, opts, nav) {
     sfx.play('whoosh');
     locked = false;
     updateHud();
+    updateUndoBtn();
     if (game.over) setTimeout(() => overSequence(false), 600);
   }
 
@@ -444,6 +573,7 @@ export function mountPlay(app, opts, nav) {
   window.addEventListener('pagehide', onHide);
   document.addEventListener('visibilitychange', onHide);
 
+  updateUndoBtn();
   if (game.won) setTimeout(() => winSequence(true), 200);
   else if (game.over) setTimeout(() => overSequence(true), 200);
   else if (classic) setTimeout(startCoach, 500);
@@ -456,6 +586,8 @@ export function mountPlay(app, opts, nav) {
     level,
     hint: () => bestMove(game),
     place: (slot, r, c) => commit(slot, r, c),
+    undo: () => undo(),
+    get undoCount() { return undoStack.length; },
     layout: () => {
       const L = view.L;
       const o = view.toClient(0, 0);

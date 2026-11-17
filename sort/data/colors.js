@@ -19,11 +19,11 @@ export const liquids = [
   { id: 'kakao', name: 'Kakao', color: '#8b5838', symbol: 'cross' },
   { id: 'limette', name: 'Limette', color: '#b2df3f', symbol: 'moon' },
   { id: 'himmel', name: 'Himmel', color: '#86cffc', symbol: 'ring' },
-  { id: 'lavendel', name: 'Lavendel', color: '#c8a9ff', symbol: 'hexagon' },
-  { id: 'nacht', name: 'Nachtblau', color: '#2d3c95', symbol: 'bolt' },
-  { id: 'beere', name: 'Brombeere', color: '#ad2160', symbol: 'leaf' },
+  { id: 'lavendel', name: 'Lavendel', color: '#dcaaf5', symbol: 'hexagon' },
+  { id: 'nacht', name: 'Nachtblau', color: '#22306f', symbol: 'bolt' },
+  { id: 'beere', name: 'Brombeere', color: '#7d1d55', symbol: 'leaf' },
   { id: 'silber', name: 'Silber', color: '#a6afba', symbol: 'bars' },
-  { id: 'pfirsich', name: 'Pfirsich', color: '#ffbb8e', symbol: 'sun' },
+  { id: 'pfirsich', name: 'Pfirsich', color: '#fdc4ae', symbol: 'sun' },
 ];
 
 /** Anzahl «Grundfarben», die für kleine Level bevorzugt werden. */

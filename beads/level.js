@@ -292,6 +292,35 @@ function parkedTotal(st) {
   return n;
 }
 
+/**
+ * Spielt den Vorrat mit einer einfachen «gierigen» Strategie durch (immer der Zug, der am
+ * meisten ins Bild legt und am wenigsten ablegt) – so spielen die meisten Menschen.
+ * true, wenn das Bild ohne Helfer fertig wird.
+ */
+export function greedyClears(L, st0, { noise = 0, seed = 'g' } = {}) {
+  const rng = noise > 0 ? makeRng(hashString(seed)) : null;
+  let st = cloneState(st0);
+  const C = st.cols.length;
+  for (let guard = 0; guard < 100000 && st.placed < L.total; guard++) {
+    let best = null;
+    let bestScore = -Infinity;
+    const legal = [];
+    const parked0 = parkedTotal(st);
+    for (let c = 0; c < C; c++) {
+      if (st.ptr[c] >= st.cols[c].length) continue;
+      const t = cloneState(st);
+      if (applyTap(L, t, c, null) !== 'ok') continue;
+      legal.push(t);
+      const score = 2 * (t.placed - st.placed) - Math.max(0, parkedTotal(t) - parked0) - 0.5 * usedSlots(t);
+      if (score > bestScore) { bestScore = score; best = t; }
+    }
+    if (!best) return false;
+    // ab und zu ein unbedachter Tipp (wie im echten Spiel)
+    st = rng && rng.next() < noise ? legal[Math.floor(rng.next() * legal.length)] : best;
+  }
+  return st.placed === L.total;
+}
+
 export function solve(L, st0, opts = {}) {
   const maxNodes = opts.maxNodes ?? 20000;
   const C = st0.cols.length;
@@ -473,32 +502,59 @@ export function deal(chunks, rng, C, bury = 0) {
  *   slack     so viele Ablageplätze weniger muss der Löser auskommen (Puffer für Anfänger)
  */
 export function levelConfig(L, n = 1, { custom = false, round = 0 } = {}) {
-  const C = clamp(Math.round(3.4 + L.K * 0.45 + L.total / 420), 5, 8);
+  // mindestens so viele Spalten wie Farben (bis 8): sonst wird die kleine Ablage zum Nadelöhr
+  const C = clamp(Math.max(Math.round(3.4 + L.K * 0.45 + L.total / 420), L.K), 5, 8);
   // ab der zweiten Runde durch die Bibliothek: schmalere Zone bei mittleren Bildern
   const R = L.W <= 7 ? 3 : round >= 1 && L.W >= 10 && L.W <= 22 ? 1 : 2;
   const S = DEFAULT_SLOTS;
-  if (custom) return { C, R, S, disorder: 1.5, bury: 0.2, slack: 1, maxChunk: Math.min(9, chunkMax(L) + 1) };
+  if (custom) return { C, R, S, disorder: 1.5, bury: 0.2, slack: 1, greedy: 1, maxChunk: Math.min(9, chunkMax(L) + 1) };
   const d = Math.max(0, n - 1);
   return {
     C, R, S,
     disorder: Math.min(2.5, 0.3 * d),
     bury: n <= 1 ? 0 : Math.min(0.45, 0.06 + 0.035 * d),
     slack: n <= 3 ? 2 : n <= 10 ? 1 : 0,
+    greedy: n <= 24 ? 2 : 1, // siehe generateTray: auch gierig spielend ohne Helfer machbar
     maxChunk: n <= 5 ? 6 : chunkMax(L),
   };
 }
 
 /**
+ * Wie gut kommt ein einfacher «gieriger» Spielstil ohne Helfer durch? Zählt die bestandenen
+ * Prüfungen (0–4): mit allen Ablageplätzen; mit einem Platz weniger; zweimal mit gelegentlichen
+ * Fehltipps (5 %). Bricht beim ersten Fehlschlag ab.
+ */
+function playability(L, cols, pri, S, R, seed) {
+  let n = 0;
+  if (!greedyClears(L, makeState(L, cols, S, R, pri))) return n;
+  n++;
+  if (S > 1 && !greedyClears(L, makeState(L, cols, S - 1, R, pri))) return n;
+  n++;
+  for (let r = 0; r < 2; r++) {
+    if (!greedyClears(L, makeState(L, cols, S, R, pri), { noise: 0.05, seed: `${seed}|n${r}` })) return n;
+    n++;
+  }
+  return n;
+}
+
+/**
  * Erzeugt einen lösbaren Vorrat. Die Unordnung wird so lange verringert, bis der
- * Löser mit (S - slack) Ablageplätzen eine Lösung findet.
+ * Löser mit (S - slack) Ablageplätzen eine Lösung findet und – je nach `greedy` – auch ein
+ * einfacher gieriger Spielstil durchkommt:
+ *   greedy = 0  keine Prüfung
+ *   greedy = 1  gierig mit allen Ablageplätzen
+ *   greedy = 2  zusätzlich mit einem Platz weniger und mit gelegentlichen Fehltipps
+ * Schafft das kein Versuch, gewinnt der lösbare Versuch mit den meisten bestandenen Prüfungen.
  */
 export function generateTray(L, cfg) {
-  const { seed = 'beads', C = 6, S = DEFAULT_SLOTS, R = 2, slack = 0, disorder = 0, bury = 0, maxChunk = 5 } = cfg;
+  const { seed = 'beads', C = 6, S = DEFAULT_SLOTS, R = 2, slack = 0, disorder = 0, bury = 0, maxChunk = 5, greedy = 0 } = cfg;
   const maxNodes = cfg.maxNodes ?? 5000;
   const seq = fillSequence(L, R);
   const verifyS = Math.max(1, S - slack);
+  const need = greedy >= 2 ? 4 : greedy >= 1 ? 1 : 0;
   const attempts = 6;
   let last = null;
+  let best = null;
   for (let a = 0; a <= attempts; a++) {
     const f = a === attempts ? 0 : Math.pow(0.68, a);
     const D = disorder * f;
@@ -508,9 +564,13 @@ export function generateTray(L, cfg) {
     const { cols, pri } = deal(perturb(chunks, rng, D), rng, C, B);
     last = { cols, pri, disorder: D, bury: B, attempt: a, solvable: false };
     const res = solve(L, makeState(L, cols, verifyS, R, pri), { maxNodes });
-    if (res.solvable) return { ...last, solvable: true, nodes: res.nodes };
+    if (!res.solvable) continue;
+    const score = need ? playability(L, cols, pri, S, R, `${seed}|${a}`) : 0;
+    const out = { ...last, solvable: true, nodes: res.nodes, playability: score };
+    if (score >= need) return out;
+    if (!best || score > best.playability) best = out;
   }
-  return last;
+  return best || last;
 }
 
 // ---------------------------------------------------------------------------

@@ -3,7 +3,7 @@
 
 import { h, icon, toast, showModal, confirmDialog, celebrate, sleep } from '../shared/ui.js';
 import { sfx } from '../shared/sfx.js';
-import { markDailyDone, todayKey } from '../shared/storage.js';
+import { markDailyDone, isDailyDone, todayKey } from '../shared/storage.js';
 import { Game, OPEN, FILL, CROSS, strokeAction, actionValue, strokeLine } from './core/game.js';
 import { BoardView, drawThumb } from './board.js';
 import { showHelp } from './help.js';
@@ -40,7 +40,9 @@ export function createPlay(o) {
   const subEl = h('span.pt-sub', null, `${puzzle.w} × ${puzzle.h}`);
   const moreBtn = h('button.icon-btn', { type: 'button', 'aria-label': 'Mehr' });
   moreBtn.innerHTML = icon('more');
-  const top = h('header.topbar.play-top', null, back, h('div.pt', null, titleEl, h('div.pt-line', null, subEl, timeEl)), moreBtn);
+  const helpBtn = h('button.icon-btn.help-btn', { type: 'button', 'aria-label': 'So geht’s' });
+  helpBtn.innerHTML = '<span class="gm-q">?</span>';
+  const top = h('header.topbar.play-top', null, back, h('div.pt', null, titleEl, h('div.pt-line', null, subEl, timeEl)), helpBtn, moreBtn);
   const bar = h('i');
   const progress = h('div.pbar', null, bar);
 
@@ -94,6 +96,7 @@ export function createPlay(o) {
     W = Math.floor(r.width); H = Math.floor(r.height);
     board.resize(W, H, Math.min(window.devicePixelRatio || 1, 2.5));
     if (board.reveal) board.reveal.to = board.pictureGeometry(pictureArea());
+    placeCoach();
     updateTools();
     requestDraw();
   }
@@ -133,8 +136,11 @@ export function createPlay(o) {
     clearTimeout(saveTimer);
     saveTimer = 0;
     tick();
-    if (game.isEmpty() && !game.canUndo() && game.elapsed < 4000) return;
-    save.saveProgress(id, { ...game.serialize(), s: game.solved ? 1 : 0 });
+    // Leeres Brett ganz am Anfang: nichts speichern – und einen eben rückgängig gemachten Stand löschen
+    if (game.isEmpty() && !game.canUndo() && game.elapsed < 4000) { save.clearProgress(id); return; }
+    const data = { ...game.serialize(), s: game.solved ? 1 : 0 };
+    if (board.zoomed && !game.solved) data.z = [Math.round(board.cs * 10) / 10, Math.round(board.sx), Math.round(board.sy)];
+    save.saveProgress(id, data);
   }
   const persistSoon = () => { clearTimeout(saveTimer); saveTimer = setTimeout(persist, 250); };
   const onVis = () => { tick(); if (document.visibilityState === 'hidden') persist(); };
@@ -154,12 +160,15 @@ export function createPlay(o) {
     const from = game.cells[i];
     if (from === v) return;
     game.cells[i] = v;
+    if (board.marks.size) board.marks.delete(i);
     board.animate(i, v === FILL ? 'fill' : v === CROSS ? 'cross' : 'erase');
   }
 
   /** Nach einem abgeschlossenen Zug: Auto-Kreuze, erledigte Linien, Fehler, Sieg. */
   function afterMove(indices, doneBefore) {
     const lines = game.linesOf(indices);
+    if (board.marks.size) board.clearMarks(indices);
+    if (coachEl) hideCoach();
     if (settings.instantErrors) {
       const wrong = [];
       for (const i of indices) {
@@ -369,6 +378,7 @@ export function createPlay(o) {
     pointers.delete(e.pointerId);
     if (gesture) {
       if (gesture.kind === 'corner' && Math.hypot(p.x - gesture.x, p.y - gesture.y) < 12) toggleZoom();
+      else if (pointers.size === 0) persistSoon();   // Zoom/Ausschnitt merken
       if (pointers.size === 0) gesture = null;
       else if (gesture.kind === 'pinch') {
         const q = [...pointers.values()][0];
@@ -386,6 +396,7 @@ export function createPlay(o) {
       board.zoomTo(board.cs * Math.exp(-e.deltaY * 0.0022), p.x, p.y);
     } else board.panBy(-e.deltaX, 0);
     updateTools();
+    persistSoon();
     requestDraw();
   }
 
@@ -400,14 +411,66 @@ export function createPlay(o) {
     }
     if (!settings.zoomTip) { settings = save.settings.set({ zoomTip: true }); }
     updateTools();
+    persistSoon();
     requestDraw();
   }
   let lastCell = null;
+
+  // ---------- Coach-Mark (allererstes Bild) ----------
+  let coachEl = null;
+  /** Linie mit dem kleinsten Spielraum (0 = ganz bestimmt), Zeilen zuerst. */
+  function coachTarget() {
+    let best = null;
+    for (const axis of [0, 1]) {
+      const clues = axis === 0 ? puzzle.rowClues : puzzle.colClues;
+      const len = axis === 0 ? game.w : game.h;
+      clues.forEach((cl, k) => {
+        if (!cl.length) return;
+        const slack = len - (cl.reduce((a, b) => a + b, 0) + cl.length - 1);
+        if (!best || slack < best.slack) best = { axis, k, slack, clue: cl, len };
+      });
+    }
+    return best;
+  }
+  function showCoach() {
+    const t = coachTarget();
+    if (!t) return;
+    board.coach = { axis: t.axis, k: t.k };
+    const what = t.axis === 0 ? 'Zeile' : 'Spalte';
+    const text = t.slack === 0 && t.clue.length === 1
+      ? `Die ${t.clue[0]} heisst: alle ${t.len} Felder dieser ${what} füllen. Einfach darüberziehen!`
+      : `Fang hier an – in dieser ${what} ist fast alles klar.`;
+    coachEl = h('div.coach', { 'aria-live': 'polite' }, text);
+    wrap.append(coachEl);
+    placeCoach();
+  }
+  function placeCoach() {
+    if (!coachEl) return;
+    const below = board.vy + board.vh + 18;
+    coachEl.style.top = Math.max(8, Math.min(below, H - 74)) + 'px';
+  }
+  function hideCoach() {
+    board.coach = null;
+    const c = coachEl;
+    coachEl = null;
+    if (!c) return;
+    c.classList.add('gone');
+    setTimeout(() => c.remove(), 320);
+  }
+
+  async function help() {
+    tick();
+    paused = true;
+    await showHelp();
+    tick();
+    paused = false;
+  }
 
   // ---------- Werkzeuge ----------
   function undo() {
     if (!game.canUndo() || game.solved) return;
     const idx = game.undo();
+    if (board.marks.size) board.clearMarks(idx);
     for (const i of idx) board.animate(i, game.cells[i] === FILL ? 'fill' : game.cells[i] === CROSS ? 'cross' : 'erase');
     sfx.play('click');
     board.invalidate();
@@ -467,6 +530,7 @@ export function createPlay(o) {
       return;
     }
     for (const i of wrong) board.markError(i);
+    board.setMarks(wrong);
     if (wrong.length) ensureVisible(wrong[0]);
     sfx.play('error');
     toast(wrong.length === 1 ? '1 Feld ist falsch (rot markiert).' : `${wrong.length} Felder sind falsch (rot markiert).`, 2400);
@@ -477,6 +541,7 @@ export function createPlay(o) {
     const ok = await confirmDialog('Neu beginnen?', 'Alle Felder dieses Bildes werden geleert.', 'Neu beginnen', 'Abbrechen');
     if (!ok) return;
     game.reset();
+    board.setMarks([]);
     board.reveal = null;
     board.revealDone = false;
     solvedShown = false;
@@ -508,7 +573,7 @@ export function createPlay(o) {
     paused = false;
     if (v === 'restart') restart();
     else if (v === 'settings') { await openSettings(); settings = save.settings.get(); updateTools(); }
-    else if (v === 'help') showHelp();
+    else if (v === 'help') help();
     else if (v === 'sound') { sfx.toggle(); sfx.play('click'); }
   }
 
@@ -519,7 +584,8 @@ export function createPlay(o) {
     const perfect = game.hints === 0 && game.checks === 0 && game.mistakes === 0;
     const res = save.markSolved(id, { time: game.elapsed, perfect });
     save.recordWin({ size: game.w === game.h ? game.w : 'andere', time: game.elapsed, hints: game.hints, perfect });
-    if (o.kind === 'daily' && o.day) {
+    // Nur das heutige Tagesrätsel zählt für die Serie – ein älteres nochmals spielen setzt sie nicht zurück
+    if (o.kind === 'daily' && o.day && o.day === todayKey() && !isDailyDone('nonogram', o.day)) {
       markDailyDone('nonogram', o.day);
       save.logDaily(o.day, { t: Math.round(game.elapsed), s: puzzle.def.sourceId || null });
     }
@@ -572,6 +638,7 @@ export function createPlay(o) {
   // ---------- Verdrahtung ----------
   back.addEventListener('click', () => { sfx.play('click'); o.onBack(); });
   moreBtn.addEventListener('click', more);
+  helpBtn.addEventListener('click', () => { sfx.play('click'); help(); });
   onTap(undoBtn, undo);
   onTap(segFill, () => setMode('fill'));
   onTap(segCross, () => setMode('cross'));
@@ -603,12 +670,25 @@ export function createPlay(o) {
     mount() {
       ro.observe(wrap);
       resize();
+      // Zoom und Ausschnitt vom letzten Mal wiederherstellen
+      if (saved && Array.isArray(saved.z) && !game.solved && board.zoomable) {
+        const [cs, sx, sy] = saved.z.map(Number);
+        if (Number.isFinite(cs) && Number.isFinite(sx) && Number.isFinite(sy)) {
+          board.cs = Math.min(Math.max(cs, board.fitCs), board.maxCs);
+          board.userZoomed = board.zoomed;
+          board.sx = sx; board.sy = sy;
+          board.layout();
+          updateTools();
+          requestDraw();
+        }
+      }
       if (game.solved) {
         board.showPicture(pictureArea());
         updateTools();
         requestDraw();
       } else {
         running = !isNew;
+        if (o.coach && isNew) showCoach();
         if (board.zoomable && !settings.zoomTip) {
           tipTimer = setTimeout(() => {
             if (!el.isConnected || game.solved || board.zoomed || settings.zoomTip) return;

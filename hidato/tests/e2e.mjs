@@ -154,6 +154,16 @@ try {
   assert.equal(await page.evaluate(() => window.__hd.state.vals.join(',')), vals, 'Stand nach Neuladen');
   log('Fortsetzen ok');
 
+  // Eine Lücke bis zur nächsten gegebenen Zahl schliessen → Lob «Verbunden!»
+  const seg2 = await nextSegment();
+  if (seg2 && seg2.length > 2) {
+    await swipe(seg2);
+    await page.waitForSelector('.nx-praise', { timeout: 1500 });
+    await wait(200);
+    await page.screenshot({ path: OUT + '06b-praise.png' });
+    log('Lob beim Schliessen einer Lücke ok:', await page.locator('.nx-praise').innerText());
+  }
+
   await solveBySwipes();
   await page.waitForSelector('.nx-win .nx-stars', { timeout: 8000 });
   await wait(1000);

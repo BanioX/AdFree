@@ -11,6 +11,21 @@ const FONT = 'ui-rounded, "SF Pro Rounded", -apple-system, BlinkMacSystemFont, "
 const clamp01 = (x) => (x < 0 ? 0 : x > 1 ? 1 : x);
 const lerp = (a, b, t) => a + (b - a) * t;
 
+/** Rechteck (in Feldern) um alle verdeckten Felder 'x' der Bild-Maske. */
+function maskBox(pm, n) {
+  if (typeof pm !== 'string') return null;
+  let r0 = n, r1 = -1, c0 = n, c1 = -1;
+  for (let i = 0; i < n * n; i++) {
+    if (pm[i] !== 'x') continue;
+    const r = Math.floor(i / n), c = i % n;
+    if (r < r0) r0 = r;
+    if (r > r1) r1 = r;
+    if (c < c0) c0 = c;
+    if (c > c1) c1 = c;
+  }
+  return r1 < 0 ? null : { r0, c0, w: c1 - c0 + 1, h: r1 - r0 + 1 };
+}
+
 export class BoardView {
   constructor(stage, skin) {
     this.stage = stage;
@@ -70,7 +85,10 @@ export class BoardView {
     this.hint = null;
     this.drag = null;
     this.returning = null;
+    this.flyers = [];
     this.pic = game.picMask && game.goals && game.goals.picture ? pictureById(game.goals.picture) : null;
+    this.picBox = this.pic ? maskBox(game.picMask, game.size) : null;
+    if (!this.picBox) this.pic = null;
     this.layout();
     const now = performance.now();
     this.trayIn = [now + 80, now + 150, now + 220];
@@ -118,7 +136,10 @@ export class BoardView {
       this.fx.style.height = vh + 'px';
     }
     this.rect = this.canvas.getBoundingClientRect();
-    this.picCanvas = this.pic ? renderPicture(this.pic, n * cs, dpr) : null;
+    // Das Bild füllt genau das Rechteck um die verdeckten Felder – so ist das ganze Motiv im
+    // aufzudeckenden Bereich, auch wenn nur ein Teil des Bretts verdeckt ist.
+    const pb = this.picBox;
+    this.picCanvas = this.pic && pb ? renderPicture(this.pic, pb.w * cs, dpr, pb.h * cs) : null;
   }
 
   /** Canvas-Koordinaten → Bildschirm-Koordinaten */
@@ -368,7 +389,8 @@ export class BoardView {
     if (this.pic && this.picCanvas) {
       const pm = game.picMask;
       const pc = this.picCanvas;
-      const k = pc.width / (n * cs);
+      const pb = this.picBox;
+      const px = bx + pb.c0 * cs, py = by + pb.r0 * cs, pw = pb.w * cs, ph = pb.h * cs;
       ctx.save();
       ctx.beginPath();
       let any = false;
@@ -381,7 +403,7 @@ export class BoardView {
       }
       if (any) {
         ctx.clip();
-        ctx.drawImage(pc, 0, 0, pc.width, pc.height, bx, by, n * cs, n * cs);
+        ctx.drawImage(pc, 0, 0, pc.width, pc.height, px, py, pw, ph);
         // feine Linien, damit das Raster sichtbar bleibt
         if (!winning || now - this.winT0 < 1600) {
           ctx.globalAlpha = winning ? clamp01(1 - (now - this.winT0 - 900) / 700) * 0.18 : 0.18;
@@ -398,6 +420,20 @@ export class BoardView {
         }
       }
       ctx.restore();
+      // Sieg: das ganze Bild (auch Ecken ausserhalb der Maske) blendet weich ein.
+      if (winning) {
+        const a = clamp01((now - this.winT0 - 600) / 700);
+        if (a < 1) busy = true;
+        if (a > 0) {
+          ctx.save();
+          ctx.globalAlpha = ease.inOutCubic(a);
+          ctx.beginPath();
+          roundRect(ctx, px, py, pw, ph, Math.max(4, cs * 0.18) * a);
+          ctx.clip();
+          ctx.drawImage(pc, 0, 0, pc.width, pc.height, px, py, pw, ph);
+          ctx.restore();
+        }
+      }
     }
 
     // Verdeckte Felder

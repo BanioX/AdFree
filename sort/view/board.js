@@ -38,6 +38,10 @@ function segsFrom(l) {
   return segs;
 }
 
+function boxesOverlap(a, b, m = 0) {
+  return a.x0 < b.x1 - m && b.x0 < a.x1 - m && a.y0 < b.y1 - m && b.y0 < a.y1 - m;
+}
+
 function amountOf(segs) {
   let a = 0;
   for (const s of segs) a += s.a;
@@ -78,6 +82,8 @@ export class Board {
     this.loop = this.loop.bind(this);
     if (this.o.interactive) {
       canvas.addEventListener('pointerdown', (e) => this.onPointer(e));
+      canvas.addEventListener('pointerup', (e) => this.onPointerUp(e));
+      canvas.addEventListener('pointercancel', () => { this.down = null; });
     }
     this.ro = new ResizeObserver(() => this.resize());
     this.ro.observe(canvas.parentElement || canvas);
@@ -206,10 +212,10 @@ export class Board {
 
   /**
    * Spielt einen (logisch schon ausgeführten) Zug ab.
-   * move: { from, to, n, color }, srcH: verdeckte Schichten im Quellglas danach.
+   * move: { from, to, n, color }, srcH / dstH: verdeckte Schichten im Quell-/Zielglas danach.
    */
-  pour(move, srcH = 0) {
-    const a = { ...move, srcH, t0: -1 };
+  pour(move, srcH = 0, dstH = null) {
+    const a = { ...move, srcH, dstH, t0: -1 };
     this.queue.push(a);
     this.pump(performance.now());
     this.wake();
@@ -237,6 +243,7 @@ export class Board {
     if (!n || !this.W) return;
     const padX = this.o.padX ?? 14;
     const padY = this.o.padY ?? 6;
+    const topRoom = this.o.topRoom || 0; // zusätzlicher Platz oben (× Breite), z.B. für weit gekippte Gläser
     let best = null;
     for (let r = 1; r <= Math.min(4, n); r++) {
       const rows = [];
@@ -248,7 +255,7 @@ export class Board {
       }
       const per = Math.max(...rows.map((x) => x.length));
       const wW = (this.W - 2 * padX) / (per + GAP * (per - 1));
-      let hc = 0;
+      let hc = topRoom;
       for (const row of rows) {
         const cap = Math.max(...row.map((i) => this.tubes[i].cap));
         hc += TOP_ROOM + tubeHeight(cap) + (this.o.shelf ? SHELF : 0.05);
@@ -261,7 +268,7 @@ export class Board {
     const w = Math.max(10, best.w);
     this.w = w;
     const used = best.hc * w;
-    let y = padY + Math.max(0, (this.H - 2 * padY - used) * (this.o.vAlign ?? 0.42));
+    let y = padY + topRoom * w + Math.max(0, (this.H - 2 * padY - used) * (this.o.vAlign ?? 0.42));
     const now = performance.now();
     this.rows = [];
     for (const row of best.rows) {
@@ -331,7 +338,20 @@ export class Board {
     if (e.button && e.button !== 0) return;
     const r = this.cv.getBoundingClientRect();
     const i = this.hitTest(e.clientX - r.left, e.clientY - r.top);
+    this.down = { id: e.pointerId, i, x: e.clientX, y: e.clientY };
     this.o.onTap && this.o.onTap(i);
+  }
+
+  /** Ziehen: Finger auf einem Glas aufsetzen und über einem anderen loslassen = giessen. */
+  onPointerUp(e) {
+    const d = this.down;
+    this.down = null;
+    if (!d || d.id !== e.pointerId || d.i < 0) return;
+    if (Math.hypot(e.clientX - d.x, e.clientY - d.y) < 14) return;
+    const r = this.cv.getBoundingClientRect();
+    const j = this.hitTest(e.clientX - r.left, e.clientY - r.top);
+    if (j < 0 || j === d.i || this.selected !== d.i) return;
+    this.o.onTap && this.o.onTap(j);
   }
 
   // ---------- Animation ----------
@@ -348,6 +368,8 @@ export class Board {
 
   pump(now) {
     // Wartende Züge starten, sobald beide Gläser frei sind (Reihenfolge je Glas bleibt erhalten)
+    // und ihr Flugweg keinen laufenden Zug kreuzt. Kreuzt er einen, wird der laufende Zug
+    // beschleunigt, damit der nächste rasch folgen kann – so fliegen nie zwei Gläser ineinander.
     const blocked = new Set();
     for (const a of this.anims) { blocked.add(a.from); blocked.add(a.to); }
     const rest = [];
@@ -357,10 +379,52 @@ export class Board {
         blocked.add(a.from); blocked.add(a.to);
         continue;
       }
+      const box = this.pourBox(a);
+      let clash = false;
+      for (const b of this.anims) {
+        if (b.box && boxesOverlap(box, b.box, this.w * 0.08)) { clash = true; b.rate = Math.max(b.rate || 1, 2.2); }
+      }
+      if (clash) {
+        rest.push(a);
+        blocked.add(a.from); blocked.add(a.to);
+        continue;
+      }
+      a.box = box;
       this.startAnim(a, now);
       blocked.add(a.from); blocked.add(a.to);
     }
     this.queue = rest;
+  }
+
+  /** Rechteck, das das Quellglas beim Giessen von a.from nach a.to höchstens überstreicht. */
+  pourBox(a) {
+    const src = this.tubes[a.from], dst = this.tubes[a.to];
+    const w = this.w;
+    const sx = src.x, dx = dst.x;
+    const dir = sx < dx - 1 ? 1 : sx > dx + 1 ? -1 : (dx < this.W / 2 ? -1 : 1);
+    const Hs = tubeHeight(src.cap) * w;
+    const lipX = dx - dir * w * 0.13;
+    const lipY = dst.base - tubeHeight(dst.cap) * w - w * 0.55;
+    const thMax = geom(src.cap).theta(Math.max(0, amountOf(src.segs) - a.n));
+    const lx = dir * (G.iw / 2) * w;
+    let x0 = sx - w * 0.6, x1 = sx + w * 0.6;
+    let y0 = src.base - Hs - LIFT * w, y1 = src.base;
+    for (let k = 0; k <= 4; k++) {
+      const th = (dir * thMax * k) / 4;
+      const c = Math.cos(th), sn = Math.sin(th);
+      for (const [px, py] of [[-0.56 * w, 0], [0.56 * w, 0], [-0.5 * w, Hs], [0.5 * w, Hs]]) {
+        const qx = px - lx;
+        const X = lipX + c * qx - sn * py, Y = lipY + sn * qx + c * py;
+        if (X < x0) x0 = X;
+        if (X > x1) x1 = X;
+        if (Y < y0) y0 = Y;
+        if (Y > y1) y1 = Y;
+      }
+    }
+    // Bogen beim Hinüberheben + Strahl bis in das Zielglas
+    y0 = Math.min(y0, lipY - w * 0.45);
+    y1 = Math.max(y1, dst.base);
+    return { x0, x1, y0, y1 };
   }
 
   startAnim(a, now) {
@@ -401,7 +465,10 @@ export class Board {
   stepAnim(a, now) {
     const src = this.tubes[a.from], dst = this.tubes[a.to];
     const g = geom(src.cap);
-    const t = now - a.t0;
+    if (a.el == null) { a.el = 0; a.tl = a.t0; }
+    a.el += Math.max(0, now - a.tl) * (a.rate || 1);
+    a.tl = now;
+    const t = a.el;
     const thetaAt = (V) => g.theta(V);
     let lip, th, phase, p;
     const restA = this.lipRest(src, a.dir, now, a.startLift);
@@ -480,6 +547,15 @@ export class Board {
         src.revealIdx = a.srcH;
         this.burstAt(a.from, a.srcH + 0.5, '#ffffff', 7);
         this.o.onReveal && this.o.onReveal(a.from);
+      }
+    }
+    if (a.dstH != null && dst.visH !== a.dstH) {
+      dst.visH = a.dstH;
+      if (!instant) {
+        dst.revealT0 = now;
+        dst.revealIdx = 0;
+        this.burstAt(a.to, 0.5, '#ffffff', 7);
+        this.o.onReveal && this.o.onReveal(a.to);
       }
     }
     for (const [t, i] of [[dst, a.to], [src, a.from]]) {

@@ -79,6 +79,11 @@ export class Play {
     this._tick();
     this.save();
     this.destroyed = true;
+    // Coach-Hinweis als Meldung nicht ins Menü mitnehmen
+    if (this.coach) {
+      const t = document.querySelector('.sp-toast.show');
+      if (t && /leuchtende Feld|passende Zahl/.test(t.textContent)) t.classList.remove('show');
+    }
     clearInterval(this._timer);
     clearInterval(this._saveTimer);
     clearTimeout(this._resizeT);

@@ -6,7 +6,7 @@ import { gameMenu, menuSection } from '../shared/gamemenu.js';
 import { showTutorial, tutorialSeen } from '../shared/tutorial.js';
 import { CellGrid, bindPointer } from '../lib/numbers/grid.js';
 import {
-  makeRouter, playTopbar, pill, toolButton, toolbar, winSheet, softSheet, statStore, runClock, coachBubble, formatTime, NI,
+  makeRouter, playTopbar, pill, toolButton, toolbar, winSheet, softSheet, statStore, runClock, coachBubble, formatTime, NI, praise, praiseWord,
 } from '../lib/numbers/hud.js';
 import * as G from './logic/game.js';
 import { hintPair, findPairs, COLS, openCount } from './logic/rules.js';
@@ -244,6 +244,8 @@ function showGame(slot) {
   let busy = false;
   let sel = -1;
   let hint = null;
+  let streak = 0;      // Paare in Folge ohne Fehlgriff (für Lob)
+  let praised = 0;
   const save = () => {
     st.elapsed = clock ? clock.elapsed : st.elapsed;
     // nie ein inzwischen neu begonnenes Spiel im selben Platz überschreiben
@@ -271,10 +273,11 @@ function showGame(slot) {
   const stack = h('div.nm-stack', null, card, coach.el);
   const area = h('div.nx-board-area.nm-area', null, stack);
 
+  const undoBtn = toolButton({ icon: 'undo', label: 'Zurück', onClick: () => doUndo() });
   const hintBtn = toolButton({ icon: 'bulb', label: 'Tipp', onClick: () => doHint() });
   const addBtn = toolButton({ icon: 'plusRows', label: 'Hinzufügen', onClick: () => doAdd(), className: 'nm-add' });
   const restartBtn = toolButton({ icon: 'refresh', label: slot === 'endless' ? 'Neu' : 'Neustart', onClick: () => doRestart() });
-  const bar = toolbar(hintBtn, addBtn, restartBtn);
+  const bar = toolbar(undoBtn, hintBtn, addBtn, restartBtn);
 
   const main = h('main.nx-main', null, goalEl, area, bar);
   const root = h('div.nx-screen.nm-play.enter', null, top.el, main);
@@ -302,6 +305,7 @@ function showGame(slot) {
     addBtn.setBadge(st.addsLeft);
     addBtn.setDisabled(!G.canAdd(st));
     hintBtn.setDisabled(st.done);
+    undoBtn.setDisabled(!G.canUndo(st));
     const g = st.goal;
     const gp = G.goalProgress(st);
     let pct = 0;
@@ -377,6 +381,7 @@ function showGame(slot) {
     const before = st.cells.length;
     const res = G.play(st, a, i);
     if (!res.ok) {
+      streak = 0;
       // passt nicht: kurz schütteln, neue Zahl auswählen
       sfx.play('error');
       grid.flash(a, 'ng-shake', 400);
@@ -400,6 +405,8 @@ function showGame(slot) {
     }
     sfx.play(res.stars ? 'sparkle' : 'pop');
     floatPoints(b, res.points);
+    streak++;
+    cheer(res);
     if (coachOn) { coachOn = false; store.set(K.coach, true); grid.coach(-1); coach.hide(); }
     if (res.rows.length) {
       await sleep(260);
@@ -410,10 +417,7 @@ function showGame(slot) {
       await sleep(340);
     }
     if (torn) return;
-    if (res.roundClear && st.mode === 'endless') {
-      toast(`Runde geschafft! +${res.points}`);
-      sfx.play('sparkle');
-    }
+    if (res.roundClear && st.mode === 'endless') sfx.play('sparkle');
     render();
     if (res.roundClear && st.mode === 'endless') {
       grid.cells.forEach((c, k) => { c.classList.add('nm-new'); c.style.animationDelay = k * 12 + 'ms'; });
@@ -425,6 +429,16 @@ function showGame(slot) {
     busy = false;
     if (st.done) return win();
     checkStuck();
+  }
+
+  // Lob: Feld leer > Reihen > Serie ohne Fehlgriff (alle 5 Paare)
+  function cheer(res) {
+    let text = null;
+    if (res.roundClear && st.mode === 'endless') text = `Feld leer! +${res.points}`;
+    else if (res.rows.length >= 2) text = 'Doppelreihe!';
+    else if (res.rows.length === 1) text = st.rowsCleared > 1 && st.rowsCleared % 3 === 0 ? praiseWord(praised++) : 'Reihe weg!';
+    else if (streak > 0 && streak % 5 === 0) text = streak >= 10 ? `${streak} in Folge!` : praiseWord(praised++);
+    if (text && !st.done) praise(stack, text, { y: 0.4, small: text.length > 12 });
   }
 
   function floatPoints(i, pts) {
@@ -470,6 +484,18 @@ function showGame(slot) {
       scroller.scrollTo({ top: Math.max(0, target - scroller.clientHeight / 3), behavior: 'smooth' });
     }
     checkStuck();
+  }
+
+  function doUndo() {
+    if (busy || !G.canUndo(st)) return;
+    clearHint();
+    if (sel >= 0) { const s0 = sel; sel = -1; renderCell(s0); }
+    G.undo(st);
+    streak = 0;
+    render();
+    sfx.play('tap');
+    save();
+    report();
   }
 
   function doHint() {
@@ -584,9 +610,14 @@ function showGame(slot) {
       title: 'Keine Paare mehr',
       emoji: '🌱',
       text: 'Kein Problem – dasselbe Feld ist sicher lösbar. Versuch es gleich nochmal!',
-      buttons: [{ label: 'Nochmal versuchen', value: 'retry', primary: true, icon: 'refresh' }, { label: 'Zum Menü', value: 'menu', ghost: true }],
+      buttons: [
+        { label: 'Nochmal versuchen', value: 'retry', primary: true, icon: 'refresh' },
+        G.canUndo(st) ? { label: 'Letzten Zug zurück', value: 'undo', icon: 'undo' } : null,
+        { label: 'Zum Menü', value: 'menu', ghost: true },
+      ].filter(Boolean),
     });
     if (torn) return;
+    if (v === 'undo') { G.undo(st); saveSlot(slot, st); route(); return; }
     if (v === 'retry') { G.restart(st); saveSlot(slot, st); route(); } else go('');
   }
 

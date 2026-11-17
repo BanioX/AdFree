@@ -13,7 +13,7 @@ export const tips = [
   'Rückgängig ist gratis und unbegrenzt. Probieren erlaubt!',
   'Mit dem Tipp-Knopf zeigt dir Farbfluss den nächsten guten Zug.',
   'Farben, die schon unten liegen, sind ein guter Startpunkt.',
-  'In den Einstellungen gibt es Farbsymbole – hilfreich bei ähnlichen Farben.',
+  'Unter «Optionen» gibt es Farbsymbole – hilfreich bei ähnlichen Farben.',
   'Fertige Gläser bekommen einen Korken und sind versiegelt.',
   'Grosse Gläser fassen 5 oder 6 Schichten – perfekte Zwischenlager.',
   'In Geheimnis-Leveln zeigt sich eine «?»-Schicht erst, wenn sie oben liegt.',
@@ -21,12 +21,15 @@ export const tips = [
   'Mit «+1 Glas» bekommst du einmal pro Level ein leeres Glas dazu.',
 ];
 
-/** Erklärung «So geht's» (Titel + Text pro Schritt; art = kleine Illustration). */
+/**
+ * «So geht's» (animiertes Tutorial, 3–4 Schritte). Pro Schritt: Titel (2–4 Wörter), ein kurzer
+ * Satz und demo = Name der Mini-Szene in view/tutorial.js ('tap' | 'rule' | 'goal' | 'help').
+ */
 export const howTo = [
-  { art: 'tap', title: 'Antippen und giessen', text: 'Tippe ein Glas an, dann ein anderes: Die oberste Farbe fliesst hinüber.' },
-  { art: 'rule', title: 'Gleiche Farbe oder leer', text: 'Giessen geht nur auf dieselbe Farbe oder in ein leeres Glas – und nur, solange Platz ist.' },
-  { art: 'goal', title: 'Ziel', text: 'Sortiere, bis jedes Glas nur noch eine Farbe enthält. Fertige Gläser bekommen einen Korken.' },
-  { art: 'help', title: 'Hilfen – alle gratis', text: 'Rückgängig, Tipp und Neustart so oft du willst. «+1 Glas» einmal pro Level (dann höchstens zwei Sterne).' },
+  { demo: 'tap', title: 'Antippen und giessen', text: 'Tippe ein Glas an, dann das Ziel – oder ziehe es hinüber.' },
+  { demo: 'rule', title: 'Gleiche Farbe oder leer', text: 'Giessen geht nur auf dieselbe Farbe oder in ein leeres Glas.' },
+  { demo: 'goal', title: 'Jedes Glas eine Farbe', text: 'Ist ein Glas voll und einfarbig, kommt ein Korken drauf.' },
+  { demo: 'help', title: 'Hilfen sind gratis', text: 'Rückgängig und Tipp so oft du willst, «+1 Glas» einmal pro Level.' },
 ];
 
 /** Einführung, wenn eine Besonderheit zum ersten Mal vorkommt. */
@@ -39,10 +42,14 @@ export const featureIntro = {
     title: 'Grosse Gläser',
     text: 'Manche Gläser fassen 5 oder 6 Schichten. Pro Farbe gibt es aber weiterhin genau 4.',
   },
+  symbols: {
+    title: 'Viele Farben!',
+    text: 'Ab jetzt gibt es ähnliche Töne. Mit Farbsymbolen trägt jede Farbe ein eigenes Zeichen – jederzeit änderbar unter «Optionen».',
+  },
 };
 
 /** Text, wenn sich nichts mehr bewegen lässt. */
 export const stuck = {
   title: 'Festgefahren',
-  text: 'Kein Zug mehr möglich. Mach etwas rückgängig, hol dir ein extra Glas oder beginne neu.',
+  text: 'Hier geht es nicht mehr weiter. Mach etwas rückgängig, nimm ein Extra-Glas oder beginne neu.',
 };

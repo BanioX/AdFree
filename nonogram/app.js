@@ -3,7 +3,7 @@
 // Routen:  (leer) Menü · #play/<id> Rätsel · #daily Tagesrätsel · #endless/<grösse>
 //          #pack/<id> Paket · #album Album · #stats Statistik
 
-import { h, icon, setupPage, soundButton, backButton, showModal, toast } from '../shared/ui.js';
+import { h, icon, setupPage, backButton, showModal, toast } from '../shared/ui.js';
 import { sfx } from '../shared/sfx.js';
 import { todayKey, isDailyDone, dailyStreak } from '../shared/storage.js';
 import {
@@ -11,7 +11,8 @@ import {
 } from './core/library.js';
 import { drawThumb } from './board.js';
 import { createPlay, openSettings } from './play.js';
-import { showHelp } from './help.js';
+import { showHelp, maybeHelp } from './help.js';
+import { gameMenu, menuSection } from '../shared/gamemenu.js';
 import * as save from './save.js';
 
 setupPage();
@@ -32,23 +33,52 @@ const IC = {
 };
 
 // ---------- Navigation ----------
+// Tiefer gehen (Menü → Rätsel/Paket/Album) legt einen Verlaufseintrag an, damit die Zurück-Geste
+// von Safari im Spiel bleibt. Die Zurück-Knöpfe nehmen – wenn möglich – denselben Eintrag zurück.
 
-function go(hash) {
+function go(hash, push = false) {
   const target = hash && hash !== '#' ? hash : '';
-  if ((location.hash || '') !== target) history.replaceState(null, '', location.pathname + location.search + target);
+  const cur = location.hash || '';
+  if (cur !== target) {
+    const url = location.pathname + location.search + target;
+    if (push) history.pushState({ from: cur }, '', url);
+    else history.replaceState(history.state, '', url);
+  }
   route();
+}
+
+/** Zurück zu `hash`: per history.back(), wenn wir von dort kamen, sonst ersetzen. */
+function goBack(hash) {
+  const target = hash && hash !== '#' ? hash : '';
+  const st = history.state;
+  if (st && st.from === target && (location.hash || '') !== target) { history.back(); return; }
+  go(target);
+}
+
+/** Von wo wurde das laufende Rätsel geöffnet? (Paket oder Album, sonst Menü) */
+function originOf() {
+  const from = (history.state && history.state.from) || '';
+  return /^#(pack\/[a-z0-9-]+|album)$/.test(from) ? from : '';
 }
 
 function setScreen(el, name, play = null) {
   if (current && current.play) current.play.destroy();
   app.replaceChildren(el);
   current = { name, el, play };
+  document.body.classList.toggle('nono-play', name === 'play');
   el.classList.add('enter');
   requestAnimationFrame(() => requestAnimationFrame(() => el.classList.remove('enter')));
   if (play) play.mount();
 }
 
 function updateSummary() { save.updateSummary(libraryCount()); }
+
+const importBeads = () => import('../beads/art/index.js');
+/** Perlen-Paket laden (falls nötig) und danach fn ausführen. */
+function withBeads(fn) {
+  if (getBeadsPack()) { fn(); return; }
+  loadBeadsPack(importBeads).then(() => fn(), () => fn());
+}
 
 /** Weitermachen: laufendes, nicht gelöstes Rätsel (zuletzt gespielt). */
 function resumeInfo() {
@@ -86,62 +116,58 @@ function labelFor(hit, id) {
   return `${hit.pack.title} · Nr. ${indexInPack(hit.pack, id)}`;
 }
 
-// ---------- Menü ----------
+// ---------- Menü (gemeinsamer Startbildschirm) ----------
 
-function renderMenu() {
-  const top = h('header.topbar', null, backButton('../'), h('div.title.center', null, 'Bilderrätsel'), soundButton());
-  const solved = save.solvedMap();
-  const total = libraryCount();
-  const solvedLib = allPacks().reduce((n, p) => n + p.puzzles.filter((d) => solved[d.id]).length, 0);
-
-  // Held: Weiter oder Spielen
+/** Hauptknopf + Titelbild: «Weiter» mit Live-Vorschau oder «Spielen» mit dem nächsten Bild. */
+function heroParts() {
   const res = resumeInfo();
-  const nxt = res ? null : nextUnsolved();
-  const heroDef = res ? res.hit.def : nxt ? nxt.def : packs[0].puzzles[0];
-  const heroId = res ? res.id : heroDef.id;
-  const thumb = h('canvas.hero-thumb');
-  if (res) drawThumb(thumb, heroDef, { mode: 'progress', cells: res.pr.c, size: 92 });
-  else drawThumb(thumb, heroDef, { mode: 'progress', cells: null, size: 92 });
-  const heroHit = res ? res.hit : lookup(heroId);
-  const pct = res ? progressPct(heroDef, res.pr.c) : 0;
-  const playBtn = h('button.btn.primary.block.big#play-btn', { type: 'button' });
-  playBtn.innerHTML = icon('play', { size: 22 });
-  playBtn.append(res ? 'Weiter' : 'Spielen');
-  playBtn.addEventListener('click', () => { sfx.play('tap'); go('#play/' + heroId); });
-  const hero = h('section.card.hero', null,
-    h('div.hero-row', null,
-      h('div.hero-pic', null, thumb, !res ? h('span.hero-q', null, '?') : null),
-      h('div.hero-info', null,
-        h('div.kicker', null, res ? 'Angefangen' : solvedLib ? 'Nächstes Bild' : 'Willkommen'),
-        h('div.hero-title', null, labelFor(heroHit, heroId)),
-        h('div.hero-meta', null, res ? `${heroDef.rows[0].length} × ${heroDef.rows.length} · ${save.formatTime(res.pr.t || 0)}` : `${heroDef.rows[0].length} × ${heroDef.rows.length} Felder · welches Bild versteckt sich?`),
-        res ? h('div.bar', null, h('i', { style: { width: pct + '%' } })) : null)),
-    playBtn);
+  if (res) {
+    const def = res.hit.def;
+    const cv = h('canvas');
+    drawThumb(cv, def, { mode: 'progress', cells: res.pr.c, size: 92 });
+    const art = h('div.nono-art', null, cv, h('span.nono-pct', null, progressPct(def, res.pr.c) + ' %'));
+    return {
+      art,
+      primary: {
+        label: 'Weiter', icon: 'play',
+        sub: `${labelFor(res.hit, res.id)} · ${def.rows[0].length}×${def.rows.length} · ${save.formatTime(res.pr.t || 0)}`,
+        onClick: () => go('#play/' + res.id, true),
+      },
+    };
+  }
+  const nxt = nextUnsolved();
+  const def = nxt ? nxt.def : packs[0].puzzles[0];
+  const hit = lookup(def.id);
+  return {
+    art: null,
+    primary: {
+      label: 'Spielen', icon: 'play',
+      sub: `${labelFor(hit, def.id)} · ${def.rows[0].length}×${def.rows.length}`,
+      onClick: () => go('#play/' + def.id, true),
+    },
+  };
+}
 
-  // Tagesrätsel
+function dailyInfo() {
   const day = todayKey();
   const done = isDailyDone('nonogram');
-  const streak = dailyStreak('nonogram');
   const dpr = save.loadProgress('daily-' + day);
-  const dIc = h('div.daily-ic');
-  dIc.innerHTML = `<span class="m">${MONTHS[new Date().getMonth()].slice(0, 3).toUpperCase()}</span><span class="d">${new Date().getDate()}</span>`;
-  const dState = h('div.daily-state', { class: done ? 'daily-state ok' : 'daily-state' });
-  dState.innerHTML = done ? icon('check', { size: 20, stroke: 3 }) : icon('play', { size: 18 });
-  const dSize = lookup('daily-' + day).def.rows.length;
-  const daily = h('button.card.daily#daily-card', { type: 'button', class: done ? 'card daily done' : 'card daily' },
-    dIc,
-    h('div.daily-info', null,
-      h('b', null, 'Tagesrätsel'),
-      h('span', null, longDate()),
-      h('small', null, done ? `Gelöst ✓${streak > 1 ? ` · Serie: ${streak} Tage` : ''}`
-        : dpr && !dpr.s ? `Weiter · ${save.formatTime(dpr.t || 0)}`
-          : `${dSize} × ${dSize} · für alle gleich${streak ? ` · Serie: ${streak}` : ''}`)),
-    dState);
-  daily.addEventListener('click', () => { sfx.play('tap'); go('#daily'); });
+  const size = lookup('daily-' + day).def.rows.length;
+  return {
+    done,
+    streak: dailyStreak('nonogram'),
+    sub: !done && dpr && !dpr.s ? `Weiter · ${save.formatTime(dpr.t || 0)}` : `${size}×${size} · ${longDate()}`,
+    onClick: () => go('#daily', true),
+  };
+}
+
+function renderMenu() {
+  const solved = save.solvedMap();
+  const solvedLib = () => allPacks().reduce((n, p) => n + p.puzzles.filter((d) => solved[d.id]).length, 0);
+  const st = save.getStats();
 
   // Pakete
   const packList = h('div.packs');
-  const secCount = h('span', null, `${solvedLib}/${total}`);
   const packCard = (pack) => {
     const n = pack.puzzles.length;
     const s = pack.puzzles.filter((d) => solved[d.id]).length;
@@ -153,57 +179,69 @@ function renderMenu() {
         h('span.bar', null, h('i', { style: { width: `${n ? (s / n) * 100 : 0}%` } }))),
       h('span.pack-count', null, s === n && n ? '✓' : `${s}/${n}`));
     if (s === n && n) b.classList.add('complete');
-    b.addEventListener('click', () => { sfx.play('tap'); go('#pack/' + pack.id); });
+    b.addEventListener('click', () => { sfx.play('tap'); go('#pack/' + pack.id, true); });
     return b;
   };
   for (const p of packs) packList.append(packCard(p));
   if (getBeadsPack()) packList.append(packCard(getBeadsPack()));
-  else {
-    loadBeadsPack(() => import('../beads/art/index.js')).then((bp) => {
-      if (!bp || !packList.isConnected) return;
-      packList.append(packCard(bp));
-      const sv = save.solvedMap();
-      secCount.textContent = `${allPacks().reduce((n, p) => n + p.puzzles.filter((d) => sv[d.id]).length, 0)}/${libraryCount()}`;
-      updateSummary();
-    });
-  }
 
   // Endlos
-  const endless = h('section.card.endless', null,
+  const endless = h('div.card.endless', null,
     h('div.endless-h', null, h('span.endless-ic', { html: svg(IC.infinity, 22) }),
       h('div', null, h('b', null, 'Endlos-Bilder'), h('small', null, 'Immer neue Fantasiewesen und Mosaike'))),
     h('div.size-row', null, ...ENDLESS_SIZES.map((sz) => {
       const b = h('button.size-btn', { type: 'button', 'data-size': sz }, h('b', null, `${sz}×${sz}`), h('small', null, `Nr. ${save.endlessNext(sz)}`));
-      b.addEventListener('click', () => { sfx.play('tap'); go('#endless/' + sz); });
+      b.addEventListener('click', () => { sfx.play('tap'); go('#endless/' + sz, true); });
       return b;
     })));
 
-  const small = (ic, label, fn, idName) => {
-    const b = h('button.card.mini-btn', { type: 'button', id: idName });
-    b.innerHTML = `<span class="ic">${ic}</span><span>${label}</span>`;
-    b.addEventListener('click', () => { sfx.play('click'); fn(); });
-    return b;
-  };
-  const row = h('div.mini-row', null,
-    small(svg(IC.album), 'Album', () => go('#album'), 'album-btn'),
-    small(svg(IC.stats), 'Statistik', () => go('#stats'), 'stats-btn'),
-    small(svg(IC.help), 'So geht’s', () => showHelp(), 'help-btn'),
-    small(icon('settings'), 'Optionen', () => openSettings(), 'settings-btn'));
+  const statsList = () => [
+    { label: 'Bilder', value: `${solvedLib()}/${libraryCount()}` },
+    { label: 'Ohne Hilfe', value: st.perfect },
+    { label: 'Tage-Serie', value: dailyStreak('nonogram') },
+    { label: 'Gesamtzeit', value: save.formatTime(st.time) },
+  ];
 
-  const body = h('main.menu-body', null, hero, daily,
-    h('h3.sec', null, 'Bildersammlungen', secCount),
-    packList, endless, row,
-    h('p.foot', null, 'Jedes Bild lässt sich ohne Raten lösen.'));
-  setScreen(h('div.screen.menu', null, top, h('div.scroll', null, body)), 'menu');
+  const hero = heroParts();
+  const menu = gameMenu({
+    id: 'nonogram',
+    title: 'Bilderrätsel',
+    tagline: 'Zahlen lösen, Bild entdecken',
+    accent: '#e0699a',
+    art: hero.art,
+    primary: hero.primary,
+    daily: dailyInfo(),
+    secondary: [
+      { label: 'Album', sub: `${Object.keys(solved).length} Bilder`, icon: 'image', onClick: () => go('#album', true) },
+      { label: 'Statistik', icon: 'star', onClick: () => go('#stats', true) },
+      { label: 'Optionen', icon: 'settings', onClick: () => openSettings() },
+    ],
+    stats: statsList(),
+    sections: [
+      menuSection('Bildersammlungen', packList),
+      menuSection('Endlos', endless),
+      h('p.foot', null, 'Jedes Bild lässt sich ohne Raten lösen.'),
+    ],
+    onHelp: () => showHelp(),
+    backHref: '../',
+  });
+  menu.classList.add('screen', 'menu');
+  setScreen(menu, 'menu');
   updateSummary();
-  maybeHelp();
-}
 
-/** «So geht's» beim allerersten Start (egal ob Menü oder direkt ein Rätsel). */
-function maybeHelp() {
-  if (save.settings.get().helpSeen) return;
-  save.settings.set({ helpSeen: true });
-  setTimeout(() => showHelp(), 400);
+  // Perlen-Paket nachladen: Karte ergänzen, Zähler und ggf. «Weiter» (p-…) aktualisieren
+  if (!getBeadsPack()) {
+    loadBeadsPack(importBeads).then((bp) => {
+      if (!bp || !menu.isConnected) return;
+      packList.append(packCard(bp));
+      const hp = heroParts();
+      const art = menu.querySelector('.gm-art');
+      if (art && hp.art) { art.replaceChildren(hp.art); art.classList.add('custom'); }
+      menu.update({ primary: hp.primary, stats: statsList() });
+      updateSummary();
+    });
+  }
+  maybeHelp();
 }
 
 function progressPct(def, cells) {
@@ -225,7 +263,7 @@ function renderPack(packId) {
   if (!pack) { go(''); return; }
   const solved = save.solvedMap();
   const s = pack.puzzles.filter((d) => solved[d.id]).length;
-  const top = h('header.topbar', null, backButton('#', () => { sfx.play('click'); go(''); }),
+  const top = h('header.topbar', null, backButton('#', () => { sfx.play('click'); goBack(''); }),
     h('div.title.center', null, `${pack.emoji || ''} ${pack.title}`), h('span.top-count', null, `${s}/${pack.puzzles.length}`));
   const grid = h('div.tiles');
   pack.puzzles.forEach((def, k) => {
@@ -238,7 +276,7 @@ function renderPack(packId) {
     tile.append(...[h('span.tile-pic', null, cv, !isSolved && !pr ? h('span.tile-q', null, '?') : null),
       h('span.tile-lbl', null, isSolved ? def.title : `Nr. ${k + 1}`),
       isSolved && solved[def.id].p ? h('span.tile-star', { html: icon('star', { size: 14 }) }) : null].filter(Boolean));
-    tile.addEventListener('click', () => { sfx.play('tap'); go('#play/' + def.id); });
+    tile.addEventListener('click', () => { sfx.play('tap'); go('#play/' + def.id, true); });
     grid.append(tile);
   });
   const w = pack.puzzles[0] ? pack.puzzles[0].rows[0].length : 0;
@@ -268,7 +306,7 @@ function albumEntries() {
 }
 
 function renderAlbum() {
-  const top = h('header.topbar', null, backButton('#', () => { sfx.play('click'); go(''); }),
+  const top = h('header.topbar', null, backButton('#', () => { sfx.play('click'); goBack(''); }),
     h('div.title.center', null, 'Album'), h('span.top-count'));
   const groups = albumEntries();
   const body = h('main.album-body');
@@ -308,14 +346,14 @@ async function viewPicture(e) {
   });
   if (v === 'again') {
     save.clearProgress(e.id);
-    go('#play/' + e.id);
+    go('#play/' + e.id, true);
   }
 }
 
 // ---------- Statistik ----------
 
 function renderStats() {
-  const top = h('header.topbar', null, backButton('#', () => { sfx.play('click'); go(''); }),
+  const top = h('header.topbar', null, backButton('#', () => { sfx.play('click'); goBack(''); }),
     h('div.title.center', null, 'Statistik'), h('span.top-count'));
   const st = save.getStats();
   const map = save.solvedMap();
@@ -351,7 +389,7 @@ function renderStats() {
 async function openPuzzle(id) {
   let loaded = loadPuzzle(id);
   if (!loaded && /^p-/.test(id)) {
-    await loadBeadsPack(() => import('../beads/art/index.js'));
+    await loadBeadsPack(importBeads);
     loaded = loadPuzzle(id);
   }
   if (!loaded) { toast('Dieses Bild gibt es nicht mehr.'); go(''); return; }
@@ -367,13 +405,13 @@ async function openPuzzle(id) {
       else { toast('Alle Bilder gelöst – wunderbar!'); go('#album'); }
     };
   }
+  // Coach-Mark nur beim allerersten Bild, solange es noch nie angefangen wurde
+  const coach = id === packs[0].puzzles[0].id && !save.loadProgress(id) && !save.isSolved(id);
   const play = createPlay({
-    id, puzzle, kind, label, pack,
+    id, puzzle, kind, label, pack, coach,
     day: loaded.day, size: loaded.size, n: loaded.n,
-    onBack: (fromWin) => {
-      if (pack && !fromWin) go('#pack/' + pack.id);
-      else go('');
-    },
+    // Zurück dorthin, wo das Rätsel geöffnet wurde (Paket/Album), sonst ins Menü
+    onBack: (fromWin) => goBack(fromWin ? '' : originOf()),
     onNext,
     onSolved: updateSummary,
   });
@@ -397,10 +435,10 @@ function route() {
     if (!ENDLESS_SIZES.includes(size)) { go(''); return; }
     go(`#play/e${size}-${save.endlessNext(size)}`);
   } else if ((m = /^pack\/([a-z0-9-]+)$/.exec(hash))) {
-    if (m[1] === 'perlen' && !getBeadsPack()) loadBeadsPack(() => import('../beads/art/index.js')).then(() => renderPack(m[1]));
+    if (m[1] === 'perlen') withBeads(() => renderPack(m[1]));
     else renderPack(m[1]);
-  } else if (hash === 'album') renderAlbum();
-  else if (hash === 'stats') renderStats();
+  } else if (hash === 'album') withBeads(renderAlbum);
+  else if (hash === 'stats') withBeads(renderStats);
   else renderMenu();
 }
 

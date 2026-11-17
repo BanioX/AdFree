@@ -8,6 +8,7 @@ import { bindPointer } from '../lib/numbers/grid.js';
 import { numPad, popover, closePopover } from '../lib/numbers/pad.js';
 import {
   makeRouter, playTopbar, timerPill, toolButton, toolbar, winSheet, statStore, runClock, coachBubble, formatTime,
+  praise, praiseWord,
 } from '../lib/numbers/hud.js';
 import * as G from './logic/game.js';
 import { touching } from './logic/puzzle.js';
@@ -210,6 +211,9 @@ function showGame(slot) {
     saveSlot(slot, st);
   };
   const solPos = []; p.sol.forEach((v, i) => { if (v > 0) solPos[v] = i; });
+  // Lücken zwischen gegebenen Zahlen, die schon einmal geschlossen wurden (Lob nur beim ersten Mal)
+  const cheered = new Set(G.closedSegments(st).map((g) => g.key));
+  let praised = 0;
   const ends = [solPos[1], solPos[p.N]];
 
   // --- DOM ---
@@ -405,11 +409,26 @@ function showGame(slot) {
     if (hnt.type === 'wrong') toast(`Die ${hnt.k} gehört woanders hin`, 2000);
     else { active = hnt.cell; toast(`Die ${hnt.k} kommt hierhin`, 1600); }
     coachDone();
-    afterChange();
+    afterChange({ quiet: true });
   }
 
-  function afterChange() {
+  /** Neu geschlossene Lücke: Abschnitt leuchtet auf, dazu ein kurzes Lob. */
+  function cheerSegments(quiet) {
+    if (st.done) return;
+    const fresh = G.closedSegments(st).filter((g) => !cheered.has(g.key));
+    if (!fresh.length) return;
+    fresh.forEach((g) => cheered.add(g.key));
+    let n = 0;
+    for (const g of fresh) for (const c of g.cells) { const d = 40 * n++; setTimeout(() => !torn && board.grid.flash(c, 'glow', 700), d); }
+    if (quiet) return;
+    setTimeout(() => !torn && sfx.play('sparkle'), 170);
+    const len = fresh.reduce((m, g) => Math.max(m, g.b - g.a), 0);
+    praise(stack, fresh.length > 1 ? 'Doppelt verbunden!' : len >= 5 ? praiseWord(praised++) : 'Verbunden!', { y: 0.42, small: fresh.length > 1 });
+  }
+
+  function afterChange(opts = {}) {
     render();
+    cheerSegments(opts.quiet);
     save();
     reportSummary(ID, isDaily ? summaryText() : `${spec.title} · Nr. ${st.number} · ${Math.round(G.progress(st) * 100)} %`);
     if (st.done) win();

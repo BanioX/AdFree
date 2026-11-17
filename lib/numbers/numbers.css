@@ -105,6 +105,26 @@
 }
 .nx-coach.show { opacity: .94; transform: translate(-50%, 0); }
 
+/* ---------- Lob-Einblendung («Super!») ---------- */
+
+.nx-praise {
+  position: absolute; left: 50%; z-index: 7; pointer-events: none; white-space: nowrap;
+  font-size: 30px; font-weight: 900; letter-spacing: -.01em; color: #fff; padding: 7px 20px 8px; border-radius: 999px;
+  background: linear-gradient(170deg, color-mix(in srgb, var(--accent) 82%, #fff), var(--accent));
+  box-shadow: 0 12px 28px color-mix(in srgb, var(--accent) 42%, transparent), inset 0 -3px 0 rgba(0, 0, 0, .1);
+  text-shadow: 0 1px 0 rgba(0, 0, 0, .12);
+  animation: nx-praise 1.35s var(--ease-out) forwards;
+}
+.nx-praise.small { font-size: 22px; padding: 6px 16px 7px; }
+@keyframes nx-praise {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(.35) rotate(-8deg); }
+  16% { opacity: 1; transform: translate(-50%, -50%) scale(1.12) rotate(2deg); }
+  28% { transform: translate(-50%, -50%) scale(1) rotate(0); }
+  72% { opacity: 1; transform: translate(-50%, -62%) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -105%) scale(.94); }
+}
+@media (prefers-reduced-motion: reduce) { .nx-praise { animation-duration: 1.6s; } }
+
 /* ---------- Tastatur & Aufklapp-Fenster ---------- */
 
 .np-shield { position: fixed; inset: 0; z-index: 900; }

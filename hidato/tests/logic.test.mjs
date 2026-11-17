@@ -3,7 +3,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { generate, solve, verify, randomPath, touching, neighbors } from '../logic/puzzle.js';
 import {
-  newGame, place, clearCell, candidates, conflicts, links, dragStep, findHint, applyHint, undo, snapshot, restart, positions, checkDone,
+  newGame, place, clearCell, candidates, conflicts, links, dragStep, findHint, applyHint, undo, snapshot, restart, positions, checkDone, closedSegments,
 } from '../logic/game.js';
 import { difficulties, DAILY } from '../data/difficulties.js';
 import { makeRng } from '../../shared/rng.js';
@@ -167,4 +167,31 @@ test('Tagesrätsel ist für alle gleich und JSON-speicherbar', () => {
   const a = newGame({ day: '2026-11-17' }), b = newGame({ day: '2026-11-17' });
   assert.deepEqual(a.puzzle, b.puzzle);
   assert.deepEqual(JSON.parse(JSON.stringify(a)).vals, a.vals);
+});
+
+test('Geschlossene Abschnitte zwischen gegebenen Zahlen', () => {
+  for (let n = 1; n <= 15; n++) {
+    const st = newGame({ diff: 'mittel', number: n });
+    const { sol, given, N } = st.puzzle;
+    assert.deepEqual(closedSegments(st), [], 'am Anfang ist keine Lücke geschlossen');
+    // Gegebene Zahlen sortiert; die erste echte Lücke mit der Lösung füllen
+    const gv = sol.map((v, i) => (given[i] ? v : 0)).filter((v) => v > 0).sort((a, b) => a - b);
+    let g = 0;
+    while (gv[g + 1] - gv[g] < 2) g++;
+    const a = gv[g], b = gv[g + 1];
+    const cellOf = (k) => sol.indexOf(k);
+    for (let k = a + 1; k < b - 1; k++) place(st, cellOf(k), k);
+    assert.equal(closedSegments(st).length, 0, 'noch eine Zahl fehlt');
+    place(st, cellOf(b - 1), b - 1);
+    const segs = closedSegments(st);
+    assert.equal(segs.length, 1);
+    assert.equal(segs[0].key, `${a}-${b}`);
+    assert.equal(segs[0].cells.length, b - a + 1);
+    assert.equal(segs[0].cells[0], cellOf(a));
+    // Ganze Lösung: jede Lücke geschlossen
+    sol.forEach((v, i) => { if (v > 0 && !given[i]) place(st, i, v); });
+    const gaps = gv.filter((v, k) => k + 1 < gv.length && gv[k + 1] - v >= 2).length;
+    assert.equal(closedSegments(st).length, gaps);
+    assert.ok(N > 0);
+  }
 });

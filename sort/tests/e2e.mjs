@@ -69,14 +69,27 @@ async function moves() {
   return page.evaluate(() => window.__sort.game && window.__sort.game.run ? window.__sort.game.run.moves : -1);
 }
 
+const tutOpen = () => page.locator('.tut-backdrop.show').count().then((n) => n > 0);
+
+/** Geht alle Tutorial-Schritte mit «Weiter» durch (Screenshots optional). */
+async function walkTutorial(prefix) {
+  await page.locator('.tut-backdrop.show').waitFor({ timeout: 5000 });
+  assert.match(await page.locator('.tut-kicker').textContent(), /So geht/);
+  const n = await page.locator('.tut-dots span').count();
+  assert.ok(n >= 3 && n <= 4, '3–4 Schritte');
+  for (let i = 0; i < n; i++) {
+    assert.ok(await page.locator('.tut-stage .tt-scene').count() > 0, 'animierte Demo in Schritt ' + (i + 1));
+    if (prefix) { await page.waitForTimeout(i === 0 ? 1900 : 1400); await shot(`${prefix}-${i + 1}`); }
+    await page.locator('.tut-next').tap();
+    await page.waitForTimeout(250);
+  }
+  await page.waitForFunction(() => !document.querySelector('.tut-backdrop'), null, { timeout: 3000 });
+}
+
 // 1) Erster Start: Anleitung erscheint automatisch
 step('Erster Start');
 await page.goto(BASE);
-await page.locator('.sp-modal-backdrop.show').waitFor({ timeout: 5000 });
-const helpTitle = await page.locator('.sp-modal h2').first().textContent();
-assert.match(helpTitle, /So geht/);
-await shot('01-howto');
-await closeModal();
+await walkTutorial('01-howto');
 assert.equal(await page.locator('.topbar a[href="../"], .topbar [href="../"]').count() > 0, true, 'Zurück zur Startseite');
 await shot('02-menu');
 
@@ -135,6 +148,71 @@ await page.evaluate(() => window.__sort.idle());
 assert.equal(await moves(), 0, 'Neustart');
 assert.equal(await page.evaluate(() => window.__sort.game.run.state.tubes.length), nTubes, 'Neustart entfernt Extra-Glas');
 
+// Ziehen: von einem Glas zum anderen giesst
+step('Ziehen');
+{
+  const sol = await page.evaluate(() => window.__sort.solution());
+  const a = await page.evaluate((k) => window.__sort.center(k), sol[0].from);
+  const b = await page.evaluate((k) => window.__sort.center(k), sol[0].to);
+  const cdp = await ctx.newCDPSession(page);
+  const tp = (x, y) => [{ x, y, id: 1 }];
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: tp(a.x, a.y) });
+  for (let k = 1; k <= 6; k++) {
+    await page.waitForTimeout(30);
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: tp(a.x + ((b.x - a.x) * k) / 6, a.y + ((b.y - a.y) * k) / 6) });
+  }
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+  await page.evaluate(() => window.__sort.idle());
+  assert.equal(await moves(), 1, 'Ziehen giesst');
+  await page.locator('#tool-undo').tap();
+  await page.evaluate(() => window.__sort.idle());
+  assert.equal(await moves(), 0);
+}
+
+// Schnelles Spielen: nie zwei Gläser gleichzeitig im selben Bereich
+step('Schnelle Züge');
+{
+  const sol = await page.evaluate(() => window.__sort.solution());
+  const watch = page.evaluate(() => new Promise((res) => {
+    const b = window.__sort.game.board;
+    let worst = 0, maxAnims = 0;
+    const t0 = performance.now();
+    const ov = (p, q) => p.x0 < q.x1 && q.x0 < p.x1 && p.y0 < q.y1 && q.y0 < p.y1;
+    (function tick() {
+      const as = b.anims;
+      maxAnims = Math.max(maxAnims, as.length);
+      for (let i = 0; i < as.length; i++) for (let j = i + 1; j < as.length; j++) if (ov(as[i].box, as[j].box)) worst++;
+      if (performance.now() - t0 < 3500) requestAnimationFrame(tick); else res({ worst, maxAnims });
+    })();
+  }));
+  for (const m of sol.slice(0, 4)) {
+    await tapTube(m.from); await page.waitForTimeout(40); await tapTube(m.to); await page.waitForTimeout(40);
+  }
+  await page.waitForTimeout(120);
+  await shot('06b-fast');
+  const r = await watch;
+  assert.equal(r.worst, 0, 'keine überlappenden Giess-Flüge');
+  await page.evaluate(() => window.__sort.idle());
+  assert.equal(await moves(), 4, 'alle schnellen Züge ausgeführt');
+  await page.locator('#tool-restart').tap();
+  await page.waitForTimeout(300);
+  if (await modalOpen()) await closeModal('Neu');
+  await page.evaluate(() => window.__sort.idle());
+}
+
+// «So geht's» im Spiel: Zeit steht still
+step('Hilfe im Spiel');
+{
+  const e0 = await page.evaluate(() => window.__sort.game.elapsed);
+  await page.locator('#game-help').tap();
+  await page.locator('.tut-backdrop.show').waitFor({ timeout: 3000 });
+  await page.waitForTimeout(1500);
+  await page.locator('.tut-skip').tap();
+  await page.waitForFunction(() => !document.querySelector('.tut-backdrop'), null, { timeout: 3000 });
+  const e1 = await page.evaluate(() => window.__sort.game.elapsed);
+  assert.ok(e1 - e0 < 900, 'Zeit pausiert während der Anleitung (' + Math.round(e1 - e0) + ' ms)');
+}
+
 // 4) Zurück ins Menü
 step('Zurück ins Menü');
 await page.locator('.topbar .icon-btn').first().tap();
@@ -144,7 +222,7 @@ await page.getByText('Weiter', { exact: false }).first().waitFor();
 // 5) Tagesrätsel
 step('Tagesrätsel');
 await page.waitForTimeout(400); // Doppeltipp-Schutz der Seite
-await page.locator('#daily-card').tap();
+await page.locator('.gm-daily').tap();
 await page.waitForFunction(() => location.hash === '#daily');
 await waitBoard();
 if (await modalOpen()) await closeModal();
@@ -155,7 +233,7 @@ const done = await page.evaluate(() => Object.keys(localStorage).some((k) => k.s
 assert.ok(done, 'Tagesrätsel als gelöst markiert');
 await closeModal('Menü');
 await page.waitForTimeout(500);
-assert.ok(await page.locator('.daily-card.done').count() > 0, 'Häkchen beim Tagesrätsel');
+assert.ok(await page.locator('.gm-daily.done').count() > 0, 'Häkchen beim Tagesrätsel');
 await shot('08-menu-daily-done');
 
 // 6) Statistik
@@ -175,7 +253,11 @@ await page.evaluate(() => {
 await page.evaluate(() => { history.replaceState(null, '', '#replay/101'); });
 await page.reload();
 await waitBoard();
-if (await modalOpen()) await closeModal();
+// Viele Farben: Farbsymbole werden einmal angeboten
+await page.locator('.sp-modal-backdrop.show').waitFor({ timeout: 4000 });
+assert.match(await page.locator('.sp-modal h2').first().textContent(), /Viele Farben/);
+await closeModal('Nein');
+await page.waitForTimeout(500);
 assert.equal(await page.evaluate(() => window.__sort.game.run.state.tubes.length), 16);
 await shot('10-sixteen');
 await page.waitForTimeout(400);

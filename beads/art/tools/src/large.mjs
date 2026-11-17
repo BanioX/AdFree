@@ -376,5 +376,5 @@ const list = [
 ];
 
 /** Reihenfolge = Level-Reihenfolge (Fläche aufsteigend, Themen abwechselnd). */
-const ORDER = ['kaffeetasse', 'cupcake', 'pinguin', 'herzballons', 'tannenbaum', 'kuerbis', 'schildkroete', 'schneemann', 'heissluftballon', 'fuchs', 'leuchtturm', 'segelboot'];
+const ORDER = ['kaffeetasse', 'pinguin', 'herzballons', 'tannenbaum', 'kuerbis', 'schildkroete', 'schneemann', 'heissluftballon', 'fuchs', 'cupcake', 'leuchtturm', 'segelboot'];
 export default ORDER.map((id) => list.find((p) => p.id === id));

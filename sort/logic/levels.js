@@ -10,7 +10,7 @@ import { liquids, PRIMARY_COUNT } from '../data/colors.js';
 import { ramp, endless, minMovesFor, features, handmade } from '../data/levels.js';
 import { chapters, CHAPTER_SIZE } from '../data/chapters.js';
 import { dailyWeek } from '../data/daily.js';
-import { PER_COLOR, validateState } from './rules.js';
+import { PER_COLOR, validateState, revealComplete } from './rules.js';
 import { generate } from './generator.js';
 import { solveBest } from './solver.js';
 
@@ -63,7 +63,9 @@ function fromHandmade(def) {
     const m = /^(\d+):(.*)$/.exec(s);
     if (m) { cap = +m[1]; s = m[2]; }
     const l = [...s].map((ch) => ch.charCodeAt(0) - 97);
-    return { cap, l, h: def.hidden && l.length ? l.length - 1 : 0 };
+    const t = { cap, l, h: def.hidden && l.length ? l.length - 1 : 0 };
+    revealComplete(t, PER_COLOR); // schon fertige Gläser zeigen alles
+    return t;
   });
   const state = { per: PER_COLOR, tubes };
   const err = validateState(state);

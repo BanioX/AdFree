@@ -59,7 +59,9 @@ export class BoardView {
     this.hover = null;          // { r, c } – hervorgehobene Zeile/Spalte
     this.anims = new Map();     // index -> { t0, kind }
     this.flashes = [];          // { axis, k, t0 }
-    this.errors = new Map();    // index -> t0
+    this.errors = new Map();    // index -> t0 (kurzes Aufblinken)
+    this.marks = new Set();     // von «Prüfen» gefundene Fehler – bleiben bis zur Änderung des Felds
+    this.coach = null;          // { axis, k } – Coach-Mark beim allerersten Bild
     this.hintMark = null;       // { index, axis, k, t0 }
     this.bubble = null;         // { x, y, n }
     this.reveal = null;         // { t0, dur, from, to }
@@ -208,12 +210,15 @@ export class BoardView {
   animate(index, kind, now = performance.now()) { this.anims.set(index, { t0: now, kind }); this.dirty = true; }
   flashLine(axis, k, now = performance.now()) { this.flashes.push({ axis, k, t0: now }); this.dirty = true; }
   markError(index, now = performance.now()) { this.errors.set(index, now); this.dirty = true; }
+  setMarks(list) { this.marks = new Set(list); this.dirty = true; }
+  clearMarks(indices) { for (const i of indices) this.marks.delete(i); this.dirty = true; }
   markHint(index, axis, k, now = performance.now()) { this.hintMark = { index, axis, k, t0: now }; this.dirty = true; }
 
   isAnimating(now) {
     if (this.reveal && !this.revealDone) return true;
     if (this.anims.size || this.flashes.length || this.errors.size) return true;
     if (this.hintMark && now - this.hintMark.t0 < 2200) return true;
+    if (this.coach) return true;
     return false;
   }
 
@@ -348,21 +353,40 @@ export class BoardView {
           ctx.fillStyle = `rgba(229, 72, 77, ${0.28 * (1 - t)})`;
           ctx.fillRect(x, y, cs, cs);
         }
+        const marked = this.marks.has(i);
         if (v === FILL) {
           let s = 1;
           if (an && an.kind === 'fill') s = 0.55 + 0.45 * ease.outBack(Math.min(1, (now - an.t0) / 200));
+          else if (marked && et != null) s = 1 + 0.12 * Math.sin(Math.min(1, (now - et) / 600) * Math.PI);
           const sz = (cs - inset * 2) * s;
           const ox = x + (cs - sz) / 2, oy = y + (cs - sz) / 2;
-          ctx.fillStyle = COLORS.ink;
+          ctx.fillStyle = marked ? COLORS.err : COLORS.ink;
           roundRect(ctx, ox, oy, sz, sz, rad * s);
           ctx.fill();
-          ctx.fillStyle = 'rgba(255, 255, 255, 0.10)';
-          roundRect(ctx, ox + sz * 0.12, oy + sz * 0.1, sz * 0.76, sz * 0.32, rad * 0.6 * s);
-          ctx.fill();
+          if (marked) {
+            // falsch gefüllt: rotes Feld mit weissem ✕ (auch ohne Farbsehen erkennbar)
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = Math.max(1.4, cs * 0.09);
+            ctx.lineCap = 'round';
+            const a = x + cs * 0.33, b = x + cs * 0.67, ya = y + cs * 0.33, yb = y + cs * 0.67;
+            ctx.beginPath();
+            ctx.moveTo(a, ya); ctx.lineTo(b, yb);
+            ctx.moveTo(b, ya); ctx.lineTo(a, yb);
+            ctx.stroke();
+          } else {
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.10)';
+            roundRect(ctx, ox + sz * 0.12, oy + sz * 0.1, sz * 0.76, sz * 0.32, rad * 0.6 * s);
+            ctx.fill();
+          }
         } else if (v === CROSS) {
           let t = 1;
           if (an && an.kind === 'cross') t = ease.outCubic(Math.min(1, (now - an.t0) / 160));
-          const red = et != null;
+          const red = et != null || marked;
+          if (marked) {
+            ctx.fillStyle = 'rgba(229, 72, 77, 0.16)';
+            roundRect(ctx, x + inset, y + inset, cs - inset * 2, cs - inset * 2, rad);
+            ctx.fill();
+          }
           ctx.strokeStyle = red ? COLORS.err : COLORS.cross;
           ctx.lineWidth = Math.max(1.4, cs * (red ? 0.1 : 0.075));
           ctx.lineCap = 'round';
@@ -410,6 +434,20 @@ export class BoardView {
 
     // Zahlen
     this.drawClues(ctx, st, gx, gy);
+
+    // Coach-Mark: pulsierender Rahmen um die erste sinnvolle Zeile/Spalte (inkl. Zahlen)
+    if (this.coach) {
+      const { axis, k } = this.coach;
+      const p = 0.5 + 0.5 * Math.sin(now / 260);
+      const grow = 2 + p * 3;
+      ctx.save();
+      ctx.strokeStyle = `rgba(224, 105, 154, ${0.65 + 0.35 * p})`;
+      ctx.lineWidth = 3;
+      if (axis === 0) roundRect(ctx, this.bandX - grow, gy + k * cs - grow, this.vx + this.vw - this.bandX + grow * 2, cs + grow * 2, 10);
+      else roundRect(ctx, gx + k * cs - grow, this.bandY - grow, cs + grow * 2, this.vy + this.vh - this.bandY + grow * 2, 10);
+      ctx.stroke();
+      ctx.restore();
+    }
 
     // Zähler-Blase beim Ziehen
     if (this.bubble) {
@@ -461,6 +499,7 @@ export class BoardView {
     }
     ctx.restore();
     // Spalten
+    const maxTw = cs - 6;
     ctx.save();
     ctx.beginPath(); ctx.rect(this.vx, this.bandY, this.vw, m.cb - 3); ctx.clip();
     for (let c = 0; c < w; c++) {
@@ -472,7 +511,16 @@ export class BoardView {
       let y = this.vy - 5 - m.slotV / 2;
       for (let j = nums.length - 1; j >= 0; j--) {
         ctx.fillStyle = s.over ? COLORS.clueOver : (clue.length === 0 || s.marks[j]) ? COLORS.clueDone : COLORS.clue;
-        ctx.fillText(String(nums[j]), x, y + 0.5);
+        const txt = String(nums[j]);
+        const tw = txt.length > 1 ? ctx.measureText(txt).width : 0;
+        if (tw > maxTw) {
+          // zweistellige Zahlen in schmalen Spalten etwas schmaler setzen, damit Luft bleibt
+          ctx.save();
+          ctx.translate(x, y + 0.5);
+          ctx.scale(Math.max(0.68, maxTw / tw), 1);
+          ctx.fillText(txt, 0, 0);
+          ctx.restore();
+        } else ctx.fillText(txt, x, y + 0.5);
         y -= m.slotV;
       }
       if (c % 5 === 0 && c) {
@@ -485,6 +533,8 @@ export class BoardView {
   }
 
   drawCorner(ctx) {
+    // Mini-Übersicht nur bei Brettern, die man zoomen kann (sonst wirkt sie wie ein Fleck)
+    if (!this.zoomable) return;
     const { m } = this;
     const { w, h } = this.g;
     const x0 = this.bandX, y0 = this.bandY, cw = m.rb - 3, ch = m.cb - 3;

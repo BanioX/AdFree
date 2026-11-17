@@ -5,6 +5,18 @@ import { generateBoard } from './generator.js';
 import { levelSpec, DAILY, endlessSpec, ENDLESS_MAX_ADDS } from '../data/levels.js';
 
 const clone = (cells) => cells.map((c) => ({ v: c.v, x: c.x, s: c.s }));
+const UNDO_MAX = 40;
+
+// Felder kompakt als Text (ein Zeichen pro Feld), damit der Rückgängig-Verlauf klein bleibt.
+export const packCells = (cells) => cells.map((c) => String.fromCharCode(64 + c.v + (c.x ? 10 : 0) + (c.s ? 20 : 0))).join('');
+export function unpackCells(str) {
+  return [...str].map((ch) => {
+    let k = ch.charCodeAt(0) - 64;
+    const s = k > 20; if (s) k -= 20;
+    const x = k > 10; if (x) k -= 10;
+    return { v: k, x, s };
+  });
+}
 
 export function seedFor(mode, { level, day, round, salt = '' } = {}) {
   if (mode === 'daily') return `numbermatch-daily-${day}`;
@@ -42,8 +54,33 @@ export function newGame(mode, opts = {}) {
     elapsed: 0,
     done: false,
     lost: false,
+    undo: [],
     created: Date.now(),
   };
+}
+
+/** Merkt sich den Stand vor einem Zug (für «Zurück»). */
+export function snapshot(st) {
+  if (!Array.isArray(st.undo)) st.undo = [];
+  st.undo.push({
+    c: packCells(st.cells), a: st.addsLeft, sc: st.score, sg: st.starsGot, rc: st.rowsCleared, p: st.pairs, r: st.round,
+  });
+  if (st.undo.length > UNDO_MAX) st.undo.shift();
+}
+
+export function canUndo(st) {
+  return !st.done && Array.isArray(st.undo) && st.undo.length > 0;
+}
+
+/** Letzten Zug zurücknehmen. Gibt true zurück, wenn etwas passiert ist. */
+export function undo(st) {
+  if (!canUndo(st)) return false;
+  const u = st.undo.pop();
+  st.cells = unpackCells(u.c);
+  st.addsLeft = u.a; st.score = u.sc; st.starsGot = u.sg; st.rowsCleared = u.rc; st.pairs = u.p; st.round = u.r;
+  st.lost = false;
+  st.undos = (st.undos || 0) + 1;
+  return true;
 }
 
 /** Level/Tagesrätsel von vorn (gleiches Feld). */
@@ -53,6 +90,7 @@ export function restart(st) {
   st.score = 0; st.starsGot = 0; st.rowsCleared = 0; st.pairs = 0;
   st.done = false; st.lost = false;
   st.round = 1;
+  st.undo = [];
   return st;
 }
 
@@ -83,6 +121,7 @@ export function play(st, i, j) {
   if (st.done) return { ok: false };
   const info = pairInfo(st.cells, i, j);
   if (!info) return { ok: false };
+  snapshot(st);
   if (i > j) [i, j] = [j, i];
   const { kind, gap } = info;
   const stars = (st.cells[i].s ? 1 : 0) + (st.cells[j].s ? 1 : 0);
@@ -126,6 +165,7 @@ export function canAdd(st) {
 /** «Zahlen hinzufügen»: offene Zahlen ans Ende kopieren. Gibt die Anzahl neuer Felder zurück. */
 export function addNumbers(st) {
   if (!canAdd(st)) return 0;
+  snapshot(st);
   const before = st.cells.length;
   st.cells = appendOpen(st.cells);
   st.addsLeft--;

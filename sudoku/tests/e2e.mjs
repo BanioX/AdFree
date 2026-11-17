@@ -109,11 +109,12 @@ async function main() {
   await page.waitForSelector('.tut-backdrop', { state: 'detached' });
   await page.waitForSelector('.screen.menu');
   assert.ok(await page.locator('.screen.menu .topbar .gm-q').count(), '«?» im Menü');
+  assert.ok(await page.locator('.screen.menu.gm .gm-hero .menu-art .mini').count(), 'Startbildschirm aus gameMenu mit Brett-Vorschau');
   await shot(page, '02-menu');
 
   // ---------- Neues Spiel (Leicht) ----------
-  await tapLoc(page, page.locator('.seg button[data-id="leicht"]'));
-  await tapLoc(page, page.locator('.newgame .btn.big'));
+  await tapLoc(page, page.locator('.gm-seg button[data-id="leicht"]'));
+  await tapLoc(page, page.locator('.gm-primary'));
   await page.waitForSelector('.screen.play');
   assert.equal(new URL(page.url()).hash, '#play');
   await page.waitForTimeout(400);
@@ -266,12 +267,14 @@ async function main() {
 
   // Zurück ins Menü => «Weiter»-Karte
   await tapSel(page, '.play-top .icon-btn');
-  await page.waitForSelector('.screen.menu .hero .btn.primary');
+  await page.waitForSelector('.screen.menu .gm-primary');
   await page.waitForTimeout(300);
+  assert.match(await page.locator('.gm-primary-label').textContent(), /Weiterspielen/, 'Hauptknopf führt ins laufende Spiel');
+  assert.ok(await page.locator('.gm-sec', { hasText: 'Neues Spiel' }).count(), '«Neues Spiel» als Nebenknopf');
   await shot(page, '12-menu-continue');
 
   // Einstellungen
-  await tapLoc(page, page.locator('.mini-btn', { hasText: 'Einstellungen' }));
+  await tapLoc(page, page.locator('.gm-sec', { hasText: 'Einstellungen' }));
   await page.waitForSelector('.settings');
   await page.waitForTimeout(350);
   await shot(page, '13-settings');
@@ -283,7 +286,7 @@ async function main() {
   await closeModal(page, 'Fertig');
 
   // Statistik
-  await tapLoc(page, page.locator('.mini-btn', { hasText: 'Statistik' }));
+  await tapLoc(page, page.locator('.gm-sec', { hasText: 'Statistik' }));
   await page.waitForSelector('.screen.stats');
   await page.waitForTimeout(400);
   await shot(page, '14-stats');
@@ -293,7 +296,7 @@ async function main() {
   await page.waitForSelector('.screen.menu');
 
   // «3 Fehler»-Modus: drei falsche Zahlen
-  await tapLoc(page, page.locator('.hero .btn.primary'));
+  await tapLoc(page, page.locator('.gm-primary'));
   await page.waitForSelector('.screen.play');
   g = await game(page);
   const em = [];
@@ -314,7 +317,7 @@ async function main() {
   await page.waitForSelector('.screen.menu');
 
   // ---------- Tagesrätsel ----------
-  await tapLoc(page, page.locator('.card.daily'));
+  await tapLoc(page, page.locator('.gm-daily'));
   await page.waitForSelector('.screen.play');
   assert.equal(new URL(page.url()).hash, '#daily');
   assert.equal(await page.locator('.title-wrap .title').textContent(), 'Tagesrätsel');
@@ -339,7 +342,7 @@ async function main() {
   const today = await page.evaluate(() => { const d = new Date(); const p = (n) => String(n).padStart(2, '0'); return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`; });
   assert.equal(await page.evaluate((t) => localStorage.getItem('spielpause.daily.sudoku.' + t), today), 'true', 'markDailyDone');
   await closeModal(page, 'Zum Menü');
-  await page.waitForSelector('.card.daily.done');
+  await page.waitForSelector('.gm-daily.done');
   await page.waitForTimeout(300);
   await shot(page, '19-menu-daily-done');
 
@@ -374,8 +377,8 @@ async function main() {
   await p3.goto(BASE + 'sudoku/');
   await skipTutorial(p3);
   await shot(p3, '22-se-menu');
-  await tapLoc(p3, p3.locator('.seg button[data-id="experte"]'));
-  await tapLoc(p3, p3.locator('.newgame .btn.big'));
+  await tapLoc(p3, p3.locator('.gm-seg button[data-id="experte"]'));
+  await tapLoc(p3, p3.locator('.gm-primary'));
   await p3.waitForSelector('.screen.play');
   await p3.waitForTimeout(300);
   await tapSel(p3, '.tool[data-tool="auto"]');
@@ -394,7 +397,7 @@ async function main() {
   watch(p4);
   await p4.goto(BASE + 'sudoku/');
   await skipTutorial(p4);
-  await tapLoc(p4, p4.locator('.newgame .btn.big'));
+  await tapLoc(p4, p4.locator('.gm-primary'));
   await p4.waitForSelector('.screen.play');
   const last = await fillByTaps(p4, 1);
   const g4 = await game(p4);
@@ -408,7 +411,7 @@ async function main() {
   const sum4 = await p4.evaluate(() => JSON.parse(localStorage.getItem('spielpause.summary.sudoku')));
   assert.match(sum4.text, /1 Rätsel gelöst/);
   // Tagesrätsel: Neuladen 0.3 s nach der letzten Zahl
-  await tapLoc(p4, p4.locator('.card.daily'));
+  await tapLoc(p4, p4.locator('.gm-daily'));
   await p4.waitForSelector('.screen.play');
   const lastD = await fillByTaps(p4, 1);
   const gd = await game(p4);
@@ -420,7 +423,7 @@ async function main() {
   assert.equal(await p4.evaluate((t) => localStorage.getItem('spielpause.daily.sudoku.' + t), today), 'true', 'Tagesrätsel trotz Neuladen gelöst');
   assert.equal(await p4.locator('.done-btns .btn.primary').textContent(), 'Neues Rätsel');
   await tapSel(p4, '.done-btns .btn:not(.primary)');
-  await p4.waitForSelector('.card.daily.done');
+  await p4.waitForSelector('.gm-daily.done');
   log('Sieg während der Feier verlassen: verbucht ✓');
   await ctx4.close();
 

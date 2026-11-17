@@ -1,46 +1,23 @@
 // Farbfluss – eigene, sanfte Flüssigkeits-Geräusche (WebAudio, keine Dateien).
-// Respektiert den gemeinsamen Ton-Schalter (sfx.muted).
+// Respektiert die gemeinsame Lautstärke (sfx.output()).
 
 import { sfx } from '../../shared/sfx.js';
 
+// Alle Töne laufen über sfx.output().node: so gelten die gemeinsame Lautstärke
+// (leise / normal / aus), der Tiefpass und der Hall wie bei den übrigen Klängen.
 let ctx = null;
 let out = null;
 
-function ensure() {
-  if (ctx) return ctx;
-  const AC = window.AudioContext || window.webkitAudioContext;
-  if (!AC) return null;
-  try {
-    ctx = new AC();
+function ready() {
+  const o = sfx.output();
+  if (!o) return null;
+  if (o.ctx !== ctx || !out) {
+    ctx = o.ctx;
     out = ctx.createGain();
-    out.gain.value = 0.5;
-    const lp = ctx.createBiquadFilter();
-    lp.type = 'lowpass';
-    lp.frequency.value = 2400;
-    out.connect(lp);
-    lp.connect(ctx.destination);
-  } catch {
-    ctx = null;
+    out.gain.value = 1;
+    out.connect(o.node);
   }
   return ctx;
-}
-
-function unlock() {
-  const c = ensure();
-  if (c && c.state === 'suspended') c.resume().catch(() => {});
-}
-
-if (typeof window !== 'undefined') {
-  window.addEventListener('pointerdown', unlock, { passive: true });
-  window.addEventListener('touchend', unlock, { passive: true });
-}
-
-function ready() {
-  if (sfx.muted) return null;
-  const c = ensure();
-  if (!c) return null;
-  if (c.state === 'suspended') c.resume().catch(() => {});
-  return c;
 }
 
 /** Ein «Blubb»: kurzer, weicher Ton mit aufsteigender Tonhöhe. */

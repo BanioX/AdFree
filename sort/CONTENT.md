@@ -20,7 +20,7 @@ gültig, lösbar und nicht zu einfach, Schweizer Rechtschreibung, keine externen
 ```
 
 - `id` eindeutig (a–z), `name` deutsch, `color` als Hex, `symbol` für die Farbsymbol-Hilfe
-  (Einstellungen → «Farbsymbole»). Mögliche Symbole: circle, square, triangle, diamond, star,
+  (Optionen → «Farbsymbole»; ab 11 Farben wird sie einmal von selbst angeboten). Mögliche Symbole: circle, square, triangle, diamond, star,
   heart, drop, flower, cross, moon, ring, hexagon, bolt, leaf, bars, sun.
 - Die ersten 8 Farben (`PRIMARY_COUNT`) werden bei wenigen Farben bevorzugt – dort nur sehr
   klar unterscheidbare Farben verwenden.
@@ -48,6 +48,10 @@ gültig, lösbar und nicht zu einfach, Schweizer Rechtschreibung, keine externen
   },
   ```
 
+  Bei `hidden: true` ist in jedem Glas alles ausser der obersten Schicht verdeckt. Ein Glas,
+  das schon fertig (4× dieselbe Farbe) ist, wird automatisch aufgedeckt; ebenso jedes Glas, das
+  im Spiel voll und einfarbig wird – es bekommt dann seinen Korken.
+
   Jede Farbe muss genau 4-mal vorkommen; der Löser prüft beim Laden, ob das Level lösbar ist.
 
 > Achtung: Wer `ramp`, `endless` oder `features` ändert, ändert bereits gespielte Level.
@@ -68,8 +72,12 @@ Ein Eintrag pro Wochentag (0 = Sonntag): `name` (Untertitel im Menü), `colors`,
 ## Texte – `data/texts.js`
 
 - `praise` – Lob im Gewinnblatt, `tips` – Tipps unten im Menü, `stuck` – Meldung bei einer
-  Sackgasse, `featureIntro` – Erklärungen beim ersten Geheimnis-/Grosse-Gläser-Level,
-  `howTo` – die Schritte von «So geht's».
+  Sackgasse (erscheint, wenn nur noch Hin-und-her-Züge möglich sind), `featureIntro` –
+  Erklärungen beim ersten Geheimnis-/Grosse-Gläser-Level und das Angebot der Farbsymbole.
+- `howTo` – die 3–4 Schritte des animierten Tutorials «So geht's» (gemeinsames
+  `/shared/tutorial.js`): `title` (2–4 Wörter), `text` (ein kurzer Satz) und `demo` = Name der
+  Mini-Szene in `view/tutorial.js` (`tap`, `rule`, `goal`, `help`). Eine neue Szene dort im
+  Objekt `DEMOS` ergänzen (kleine SVG-Gläser über `demoTube`, Finger über `api.finger.tap`).
 - Schweizer Rechtschreibung: immer «ss» (kein scharfes S), Anführungszeichen «so».
 
 ## Sterne

@@ -6,7 +6,7 @@ import { gameMenu } from '../shared/gamemenu.js';
 import { showTutorial, tutorialSeen } from '../shared/tutorial.js';
 import { bindPointer } from '../lib/numbers/grid.js';
 import {
-  makeRouter, playTopbar, heartsBar, toolButton, onPress, winSheet, softSheet, statStore, runClock, coachBubble, formatTime, NI,
+  makeRouter, playTopbar, heartsBar, toolButton, onPress, winSheet, softSheet, statStore, runClock, coachBubble, formatTime, NI, praise, praiseWord,
 } from '../lib/numbers/hud.js';
 import * as G from './logic/game.js';
 import { difficulties, difficultyById } from './data/difficulties.js';
@@ -189,6 +189,8 @@ function showGame(slot) {
   let busy = false;
   let clock = null;
   let tool = store.get(K.tool, 'erase') === 'keep' ? 'keep' : 'erase';
+  let lineStreak = 0;   // fertige Summen seit dem letzten Fehler (für Lob)
+  let praised = 0;
   const save = () => {
     if (clock) st.elapsed = clock.elapsed;
     // nie ein inzwischen neu begonnenes Rätsel im selben Platz überschreiben
@@ -277,6 +279,7 @@ function showGame(slot) {
     if (!res.ok) {
       if (res.wrong) {
         dragOk = false;
+        lineStreak = 0;
         sfx.play('error');
         board.grid.flash(i, 'ng-shake', 420);
         board.grid.flash(i, 'wrong', 700);
@@ -291,7 +294,7 @@ function showGame(slot) {
     afterResolve([i], res);
   }
 
-  function afterResolve(cells, res) {
+  function afterResolve(cells, res, fromHint = false) {
     render();
     for (const i of cells) board.grid.flash(i, 'ng-pop', 420);
     res.auto.forEach((k, n) => setTimeout(() => !torn && board.grid.flash(k, 'ng-pop', 420), 60 + n * 30));
@@ -300,6 +303,12 @@ function showGame(slot) {
       for (const key of res.lines) {
         const el = board.lineEl(key);
         if (el) { el.classList.remove('just'); void el.offsetWidth; el.classList.add('just'); }
+      }
+      lineStreak += res.lines.length;
+      if (!res.won && !fromHint) {
+        const n = res.lines.length;
+        if (n >= 2) praise(stack, n === 2 ? 'Doppelt!' : n === 3 ? 'Dreifach!' : praiseWord(praised++));
+        else if (lineStreak % 4 === 0) praise(stack, praiseWord(praised++));
       }
     }
     if (coachOn) { coachOn = false; store.set(K.coach, true); updateCoach(); }
@@ -322,7 +331,7 @@ function showGame(slot) {
       const el = board.lineEl(`${hint.line.kind}-${hint.line.idx}`);
       if (el) { el.classList.remove('hl'); void el.offsetWidth; el.classList.add('hl'); setTimeout(() => el.classList.remove('hl'), 1600); }
     }
-    afterResolve([hint.i], res);
+    afterResolve([hint.i], res, true);
   }
 
   async function doRestart() {

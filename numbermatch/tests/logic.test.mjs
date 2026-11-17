@@ -3,7 +3,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { COLS, fits, pairKind, findPairs, clearedRows, removeRows, appendOpen, linearPlan, hintPair, openCount } from '../logic/rules.js';
 import { generateBoard, isFair } from '../logic/generator.js';
-import { newGame, play, addNumbers, restart, isWon, isStuck, nextRound } from '../logic/game.js';
+import { newGame, play, addNumbers, restart, isWon, isStuck, nextRound, undo, canUndo, packCells, unpackCells } from '../logic/game.js';
 import { levelSpec, INTRO } from '../data/levels.js';
 
 const mk = (digits, crossed = '') => digits.split('').map((d, k) => ({ v: +d, x: crossed[k] === 'x', s: false }));
@@ -174,4 +174,38 @@ test('Punkte: weiter Zug zählt doppelt, Reihe gibt Bonus', () => {
   assert.equal(r.gap, 6);
   assert.deepEqual(r.rows, [0, 1]);
   assert.equal(r.points, 20 + 2 * 50 + 150);
+});
+
+test('Rückgängig: Paar, Reihe und Hinzufügen zurücknehmen; kompakter Verlauf', () => {
+  const cells = [{ v: 9, x: true, s: true }, { v: 1, x: false, s: false }, { v: 5, x: true, s: false }, { v: 7, x: false, s: true }];
+  assert.deepEqual(unpackCells(packCells(cells)), cells);
+  const st = newGame('level', { level: 1 });
+  assert.ok(!canUndo(st));
+  const start = JSON.stringify(st.cells);
+  // ein ganzes Level mit Tipps spielen und alles wieder zurücknehmen
+  const scores = [];
+  while (!st.done) {
+    const p = hintPair(st.cells);
+    if (!p) { assert.ok(addNumbers(st) > 0); scores.push(st.score); continue; }
+    assert.ok(play(st, p[0], p[1]).ok);
+    scores.push(st.score);
+  }
+  assert.ok(!canUndo(st), 'gewonnenes Level bleibt gewonnen');
+  st.done = false;
+  let n = 0;
+  while (canUndo(st)) { undo(st); n++; }
+  assert.ok(n > 0 && n <= 40);
+  if (n === scores.length) { assert.equal(JSON.stringify(st.cells), start); assert.equal(st.score, 0); assert.equal(st.pairs, 0); }
+  // Steckenbleiben lässt sich mit «Zurück» verlassen
+  const s2 = newGame('level', { level: 1 });
+  s2.cells = mk('12'); s2.addsLeft = 1;
+  addNumbers(s2);
+  assert.ok(isStuck(s2));
+  s2.lost = true;
+  assert.ok(undo(s2));
+  assert.equal(s2.lost, false);
+  assert.equal(s2.addsLeft, 1);
+  assert.equal(s2.cells.length, 2);
+  restart(s2);
+  assert.ok(!canUndo(s2));
 });

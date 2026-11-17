@@ -99,7 +99,7 @@ export function tutorialSteps() {
     },
     {
       title: 'Zahlen hinzufügen',
-      text: 'Keine Paare mehr? «Hinzufügen» hängt alle offenen Zahlen unten an. Tipps sind gratis.',
+      text: 'Keine Paare mehr? «Hinzufügen» hängt alle offenen Zahlen unten an. Tipp und «Zurück» sind gratis.',
       demo(stage, api) {
         const D = '1a6b' + 'c42d';
         const wrap = h('div.nx-demo.nm-demo-add');

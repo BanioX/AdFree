@@ -17,6 +17,7 @@ Was in Spielpause neu dazukommt. Neueste Einträge oben.
 - **Schach**: legale Züge mit Rochade, en passant und Umwandlung, drei Stärken. Deutsch und Englisch.
 - **Backgammon**: ohne Verdopplungswürfel, schlagen und abtragen, drei Stärken. Deutsch und Englisch.
 - **Wortkreis**: Wörter aus einem Buchstabenrad, deutsch und englisch mit eigenen Listen.
+- **Wabenwort**: sieben Buchstaben, die Mitte muss ins Wort, deutsch und englisch.
 
 ### Behoben (Grok)
 - **Vier in einer Reihe**: Tippen auf eine Reihe legt wieder einen Stein (iPhone). Der Tipp hebt die Reihe nur hervor.

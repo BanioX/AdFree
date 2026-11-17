@@ -56,6 +56,7 @@ export const games = [
   { id: 'schach', title: 'Schach', title_en: 'Chess', subtitle: 'Weiss gegen den Computer', subtitle_en: 'White against the computer', category: 'brett', color: '#4a5568', added: '2026-11-17' },
   { id: 'backgammon', title: 'Backgammon', tile: 'Backgammon', subtitle: 'Würfeln, ziehen, abtragen', subtitle_en: 'Roll, move, bear off', category: 'brett', color: '#9a3b2f', added: '2026-11-17' },
   { id: 'wortkreis', title: 'Wortkreis', title_en: 'Word Wheel', tile: 'Wortkreis', tile_en: 'Word Wheel', subtitle: 'Wörter aus dem Buchstabenrad', subtitle_en: 'Words from the letter wheel', category: 'woerter', color: '#7a4dd6', added: '2026-11-17' },
+  { id: 'wabenwort', title: 'Wabenwort', title_en: 'Honeycomb', tile: 'Wabenwort', tile_en: 'Honeycomb', subtitle: 'Sieben Buchstaben, die Mitte muss rein', subtitle_en: 'Seven letters, the centre is required', category: 'woerter', color: '#e6a317', added: '2026-11-17' },
 ];
 
 /** Titel/Untertitel/Kachelname in der aktuellen Sprache */

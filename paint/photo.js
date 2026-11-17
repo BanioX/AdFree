@@ -6,15 +6,16 @@ import { sfx } from '../shared/sfx.js';
 import { store } from '../shared/storage.js';
 import { sanitizePuzzle } from './engine/model.js';
 import { liteModel, renderThumb } from './engine/render.js';
+import { PHOTO_DEFAULTS as PD } from './data/catalog.js';
 
 const DETAILS = [['grob', 'Grob'], ['mittel', 'Mittel'], ['fein', 'Fein']];
 
 export function openPhotoSheet(lib) {
   return new Promise((resolve) => {
     if (!lib.photoToPuzzle) { resolve(null); return; }
-    const opts = store.get('paint.photoOpts', { colors: 16, detail: 'mittel' });
-    let colors = Math.min(24, Math.max(8, opts.colors | 0 || 16));
-    let detail = DETAILS.some((d) => d[0] === opts.detail) ? opts.detail : 'mittel';
+    const opts = store.get('paint.photoOpts', { colors: PD.colors, detail: PD.detail }) || {};
+    let colors = Math.min(PD.maxColors, Math.max(PD.minColors, opts.colors | 0 || PD.colors));
+    let detail = DETAILS.some((d) => d[0] === opts.detail) ? opts.detail : PD.detail;
     let file = null;
     let puzzle = null;
     let ctrl = null;
@@ -35,7 +36,7 @@ export function openPhotoSheet(lib) {
     const info = h('p.ph-info', null, 'Aus deinem Foto wird ein Malbild mit Nummern.');
 
     const valEl = h('b.ph-val', null, String(colors));
-    const range = h('input.ph-range', { type: 'range', min: '8', max: '24', step: '1', value: String(colors), 'aria-label': 'Anzahl Farben' });
+    const range = h('input.ph-range', { type: 'range', min: String(PD.minColors), max: String(PD.maxColors), step: '1', value: String(colors), 'aria-label': 'Anzahl Farben' });
     const seg = h('div.ph-seg', { role: 'radiogroup', 'aria-label': 'Detail' });
     const segBtns = DETAILS.map(([v, label]) => {
       const b = h('button' + (v === detail ? '.on' : ''), { type: 'button', role: 'radio', 'aria-checked': v === detail ? 'true' : 'false' }, label);

@@ -479,7 +479,8 @@ async function openSettings() {
 
   const dots = h('div.theme-dots');
   for (const t of themes) {
-    const b = h('button', { type: 'button', class: t.id === settings.theme ? 'on' : '', 'aria-label': t.title, title: t.title, style: { '--c': t.accent } });
+    const b = h('button', { type: 'button', class: t.id === settings.theme ? 'on' : '', 'aria-label': t.title, title: t.title });
+    b.style.setProperty('--c', t.accent);
     b.addEventListener('click', () => {
       settings.theme = t.id;
       saveSettings(settings);

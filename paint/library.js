@@ -6,11 +6,11 @@ import { kv } from '../shared/idb.js';
 import { sanitizePuzzle } from './engine/model.js';
 import { removeProgress } from './state.js';
 import { forgetAnalysis } from './engine/analyze.js';
+import { CATEGORY_ORDER as CAT_ORDER, GENERATOR_SEEDS, DEFAULT_SEEDS } from './data/catalog.js';
 
-export const CAT_ORDER = ['Blumen', 'Tiere', 'Landschaften', 'Essen', 'Fantasie', 'Winter', 'Mandalas', 'Muster', 'Glasfenster'];
 export const PHOTO_CAT = 'Meine Fotos';
 export const TEST_CAT = 'Test';
-const DEFAULT_SEEDS = [1, 2, 3, 4, 5, 6];
+const seedsOf = (genId) => (Array.isArray(GENERATOR_SEEDS[genId]) ? GENERATOR_SEEDS[genId] : DEFAULT_SEEDS);
 
 function catRank(c) {
   const i = CAT_ORDER.indexOf(c);
@@ -63,11 +63,13 @@ export async function loadLibrary({ debug = false } = {}) {
   });
 
   function buildGen(gen) {
-    const user = store.get('paint.gen.' + gen.id, []);
+    let user = store.get('paint.gen.' + gen.id, []);
+    if (!Array.isArray(user)) user = [];
+    const base = seedsOf(gen.id);
     const list = [];
     // neueste eigene zuerst
-    user.forEach((seed, k) => list.unshift(genItem(gen, seed, DEFAULT_SEEDS.length + k + 1)));
-    DEFAULT_SEEDS.forEach((seed, k) => list.push(genItem(gen, seed, k + 1)));
+    user.forEach((seed, k) => list.unshift(genItem(gen, seed, base.length + k + 1)));
+    base.forEach((seed, k) => list.push(genItem(gen, seed, k + 1)));
     for (const it of list) items.set(it.id, it);
     genItems.set(gen.id, list);
   }

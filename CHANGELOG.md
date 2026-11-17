@@ -10,6 +10,7 @@ Was in Spielpause neu dazukommt. Neueste Einträge oben.
 - **Kalaha**: Samen säen, Extra-Zug und Fangen, drei Stärken.
 - **Fünf in einer Reihe**: 13×13, fünf Steine in einer Linie, drei Stärken.
 - **Dame**: deutsche Regeln, Schlagzwang und fliegende Damen, drei Stärken.
+- **Mühle**: neun Steine, Mühle schliessen, fliegen mit drei Steinen, drei Stärken.
 
 ### Behoben (Grok)
 - **Vier in einer Reihe**: Tippen auf eine Reihe legt wieder einen Stein (iPhone). Der Tipp hebt die Reihe nur hervor.

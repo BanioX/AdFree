@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { generateLevel, levelParams, solve, freeArrowIds, FRONT_FACES } from '../generator.js';
 import { makeCube } from '../geometry.js';
+import { SPECIALS } from '../data/levels.js';
 
 const LEVELS = Array.from({ length: 200 }, (_, i) => i + 1);
 
@@ -13,7 +14,7 @@ function check(level) {
   assert.ok(lv.arrows.length >= 2, `L${level}: genug Pfeile`);
   const owner = new Int32Array(geo.count).fill(-1);
   lv.arrows.forEach((a, id) => {
-    assert.ok(a.cells.length >= 2 && a.cells.length <= 10, `L${level}: Länge 2..10`);
+    assert.ok(a.cells.length >= 2 && a.cells.length <= 12, `L${level}: Länge 2..12`);
     assert.ok(a.dir >= 0 && a.dir < 4);
     for (const c of a.cells) {
       assert.equal(owner[c], -1, `L${level}: Zellen überlappen nicht`);
@@ -59,7 +60,7 @@ test('Level 1..200: gültig, lösbar, mit freien Pfeilen zu Beginn', () => {
     if (lv.N >= 6) assert.ok(free.length <= p.maxFree + 3, `L${L}: nicht zu viele freie Pfeile (${free.length})`);
     const occ = lv.arrows.reduce((s, a) => s + a.cells.length, 0) / geo.count;
     if (L > 2) assert.ok(occ >= 0.55 && occ <= 0.95, `L${L}: Dichte ${occ.toFixed(2)}`);
-    assert.ok(lv.hearts >= 2 && lv.hearts <= 5);
+    assert.ok(lv.hearts >= 3 && lv.hearts <= 5, `L${L}: 3–5 Herzen`);
   }
 });
 
@@ -86,18 +87,25 @@ test('Tutorial-Level: wenige Pfeile, freie Pfeile auf den sichtbaren Seiten', ()
   }
 });
 
-test('Spezial-Level alle 10 Level', () => {
+test('Spezial-Level alle 10 Level, Reihum aus data/levels.js', () => {
+  const ids = SPECIALS.map((s) => s.id);
   for (let L = 10; L <= 200; L += 10) {
     const lv = generateLevel(L);
-    assert.ok(lv.special === 'edges' || lv.special === 'big');
-    if (lv.special === 'edges') {
-      const geo = makeCube(lv.N);
+    const sp = SPECIALS[(L / 10 - 1) % SPECIALS.length];
+    assert.equal(lv.special, sp.id);
+    assert.ok(ids.includes(lv.special));
+    const geo = makeCube(lv.N);
+    if (sp.mustCross) {
       for (const a of lv.arrows) {
         assert.ok(new Set(a.cells.map((c) => geo.faceOf(c))).size >= 2, `L${L}: jeder Pfeil läuft über eine Kante`);
       }
     }
+    if (sp.minLen) {
+      const short = lv.arrows.filter((a) => a.cells.length < sp.minLen).length;
+      assert.equal(short, 0, `L${L}: alle Pfeile mindestens ${sp.minLen} lang`);
+    }
   }
-  assert.equal(generateLevel(11).special, null);
+  for (const L of [11, 19, 21, 99]) assert.equal(generateLevel(L).special, null);
   assert.equal(generateLevel(10).special, 'edges');
   assert.equal(generateLevel(20).special, 'big');
 });

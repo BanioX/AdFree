@@ -4,7 +4,7 @@
 export default [
   {
     id: 'kaffeetasse', title: 'Kaffeetasse', category: 'Essen',
-    palette: { k: '#4a2f2a', w: '#ffffff', c: '#d5dde9', n: '#7a4a2e', l: '#f0cf9c', r: '#f2385a', B: '#c9ebe4', T: '#d4925f' },
+    palette: { k: '#4a2f2a', w: '#ffffff', c: '#b8c4d6', n: '#7a4a2e', l: '#f0cf9c', r: '#f2385a', B: '#c9ebe4', T: '#d4925f' },
     rows: [
       'BBBBBBBwBBwBBBBBBBBB',
       'BBBBBBwBBwBBBBBBBBBB',
@@ -58,7 +58,7 @@ export default [
   },
   {
     id: 'pinguin', title: 'Pinguin', category: 'Tiere',
-    palette: { k: '#1e2638', n: '#34405e', w: '#ffffff', o: '#ffa53a', r: '#e8433f', R: '#b52f2f', p: '#ff9db5', B: '#cfe8ff' },
+    palette: { k: '#1e2638', n: '#405a8c', w: '#ffffff', o: '#ffa53a', r: '#e8433f', R: '#b52f2f', p: '#ff9db5', B: '#cfe8ff' },
     rows: [
       'BBBBBBBBBBBBBBBBBBBBBB',
       'BBBBBBwBBBBBBBBBBBwBBB',
@@ -146,7 +146,7 @@ export default [
   },
   {
     id: 'fuchs', title: 'Fuchs', category: 'Tiere',
-    palette: { k: '#3a2420', o: '#ff8a3d', O: '#d9612a', n: '#5a3326', w: '#ffffff', p: '#ffa3b8', B: '#dcefff' },
+    palette: { k: '#3a2420', o: '#ff8a3d', O: '#d9612a', n: '#7d4630', w: '#ffffff', p: '#ffa3b8', B: '#c4e2fb' },
     rows: [
       'BBBBBBBBBBBBBBBBBBBBBBBB',
       'BBkkBBBBBBBBBBBBBBBBkkBB',

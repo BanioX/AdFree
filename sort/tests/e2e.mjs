@@ -32,6 +32,7 @@ async function closeModal(label) {
     ? page.locator('.sp-modal-backdrop.show .sp-modal-buttons button', { hasText: label })
     : page.locator('.sp-modal-backdrop.show .sp-modal-buttons button').first();
   await btn.first().waitFor({ timeout: 5000 });
+  await page.waitForTimeout(350); // Doppeltipp-Schutz der Seite
   await btn.first().tap();
   await page.waitForTimeout(450);
 }
@@ -142,6 +143,7 @@ await page.getByText('Weiter', { exact: false }).first().waitFor();
 
 // 5) Tagesrätsel
 step('Tagesrätsel');
+await page.waitForTimeout(400); // Doppeltipp-Schutz der Seite
 await page.locator('#daily-card').tap();
 await page.waitForFunction(() => location.hash === '#daily');
 await waitBoard();
@@ -158,6 +160,7 @@ await shot('08-menu-daily-done');
 
 // 6) Statistik
 step('Statistik');
+await page.waitForTimeout(400);
 await page.getByText('Statistik').first().tap();
 await page.locator('.sp-modal-backdrop.show').waitFor();
 await shot('09-stats');

@@ -455,8 +455,8 @@ function showGame(session, slot, { fresh = false } = {}) {
       h('div.title', null, nameEl, subEl),
       h('div.right', null,
         helpBtn(),
-        iconBtn('settings', () => showSettings(() => { view.setOptions(settings); }), 'Einstellungen'))),
-    h('div.progress', null, progI),
+        iconBtn('settings', () => showSettings(() => { view.setOptions(settings); }), 'Einstellungen')),
+      h('div.progress', null, progI)),
     wrap,
     h('div.toolbar', null, undoBtn, hintBtn, shuffleBtn, moreBtn));
 

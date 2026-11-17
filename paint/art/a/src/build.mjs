@@ -21,6 +21,7 @@ export const ORDER = [
   'igel',
   'fuchs',
   'koi',
+  'katze',
   'eule',
   'kolibri',
 ];

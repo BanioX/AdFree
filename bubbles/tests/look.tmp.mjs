@@ -16,6 +16,12 @@ for (const s of steps) {
   else if (s.startsWith('click:')) await page.locator(s.slice(6)).first().click();
   else if (s.startsWith('hash:')) await page.evaluate((h) => { location.hash = h; }, s.slice(5));
   else if (s.startsWith('eval:')) console.log(await page.evaluate(s.slice(5)));
+  else if (s.startsWith('aim:')) { const [x, y, up] = s.slice(4).split(','); await page.evaluate(([x, y, up]) => {
+      const c = document.querySelector('.bz-canvas'); const r = c.getBoundingClientRect();
+      const o = { clientX: r.left + r.width * x, clientY: r.top + r.height * y, pointerId: 7, bubbles: true, isPrimary: true, pointerType: 'touch' };
+      c.dispatchEvent(new PointerEvent('pointerdown', o)); c.dispatchEvent(new PointerEvent('pointermove', o));
+      if (up) c.dispatchEvent(new PointerEvent('pointerup', o));
+    }, [+x, +y, up]); }
   else if (s.startsWith('tap:')) { const [x, y] = s.slice(4).split(',').map(Number); await page.touchscreen.tap(x, y); }
 }
 console.log(errs.join('\n') || 'no errors');

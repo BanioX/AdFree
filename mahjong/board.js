@@ -127,7 +127,7 @@ export class BoardView {
 
   computeFit() {
     const e = this.ext;
-    const padX = 10, padTop = 10, padBottom = 14;
+    const padX = 6, padTop = 6, padBottom = 10;
     const maxTile = Math.min(64, this.viewW / 5.5);
     this.fitW = Math.max(8, Math.min(maxTile, (this.viewW - padX * 2) / e.w, (this.viewH - padTop - padBottom) / e.h));
     this.padTop = padTop; this.padBottom = padBottom;

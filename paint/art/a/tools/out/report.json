@@ -1,0 +1,18 @@
+[
+  {
+    "id": "a-rose",
+    "title": "Rose",
+    "category": "Blumen",
+    "regions": 78,
+    "colors": 13,
+    "size": "1000x1000",
+    "kb": 37,
+    "minArea": 812,
+    "medianArea": 7100,
+    "errors": [],
+    "warnings": [
+      "split into parts: #8(c1: 19928+7392px) #9(c2: 17033+1779px) #30(c3: 9576+119px)",
+      "same-colour neighbours: #18/#30(c3,111px)"
+    ]
+  }
+]

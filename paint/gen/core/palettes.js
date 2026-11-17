@@ -1,0 +1,31 @@
+// Handverlesene, harmonische Paletten für die Generatoren.
+// Jede Palette hat helle, mittlere und dunkle Töne, damit benachbarte Flächen kontrastieren.
+
+export const MANDALA_PALETTES = [
+  { name: 'Rosengarten', colors: ['#fff3e8', '#fcd5ce', '#f8a5b0', '#e56b86', '#b8325e', '#7a1f45', '#f6c56b', '#a8d5ba', '#5e9e7e', '#2e5e55'] },
+  { name: 'Ozean', colors: ['#f1f8f6', '#c8ebe5', '#8fd3cf', '#4fb3bf', '#2a7f9e', '#1d4e79', '#13294b', '#f4d58d', '#f28f6b', '#e05a5a'] },
+  { name: 'Herbstwald', colors: ['#fbf1df', '#f7d08a', '#eda04c', '#d96c2c', '#a8431f', '#6e2a1c', '#c9b458', '#7d8f4e', '#3f5a3a', '#2a2a3a'] },
+  { name: 'Lavendel', colors: ['#f7f2fb', '#e2d4f0', '#c3a6e0', '#9a7bc8', '#6c4fa3', '#41316e', '#f6c6d8', '#e889ad', '#a6d9d0', '#5fa8a0'] },
+  { name: 'Sonnenaufgang', colors: ['#fff6db', '#ffe08a', '#ffc04d', '#ff9a3d', '#f2643f', '#d43d51', '#9c2b5e', '#5a2a6e', '#8ecae6', '#2f6690'] },
+  { name: 'Pfauenfeder', colors: ['#eaf6f0', '#9bd6c4', '#3fae9f', '#1b7f86', '#0f4c5c', '#e3b23c', '#f5dc8c', '#6a4c93', '#3d2c6b', '#c8e66c'] },
+  { name: 'Bonbon', colors: ['#fff8f0', '#ffd8e4', '#ffb3c8', '#ff8fab', '#c9e4ff', '#8fb8f5', '#d4f5d0', '#93d68e', '#fff0a8', '#ffc94d', '#b8a9ff', '#6f5bd0'] },
+  { name: 'Terrakotta', colors: ['#faf0e4', '#f1d3b3', '#e3a873', '#cf7a4a', '#a8532e', '#6f3420', '#9fb8a8', '#5f8575', '#2f4f4f', '#e8c35a'] },
+  { name: 'Mitternacht', colors: ['#fdf3d0', '#f3cf6b', '#d9a43a', '#a96f2a', '#7fc8d6', '#3b8fb0', '#24557f', '#1b2f57', '#121a33', '#c45a7a'] },
+  { name: 'Zitrus', colors: ['#fffbe6', '#fff09a', '#ffd23f', '#ffa62b', '#f26b1d', '#c9e265', '#7cc04b', '#3a8a3e', '#1f5c3a', '#2f9e9a'] },
+  { name: 'Beeren', colors: ['#fbf0f5', '#f2c4d8', '#e38fb4', '#c4528a', '#8c2a63', '#4f1b44', '#bcd4ef', '#6f8fc9', '#3c4f8f', '#f3d9a4'] },
+  { name: 'Blumenwiese', colors: ['#fbfbef', '#e6f2c2', '#bfe090', '#8dc66b', '#4f9a52', '#2f6e4a', '#ffd9e8', '#f59ac0', '#fbd36b', '#8fc1e3', '#4a7fc0'] },
+  { name: 'Wüstenrose', colors: ['#fbf4e9', '#f0dcc0', '#e2bc8c', '#cc9461', '#b06a3f', '#7c4630', '#e9a1a1', '#c76b6b', '#86a3a1', '#4d6f6d'] },
+  { name: 'Eiskristall', colors: ['#f7fbff', '#dcecfb', '#b5d6f2', '#86b8e3', '#5a8fcc', '#3b65a8', '#253e77', '#c9c3e8', '#9a8fd0', '#e8d6a8'] },
+  { name: 'Koralle', colors: ['#fff5ef', '#ffd9c9', '#ffb199', '#ff8a70', '#f2635c', '#c9455a', '#2fa39b', '#1d6f74', '#ffe5a3', '#5a3d5c'] },
+  { name: 'Smaragd', colors: ['#f2fbf6', '#c4ebd6', '#83d0aa', '#3fae7c', '#1e8159', '#135740', '#0b3328', '#f2d16b', '#d68c45', '#f7e8c4'] },
+  { name: 'Bohème', colors: ['#fbf3e4', '#e9c46a', '#f4a261', '#e76f51', '#c0504d', '#264653', '#2a9d8f', '#8ab17d', '#6d597a', '#b56576'] },
+  { name: 'Aquarell', colors: ['#fefaf4', '#f9dcc4', '#fec89a', '#ffb5a7', '#d8e2dc', '#a3c4bc', '#7ea8be', '#5c6f91', '#46536e', '#b9a6c9'] },
+  { name: 'Indigo', colors: ['#f5f3ee', '#e0d9c8', '#c2b280', '#8a9bc4', '#5c6fa8', '#3b4a8a', '#26306b', '#171d45', '#d97b66', '#f0b8a2'] },
+  { name: 'Kirschblüte', colors: ['#fff7f9', '#ffe1ea', '#ffc2d4', '#ff9ebb', '#f27598', '#d1497a', '#8e3b62', '#cde7c9', '#86b98a', '#4d7c5a', '#f8e2b0'] },
+  { name: 'Gewürzmarkt', colors: ['#fbf1e1', '#f3d17a', '#e9a23b', '#d4712a', '#b2442a', '#7c2d2a', '#4b2a3a', '#9a8c4a', '#5d6b3a', '#cfa8a0'] },
+  { name: 'Lagune', colors: ['#f4fbfb', '#c9f0ec', '#93ddd8', '#5cc5c9', '#2fa3b5', '#1f7896', '#1a4f73', '#fbe3b8', '#f7b68a', '#ee8c74', '#ffd6e0'] },
+  { name: 'Pflaume', colors: ['#f9f4f7', '#e8d3e3', '#cfa7c9', '#a974a6', '#7d4a83', '#53305e', '#2f1d3b', '#f2c879', '#de8f5f', '#9fc6b0'] },
+  { name: 'Regenbogen', colors: ['#fff7ea', '#ff6b6b', '#ff9f43', '#feca57', '#1dd1a1', '#48dbfb', '#54a0ff', '#5f27cd', '#ff9ff3', '#222f3e'] },
+  { name: 'Salbei', colors: ['#f6f5ee', '#dfe6d3', '#b9c9a7', '#8fa982', '#5f7f63', '#3c5a4a', '#e8c9a9', '#d39a7a', '#a8645a', '#f2e2b8'] },
+  { name: 'Türkisgold', colors: ['#fdf8ec', '#f6e2a6', '#e8bf55', '#c99a2e', '#8fd6cf', '#3fb5b0', '#1d8a8f', '#13575f', '#f29e8e', '#2b3a4a'] },
+];

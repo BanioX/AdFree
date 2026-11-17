@@ -1,0 +1,108 @@
+// Stufe 1 (Level 1–6): klein und einfach, 9–12 Perlen breit, 3–4 Farben.
+import { Grid } from '../raster.mjs';
+
+export default [
+  {
+    id: 'herz', title: 'Herz', category: 'Liebe',
+    palette: { k: '#7a1636', r: '#f2385a', p: '#ff9db5' },
+    rows: [
+      '.kkk..kkk.',
+      'kpprkkrrrk',
+      'kprrrrrrrk',
+      'krrrrrrrrk',
+      'krrrrrrrrk',
+      '.krrrrrrk.',
+      '..krrrrk..',
+      '...krrk...',
+      '....kk....',
+    ],
+  },
+  {
+    id: 'stern', title: 'Stern', category: 'Dinge',
+    palette: { k: '#9a4b12', y: '#ffd23f', l: '#fff3a6', o: '#ffa62b' },
+    rows: [
+      '.....k.....',
+      '....klk....',
+      '...klyyk...',
+      'kkkklyyokkk',
+      'kllyyyyyyok',
+      '.klykykyok.',
+      '..kyyyyok..',
+      '..kyyyyok..',
+      '.kyyykyyok.',
+      '.kyyk.kyok.',
+      '.kkk...kkk.',
+    ],
+  },
+  {
+    id: 'erdbeere', title: 'Erdbeere', category: 'Essen',
+    palette: { k: '#5a1a2b', r: '#ee3a4a', g: '#45b85a', y: '#ffe08a' },
+    rows: [
+      '.....k.....',
+      '....kgk....',
+      '.kkkkgkkkk.',
+      'kgggggggggk',
+      'krgggrgggrk',
+      'krrgryrgrrk',
+      'kryrrrrryrk',
+      'krrrrrrrrrk',
+      '.krryryrrk.',
+      '..krrrrrk..',
+      '...kryrk...',
+      '....kkk....',
+    ],
+  },
+  {
+    id: 'apfel', title: 'Apfel', category: 'Essen',
+    palette: { k: '#4a2224', r: '#e83b3b', p: '#ff9a8a', g: '#5cc25a' },
+    rows: [
+      '....k.kkk..',
+      '....kkgggk.',
+      '..kkkkkkk..',
+      '.kpprkrrrk.',
+      'kpprrrrrrrk',
+      'kprrrrrrrrk',
+      'krrrrrrrrrk',
+      'krrrrrrrrrk',
+      'krrrrrrrrrk',
+      '.krrrrrrrk.',
+      '.krrrrrrrk.',
+      '..kkkkkkk..',
+    ],
+  },
+  {
+    id: 'pilz', title: 'Fliegenpilz', category: 'Natur',
+    palette: { k: '#4a2a22', r: '#ec4a3c', w: '#fff8ee', c: '#f5d7a8' },
+    rows: [
+      '....kkkk....',
+      '..kkrrrrkk..',
+      '.krrwwrrrrk.',
+      '.krwwwrrwwk.',
+      'krrrwrrrwwrk',
+      'kwwrrrrrrrrk',
+      'kwwrrrrwwrrk',
+      '.kkkkkkkkkk.',
+      '..kcccccck..',
+      '..kckcckck..',
+      '..kcccccck..',
+      '...kkkkkk...',
+    ],
+  },
+  {
+    id: 'kirschen', title: 'Kirschen', category: 'Essen',
+    palette: { k: '#5a1430', r: '#e5233f', p: '#ff8ea0', g: '#4caf50' },
+    build() {
+      const g = new Grid(12, 12);
+      const cherry = ['..kkk..', '.kpprk.', 'kpprrrk', 'kprrrrk', 'krrrrrk', '.krrrk.', '..kkk..'];
+      g.stamp(5, 4, cherry);
+      g.stamp(0, 5, cherry);
+      g.stamp(3, 0, [
+        '...kkggg.',
+        '..k..kggg',
+        '.k....k..',
+        'k.....k..',
+      ]);
+      return g;
+    },
+  },
+];

@@ -22,6 +22,7 @@ Was in Spielpause neu dazukommt. Neueste Einträge oben.
 - **Anagramm**: Buchstaben in die richtige Reihe legen, deutsch und englisch.
 - **Wortleiter**: vom Startwort zum Ziel, ein Buchstabe pro Stufe, deutsch und englisch.
 - **Geheimschrift**: eigene kurze Sätze entschlüsseln, deutsch und englisch.
+- **Wortwirbel**: Wörter im 4×4-Feld, auch schräg, ohne Uhr. «Zeit» ist freiwillig. Deutsch und Englisch.
 
 ### Behoben (Grok)
 - **Vier in einer Reihe**: Tippen auf eine Reihe legt wieder einen Stein (iPhone). Der Tipp hebt die Reihe nur hervor.

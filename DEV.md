@@ -219,3 +219,38 @@ Alles andere in `/beads/` gehört der **Perlenbild-Engine**.
 ## Pfeilwürfel
 
 Vollständig in `/cube/` (Level werden prozedural erzeugt), siehe Auftrag.
+
+---
+
+## Neues Spiel hinzufügen – Checkliste
+
+1. `games.js`: Eintrag mit `id`, `title` (+ optional `tile` mit weichen Trennstellen), `subtitle`,
+   `category`, `color`, `daily`, `added` (heutiges Datum → «Neu»-Abzeichen).
+2. Ordner `/<id>/` mit `index.html` (Seitengerüst oben), `app.js`, `style.css`, Inhalten in `data/`.
+3. Startbildschirm mit `gameMenu`, Anleitung mit `showTutorial` (3–4 Schritte, animiert).
+4. Kachel-Icon `/icons/games/<id>.svg`.
+5. Tests in `/<id>/tests/` (Logik mit `node --test`, Ablauf mit Playwright).
+6. `/<id>/CONTENT.md`: wie man Inhalte ergänzt.
+7. Doku nachführen (siehe unten).
+
+## Inhalte erweitern
+
+Jedes Spiel hält seine Inhalte (Bilder, Level, Wortlisten, Themen, Layouts) in `/<id>/data/` und
+beschreibt das Format in `/<id>/CONTENT.md`. Neue Inhalte: Datei ergänzen, Tests laufen lassen
+(prüfen z.B. Lösbarkeit, Rechtschreibung, Format), committen – fertig.
+
+## Veröffentlichen
+
+- Jeder Push auf `main` wird automatisch veröffentlicht: **Cloudflare Workers** (`wrangler.jsonc`,
+  baut mit `node tools/build-site.mjs` nach `dist/`) und **GitHub Pages** (`.github/workflows/pages.yml`).
+- `tools/build-site.mjs` kopiert nur Laufzeit-Dateien (ohne `tests/`, `tools/`, `src/`, `out/`, `.md`)
+  und schreibt die Offline-Cache-Liste mit neuer Version in `dist/sw.js`.
+
+## Dokumentation nachführen (Pflicht)
+
+Bei jeder sichtbaren Änderung mitpflegen:
+
+- **`CHANGELOG.md`** – neuer Eintrag oben (Datum, Neu / Verbessert / Behoben), in einfachem Deutsch.
+- **`README.md`** – Spieltabelle (Inhalt, Tagesrätsel), Stand-Hinweis, Links.
+- **`/<id>/CONTENT.md`** – wenn sich Datenformate ändern.
+- **`DEV.md`** – wenn sich Regeln, gemeinsame Module oder Abläufe ändern.

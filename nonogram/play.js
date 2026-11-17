@@ -540,15 +540,16 @@ export function createPlay(o) {
   async function winSheet(res, perfect) {
     const thumb = h('canvas.win-pic');
     drawThumb(thumb, puzzle.def, { mode: 'color', size: 120 });
-    const best = res.first ? 'Erstes Mal gelöst' : res.best < (res.prevBest ?? Infinity) ? 'Neue Bestzeit!' : `Bestzeit ${save.formatTime(res.best)}`;
+    const record = !res.first && res.prevBest != null && game.elapsed < res.prevBest;
+    const note = perfect ? '★ Ganz ohne Hilfe – stark!' : record ? 'Neue Bestzeit!' : res.first ? 'Neues Bild für dein Album!' : 'Schön gemalt!';
     const content = h('div.win',
       h('div.win-frame', null, thumb),
       h('div.win-title', null, `«${puzzle.title}»`),
       h('div.win-stats', null,
         stat('Zeit', save.formatTime(game.elapsed)),
         stat('Tipps', String(game.hints)),
-        stat(perfect ? 'Ohne Hilfe' : 'Rekord', perfect ? '★' : best.replace('Bestzeit ', ''))),
-      h('p.win-note', null, perfect && !res.first ? best : perfect ? 'Ganz ohne Hilfe – stark!' : best));
+        stat('Bestzeit', save.formatTime(res.best))),
+      h('p.win-note', null, note));
     const buttons = [];
     if (o.onNext) buttons.push({ label: 'Nächstes Bild', value: 'next', primary: true, icon: 'play' });
     buttons.push({ label: 'Zum Menü', value: 'menu', primary: !o.onNext, icon: 'home' });

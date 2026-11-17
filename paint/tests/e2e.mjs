@@ -482,6 +482,7 @@ try {
 
   // ------------------------------------------------------------ Desktop: Mausrad-Zoom
   const dctx = await browser.newContext({ viewport: { width: 1100, height: 800 } });
+  await dctx.addInitScript(() => { localStorage.setItem('spielpause.tutorial.paint', 'true'); }); // «So geht's» schon gesehen
   const dpage = await dctx.newPage();
   dpage.on('pageerror', (e) => errors.push('desktop pageerror: ' + e.message));
   dpage.on('console', (m) => { if (m.type() === 'error') errors.push('desktop: ' + m.text()); });

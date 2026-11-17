@@ -13,6 +13,7 @@ export function getProgress() {
     done: p.done && typeof p.done === 'object' ? p.done : {},
     beads: p.beads | 0,
     tutorial: !!p.tutorial,
+    recent: Array.isArray(p.recent) ? p.recent.filter((x) => typeof x === 'string') : [],
   };
 }
 

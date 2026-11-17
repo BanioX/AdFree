@@ -325,6 +325,24 @@ export class Board {
     this.gHint.replaceChildren();
   }
 
+  /** Coach-Mark beim ersten Spiel: pulsierender Ring am Wortanfang + wandernde Geisterkapsel. */
+  coach(index) {
+    this.clearCoach();
+    const p = this.pz.words[index];
+    if (!p) return;
+    const e = wordEnd(p);
+    const g = svg('g', { class: 'g-coach' });
+    g.append(
+      svg('line', { class: 'coach-ghost', x1: p.c + 0.5, y1: p.r + 0.5, x2: e.c + 0.5, y2: e.r + 0.5, pathLength: 1 }),
+      svg('circle', { class: 'coach-ring', cx: p.c + 0.5, cy: p.r + 0.5, r: 0.47 }));
+    this.svg.insertBefore(g, this.gSel);
+    this.coachG = g;
+  }
+
+  clearCoach() {
+    if (this.coachG) { this.coachG.remove(); this.coachG = null; }
+  }
+
   /** Siegeswelle über alle Buchstaben. */
   winWave() {
     for (let r = 0; r < this.n; r++) {

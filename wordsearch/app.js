@@ -214,7 +214,7 @@ function primaryFor(modeId) {
   }
   return {
     label: 'Spielen',
-    sub: `${mode.title} · ${mode.info} · Überraschungsthema`,
+    sub: `${mode.title} · ${mode.info}`,
     onClick: () => { createGame(modeId); go('play/' + modeId); },
   };
 }
@@ -232,9 +232,9 @@ function dailyInfo() {
 
 function secondaryFor(modeId) {
   return [
-    { label: 'Themen', icon: 'grid', sub: `${themes.length} zur Wahl`, onClick: () => go('themen') },
+    { label: 'Themen', icon: 'grid', onClick: () => go('themen') },
     {
-      label: 'Neu', icon: 'refresh', sub: 'Anderes Thema',
+      label: 'Neues Spiel', icon: 'refresh',
       onClick: async () => {
         const st = runningGame(modeId);
         if (st && st.found.length && !(await confirmLeave())) return;
@@ -444,7 +444,7 @@ function showGame(kind, modeId) {
   const list = h('div.words-list');
   const words = h('section.card.words' + (settings.listCollapsed ? '.collapsed' : ''), null,
     h('div.words-head', null, toggle, hintBtn), list);
-  const main = h('main.play-main', null, pill, boardWrap, words);
+  const main = h('main.play-main', null, boardWrap, words);
   const root = screen('play-screen', top, main);
   root.style.setProperty('--accent-theme', themeColor(theme));
 
@@ -458,7 +458,7 @@ function showGame(kind, modeId) {
       sfx.play('place');
     },
   });
-  boardWrap.append(board.el);
+  boardWrap.append(board.el, pill);
   st.found.forEach((idx, order) => board.addFound(idx, order, false));
 
   // --- Wortliste ---
@@ -529,9 +529,27 @@ function showGame(kind, modeId) {
   };
   report();
 
+  // --- Coach-Mark (nur beim allerersten Rätsel) ---
+  let coachIdx = -1;
+  if (!store.get(K.coach, false) && !st.found.length && !st.done) {
+    const order = pz.words.map((p, i) => i)
+      .sort((x, y) => (['E', 'S'].includes(pz.words[y].d) - ['E', 'S'].includes(pz.words[x].d)) || pz.words[x].w.length - pz.words[y].w.length);
+    coachIdx = order[0];
+    board.coach(coachIdx);
+    chips[coachIdx].classList.add('coach');
+  }
+  const endCoach = () => {
+    if (coachIdx < 0) return;
+    board.clearCoach();
+    chips[coachIdx].classList.remove('coach');
+    coachIdx = -1;
+    store.set(K.coach, true);
+  };
+
   // --- Auswahl ---
   function onSelect(a, b) {
     if (st.done) return false;
+    endCoach();
     const m = matchSelection(pz, a, b, foundSet);
     if (!m) {
       sfx.play('tap');

@@ -23,14 +23,16 @@ function place(el, x, y, animate = true) {
 }
 
 function gem(parent, color, x, y) {
-  const el = h('i.bt-gem', { style: { '--c': color } });
+  const el = h('i.bt-gem');
+  el.style.setProperty('--c', color);
   place(el, x, y, false);
   parent.append(el);
   return el;
 }
 
 function ghost(parent, color, x, y) {
-  const el = h('i.bt-ghost', { style: { '--c': color } });
+  const el = h('i.bt-ghost');
+  el.style.setProperty('--c', color);
   place(el, x, y, false);
   parent.append(el);
   return el;
@@ -113,7 +115,7 @@ function demoRows(stage, api) {
   const rows = ['.RR.RR.', 'RPRRRRR', 'RRRRRRR', '.RRRRR.', '..RRR..', '...R...'];
   const pic = cells(rows, 29, 17, 7, 13);
   const ghosts = pic.map((c) => ghost(sc, C[c.k], c.x, c.y));
-  const zone = h('div.bt-zone');
+  const zone = h('div.bt-zone', { style: { left: '23%', width: '54%' } });
   sc.append(zone);
   const gems = pic.map((c) => gem(sc, C[c.k], c.x, c.y));
   const setZone = (lowRow, animate) => {
@@ -153,7 +155,7 @@ function demoPark(stage, api) {
   const rows = ['YYYY', 'BBBB', 'RRRR'];
   const pic = cells(rows, 35, 14, 10, 11);
   for (const c of pic) ghost(sc, C[c.k], c.x, c.y);
-  const zone = h('div.bt-zone');
+  const zone = h('div.bt-zone', { style: { left: '29%', width: '42%' } });
   sc.append(zone);
   const setZone = (low, animate) => {
     zone.style.transition = animate ? '' : 'none';
@@ -223,14 +225,15 @@ function demoHelpers(stage, api) {
   const stars = h('div.bt-stars');
   for (let i = 0; i < 3; i++) stars.append(h('span.on', { html: icon('star', { size: 34 }) }));
   sc.append(stars);
+  const row = h('div.bt-pills');
+  sc.append(row);
   const pills = [
-    { ic: icon('bolt', { size: 18 }), label: 'Magnet', x: 20 },
-    { ic: icon('shuffle', { size: 18 }), label: 'Mischen', x: 50 },
-    { ic: '<b>+1</b>', label: 'Ablage', x: 80 },
+    { ic: icon('bolt', { size: 17 }), label: 'Magnet' },
+    { ic: icon('shuffle', { size: 17 }), label: 'Mischen' },
+    { ic: '<b>+1</b>', label: 'Ablage' },
   ].map((p) => {
     const el = h('div.bt-pill', null, h('span.ic', { html: p.ic }), h('span', null, p.label));
-    place(el, p.x, 68, false);
-    sc.append(el);
+    row.append(el);
     return el;
   });
   const starEls = [...stars.children];
@@ -243,7 +246,7 @@ function demoHelpers(stage, api) {
       pills[i].classList.remove('pop');
       void pills[i].offsetWidth;
       pills[i].classList.add('pop');
-      if (i < 2) starEls[2 - i].classList.remove('on');
+      if (i === 0) starEls[2].classList.remove('on');
       await api.sleep(650);
     }
     await api.sleep(1200);

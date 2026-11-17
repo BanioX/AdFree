@@ -195,6 +195,7 @@ async function showMenu(token) {
 async function showLevel(n, token) {
   const p = getProgress();
   if (!(n >= 1) || n > p.level) { location.replace('#play/' + p.level); return; }
+  if (!tutorialSeen('beads')) maybeShowHowto();
   const L = await levelPattern(n);
   if (token !== routeToken) return;
   const key = 'L' + n;

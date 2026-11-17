@@ -3,7 +3,7 @@ const { chromium, devices } = require('playwright');
 (async () => {
   const [hash = '', name = 'shot', setup = ''] = process.argv.slice(2);
   const browser = await chromium.launch();
-  const ctx = await browser.newContext({ ...devices['iPhone 13'], deviceScaleFactor: 1 });
+  const ctx = await browser.newContext({ ...devices[process.env.DEV || 'iPhone 13'], deviceScaleFactor: 1 });
   const page = await ctx.newPage();
   const errs = [];
   page.on('console', (m) => { if (m.type() === 'error') errs.push(m.text()); });

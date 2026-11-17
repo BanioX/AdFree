@@ -260,3 +260,12 @@ button.card:active { transform: scale(.98); }
   .tool .tl { display: none; }
   .play-top { min-height: 48px; }
 }
+@media (max-width: 360px) {
+  .toolbar { gap: 0; padding-left: 4px; padding-right: 4px; }
+  .tool { min-width: 46px; }
+  .tool .ti { width: 42px; }
+  .mode-seg .knob, .seg-btn { width: 50px; }
+  .mode-seg[data-mode="cross"] .knob { transform: translateX(50px); }
+  .packs { gap: 10px; }
+  .pack { padding: 12px; }
+}

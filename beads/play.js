@@ -4,8 +4,9 @@ import { h, icon, toast, showModal, celebrate, soundButton, backButton, sleep } 
 import { sfx } from '../shared/sfx.js';
 import { BoardView } from './render.js';
 import { drawPicture } from './gems.js';
-import { MAX_SLOTS } from './level.js';
+import { MAX_SLOTS, canPlace } from './level.js';
 import { resetCombo } from './sound.js';
+import { hints, praise } from './data/texts.js';
 
 export class PlayScreen {
   /**
@@ -25,7 +26,7 @@ export class PlayScreen {
     this.bar = h('i');
     this.canvas = h('canvas', { 'aria-label': 'Spielfeld' });
     this.stage = h('div.bp-stage', null, this.canvas);
-    this.tip = h('div.bp-tip', { role: 'status' }, 'Kleiner Tipp: Nutze einen Helfer');
+    this.tip = h('div.bp-tip', { role: 'status' }, hints.stuck);
     const mk = (name, label, aria) => {
       const b = h('button.bp-helper', { type: 'button', 'aria-label': aria });
       const ic = name === '+1' ? '<b>+1</b>' : icon(name, { size: 19 });
@@ -40,7 +41,7 @@ export class PlayScreen {
     this.btnSlot.addEventListener('click', () => this.useSlot());
 
     this.el = h('div.bp-play', { style: { display: 'contents' } },
-      h('header.topbar', null, backButton(opts.backHref || '#menu'), titleEl, soundButton()),
+      h('header.topbar', null, backButton(opts.backHref || '#menu'), titleEl, this.helpButton(), soundButton()),
       h('div.bp-progress', { role: 'progressbar', 'aria-label': 'Fortschritt' }, this.bar),
       this.stage,
       h('div.bp-helpers', null, this.tip, this.btnMagnet, this.btnMix, this.btnSlot),
@@ -63,6 +64,8 @@ export class PlayScreen {
 
     this.installDebug();
 
+    if (opts.coach) this.showCoach();
+
     if (this.game.complete) {
       // Sollte nicht vorkommen (fertige Level werden nicht gespeichert) – sicherheitshalber
       this.onLogicalComplete();
@@ -71,8 +74,63 @@ export class PlayScreen {
     }
   }
 
+  helpButton() {
+    if (!this.opts.onHelp) return null;
+    const b = h('button.icon-btn', { type: 'button', 'aria-label': 'So geht’s' });
+    b.innerHTML = '<span class="gm-q">?</span>';
+    b.addEventListener('click', () => { sfx.play('click'); this.opts.onHelp(); });
+    return b;
+  }
+
+  /** Coach-Mark (Level 1): pulsierender Ring um die erste sinnvolle Spalte, bis zum ersten Tipp. */
+  showCoach() {
+    const g = this.game, st = g.st;
+    let col = -1;
+    for (let c = 0; c < st.cols.length && col < 0; c++) {
+      const k = st.cols[c][st.ptr[c]];
+      if (k !== undefined && canPlace(g.L, st, k)) col = c;
+    }
+    if (col < 0) return;
+    this.coach = h('div.bp-coach', { 'aria-hidden': 'true' }, h('span', null, hints.coach));
+    this.coachCol = col;
+    this.stage.append(this.coach);
+    this.placeCoach();
+    this._coachResize = () => this.placeCoach();
+    window.addEventListener('resize', this._coachResize);
+  }
+
+  placeCoach() {
+    if (!this.coach) return;
+    const v = this.view, gm = v.g;
+    if (!gm) return;
+    const x = v.colX(this.coachCol) - gm.colW / 2;
+    Object.assign(this.coach.style, {
+      left: (this.canvas.offsetLeft + x - 2) + 'px',
+      top: (this.canvas.offsetTop + gm.trayY + 2) + 'px',
+      width: (gm.colW + 4) + 'px',
+      height: (gm.trayH - 4) + 'px',
+    });
+    // Beschriftung innerhalb der Bühne halten, Pfeil zeigt auf die Spalte
+    const label = this.coach.firstChild;
+    const w = label.offsetWidth, boxW = gm.colW + 4;
+    const left0 = this.canvas.offsetLeft + x - 2;
+    const stageW = this.stage.clientWidth;
+    const want = boxW / 2 - w / 2;
+    const lx = Math.max(8 - left0, Math.min(stageW - 8 - left0 - w, want));
+    label.style.left = lx + 'px';
+    label.style.setProperty('--ax', (boxW / 2 - lx) + 'px');
+  }
+
+  hideCoach() {
+    if (!this.coach) return;
+    this.coach.remove();
+    this.coach = null;
+    window.removeEventListener('resize', this._coachResize);
+  }
+
   destroy() {
     if (this.destroyed) return;
+    this.hideCoach();
     this.flush();
     this.destroyed = true;
     this.view.destroy();
@@ -93,11 +151,12 @@ export class PlayScreen {
     if (res.status === 'refused') {
       sfx.play('error');
       this.view.refuse(c);
-      toast('Ablage voll');
+      toast(hints.full);
       this.checkStuck();
       return;
     }
     if (res.status !== 'ok') return;
+    this.hideCoach();
     sfx.play('tap');
     this.view.applyMoves(res.moves);
     this.afterAction();
@@ -124,7 +183,7 @@ export class PlayScreen {
   useSlot() {
     if (this.completed) return;
     if (!this.game.addSlot()) {
-      toast('Mehr Ablageplätze passen nicht hin');
+      toast(hints.maxSlots);
       return;
     }
     sfx.play('pop');
@@ -210,10 +269,11 @@ export class PlayScreen {
     const cv = h('canvas');
     const size = Math.min(210, window.innerWidth - 120);
     drawPicture(cv, L, { size, pad: 0.07 });
-    const used = this.game.helpersUsed();
-    const text = used === 0 ? 'Ganz ohne Helfer – wunderbar!'
-      : used === 1 ? 'Mit einem Helfer gelegt.' : `Mit ${used} Helfern gelegt.`;
-    const content = h('div.bp-win', null, starsEl, cv, h('p', null, `«${L.title}» ist fertig. ${text}`));
+    const lines = praise[stars] || praise[1];
+    let hsh = 0;
+    for (const ch of L.id) hsh = (hsh * 31 + ch.charCodeAt(0)) >>> 0;
+    const text = lines[hsh % lines.length].replace('{title}', L.title);
+    const content = h('div.bp-win', null, starsEl, cv, h('p', null, text));
     const v = await showModal({
       title: 'Geschafft!',
       content,

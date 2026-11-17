@@ -116,7 +116,7 @@ export function tutorialSteps(modes) {
     },
     {
       title: 'Tipp & Zeit',
-      text: 'Ein Tipp zeigt den Anfang eines Wortes. Mit wenig Zeit und ohne Tipp gibt es drei Sterne.',
+      text: 'Ein Tipp zeigt den Wortanfang. Schnell und ohne Tipp gibt es drei Sterne.',
       demo(stage, api) {
         const g = demoGrid(stage, { cell: 30 });
         const btn = h('div.wsd-hint', { html: '<svg viewBox="0 0 24 24" width="20" height="20"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.6 10.8c.7.6 1.1 1.3 1.1 2.2h5c0-.9.4-1.6 1.1-2.2A6 6 0 0 0 12 3z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Tipp</span>' });

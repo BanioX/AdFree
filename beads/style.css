@@ -271,7 +271,7 @@ html, body {
   transition: left .48s cubic-bezier(.3, .75, .3, 1), top .48s cubic-bezier(.3, .75, .3, 1), transform .48s cubic-bezier(.3, .75, .3, 1), opacity .3s;
 }
 .bt-gem.placed { transform: scale(.72); }
-.bt-ghost { position: absolute; width: 11px; height: 11px; margin: -5.5px 0 0 -5.5px; border-radius: 50%; background: var(--c); opacity: .3; transition: opacity .2s; }
+.bt-ghost { position: absolute; width: 13px; height: 13px; margin: -6.5px 0 0 -6.5px; border-radius: 50%; background: var(--c); opacity: .3; transition: opacity .2s; }
 .bt-ghost.hidden { opacity: 0; }
 .bt-zone {
   position: absolute; left: 24%; width: 52%; border-radius: 10px; z-index: 1;
@@ -289,15 +289,16 @@ html, body {
 .bt-stars { position: absolute; left: 0; right: 0; top: 16%; display: flex; justify-content: center; gap: 8px; }
 .bt-stars span { color: #d9dde6; transition: color .3s, transform .3s; transform: scale(.9); display: grid; }
 .bt-stars span.on { color: var(--gold); transform: scale(1); }
+.bt-pills { position: absolute; left: 0; right: 0; top: 56%; display: flex; justify-content: center; gap: 6px; padding: 0 8px; }
 .bt-pill {
-  position: absolute; transform: translate(-50%, -50%); display: flex; align-items: center; gap: 6px; white-space: nowrap;
-  background: #fff; border-radius: 16px; padding: 10px 12px; font-weight: 800; font-size: 14px; color: var(--text);
+  display: flex; align-items: center; gap: 5px; white-space: nowrap;
+  background: #fff; border-radius: 15px; padding: 10px 10px; font-weight: 800; font-size: 13.5px; color: var(--text);
   box-shadow: 0 4px 12px rgba(40, 70, 120, .12);
 }
 .bt-pill .ic { color: var(--accent); display: grid; }
 .bt-pill .ic b { font-size: 15px; }
 .bt-pill.pop { animation: bt-pop .45s cubic-bezier(.3, 1.5, .5, 1); }
-@keyframes bt-pop { 0% { transform: translate(-50%, -50%) scale(1); } 40% { transform: translate(-50%, -50%) scale(1.14); } 100% { transform: translate(-50%, -50%) scale(1); } }
+@keyframes bt-pop { 0% { transform: scale(1); } 40% { transform: scale(1.14); } 100% { transform: scale(1); } }
 
 /* Schritt 2: Steine «poppen» ins Bild */
 .bt-rows .bt-gem { transform: scale(0); opacity: 0; transition: transform .3s cubic-bezier(.3, 1.6, .5, 1), opacity .2s; }
@@ -310,12 +311,12 @@ html, body {
   animation: bp-coach 1.3s ease-in-out infinite;
 }
 .bp-coach span {
-  position: absolute; left: 50%; bottom: calc(100% + 8px); transform: translateX(-50%); white-space: nowrap;
+  position: absolute; left: 0; bottom: calc(100% + 8px); white-space: nowrap;
   background: var(--accent); color: #fff; font-weight: 800; font-size: 13.5px; padding: 6px 11px; border-radius: 12px;
   box-shadow: 0 4px 10px rgba(63, 142, 240, .35);
 }
 .bp-coach span::after {
-  content: ''; position: absolute; left: 50%; top: 100%; margin-left: -6px;
+  content: ''; position: absolute; left: var(--ax, 50%); top: 100%; margin-left: -6px;
   border: 6px solid transparent; border-top-color: var(--accent);
 }
 @keyframes bp-coach { 0%, 100% { box-shadow: 0 0 0 3px var(--accent), 0 0 0 6px rgba(63, 142, 240, .25); } 50% { box-shadow: 0 0 0 3px var(--accent), 0 0 0 13px rgba(63, 142, 240, 0); } }

@@ -18,7 +18,7 @@ export const praise = {
     'Bravo! Jeder Stein sitzt: «{title}» ist fertig.',
   ],
   2: [
-    '«{title}» ist fertig. Mit einem Helfer – sehr schön!',
+    '«{title}» ist fertig – mit ein wenig Hilfe. Sehr schön!',
     'Schön gelegt! «{title}» hat seinen Platz in der Sammlung.',
   ],
   1: [

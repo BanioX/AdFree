@@ -192,6 +192,8 @@ async function run() {
   const dot = await ev(page, () => window.__blocks.dragPlan(0, 0, 7));
   await touchDrag(page, cdp, dot.from, dot.to);
   await wait(page, 300);
+  const st = await ev(page, () => ({ moves: window.__blocks.game.moves, over: window.__blocks.game.over, tray: window.__blocks.game.tray.map((v) => v && v.key) }));
+  check(st.over, 'kein Teil passt mehr: ' + JSON.stringify(st));
   // Spalte 7 ist nun bei Zeile 0 belegt: weitere Punkte gibt es nicht – das Spiel ist vorbei
   await page.locator('.over-score').waitFor({ state: 'visible', timeout: 5000 }).catch(() => {});
   await wait(page, 400);

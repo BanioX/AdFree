@@ -74,6 +74,7 @@ export const games = [
   { id: 'farbklick', title: 'Farbklicker', title_en: 'Color Flood', tile: 'Farb\u00ADklicker', tile_en: 'Color Flood', subtitle: 'Die Ecke frisst die Farbe', subtitle_en: 'The corner swallows the colour', category: 'action', color: '#d0447c', added: '2026-11-17' },
   { id: 'farbkugel', title: 'Farbkugeln', title_en: 'Color Lines', tile: 'Farbkugeln', tile_en: 'Color Lines', subtitle: 'Fünf in einer Reihe räumen', subtitle_en: 'Clear five in a row', category: 'action', color: '#8a63d2', added: '2026-11-17' },
   { id: 'schlange', title: 'Schlängel', title_en: 'Snake', tile: 'Schlängel', tile_en: 'Snake', subtitle: 'Tippe die Richtung, sammle Futter', subtitle_en: 'Tap a direction, gather food', category: 'action', color: '#3c8d4e', added: '2026-11-17' },
+  { id: 'mauer', title: 'Mauerbrecher', title_en: 'Brick Break', tile: 'Mauer\u00ADbrecher', tile_en: 'Brick Break', subtitle: 'Schläger ziehen, Steine treffen', subtitle_en: 'Drag the paddle, hit the bricks', category: 'action', color: '#c45c26', added: '2026-11-17' },
 ];
 
 /** Titel/Untertitel/Kachelname in der aktuellen Sprache */

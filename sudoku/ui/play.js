@@ -719,9 +719,11 @@ export class Play {
       const last = g.history[g.history.length - 1];
       if (last && last.k === 'set') g.undo();
       g.extraLives++;
+      g.meta.combo = 0;
       toast('Weiter geht’s!');
     } else if (v === 'restart') {
       g.restart();
+      g.meta.combo = 0;
       this.sel = null;
       this.focusDigit = 0;
       toast('Neuer Anlauf');

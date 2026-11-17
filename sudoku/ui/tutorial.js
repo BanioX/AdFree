@@ -54,7 +54,7 @@ function wave(cells, cls = 'wave') {
 export const steps = [
   {
     title: 'Feld, dann Zahl',
-    text: 'Tippe auf ein leeres Feld und dann unten auf die passende Zahl.',
+    text: 'Tippe ein leeres Feld an, dann unten die passende Zahl.',
     demo(stage, api) {
       const vals = [5, 3, 0, 6, 0, 2, 9, 8, 4];
       const answer = { 2: 7, 4: 1 };
@@ -85,7 +85,7 @@ export const steps = [
   },
   {
     title: 'Das Ziel',
-    text: 'Jede Reihe, jede Spalte und jeder 3×3-Block enthält 1 bis 9 genau einmal.',
+    text: 'In jeder Reihe, Spalte und jedem Block steht 1–9 genau einmal.',
     demo(stage, api) {
       const grid = h('div.sdt-grid');
       const cells = [];
@@ -180,8 +180,8 @@ export const steps = [
     },
   },
   {
-    title: 'Hilfe bei Bedarf',
-    text: 'Steckst du fest, zeigt und erklärt dir der Tipp den nächsten Schritt.',
+    title: 'Tipps sind gratis',
+    text: 'Steckst du fest, zeigt dir der Tipp den nächsten Schritt.',
     demo(stage, api) {
       const vals = [8, 0, 3, 5, 9, 7, 6, 1, 2];
       const block = h('div.sdt-block');

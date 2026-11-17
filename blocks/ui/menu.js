@@ -67,7 +67,7 @@ function boardPreview(skin, boardData, status) {
   try {
     const b = Board.deserialize(boardData);
     const wrap = h('div.hero-art.preview');
-    wrap.append(miniBoard(skin, boardRows(b), b.n === 10 ? 13 : 16));
+    wrap.append(miniBoard(skin, boardRows(b), b.n === 10 ? 15 : 19));
     if (status && status.length) wrap.append(goalBadge(status));
     return wrap;
   } catch {

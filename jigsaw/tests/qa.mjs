@@ -102,11 +102,11 @@ try {
   await page.waitForTimeout(16);
   for (let k = 1; k <= 5; k++) { await touch('touchMove', [{ x: a.x + 12 * k, y: a.y - 120 - 20 * k, id: 1 }, { x: f2.x - 10 * k, y: f2.y + 10 * k, id: 2 }]); await page.waitForTimeout(10); }
   const after = await J((k) => window.__jigsaw.piecePoint(k), first);
-  check(after.x - before.x > 40 && before.y - after.y > 100, 'erstes Teil folgt weiter dem ersten Finger');
+  check(after.x - before.x > 40 && before.y - after.y > 100, `erstes Teil folgt weiter dem ersten Finger (${Math.round(after.x - before.x)}, ${Math.round(before.y - after.y)})`);
   await touch('touchEnd', [{ x: f2.x - 50, y: f2.y + 50, id: 2 }]); // Finger 1 hebt ab
   await page.waitForTimeout(350);
   const dropped = await J((k) => { const s = window.__jigsaw.state(); return { inOrder: s.order.includes(s.pieces[k].g) || s.pieces[k].s === 2, gone: !document.querySelector(`.pz-ti[data-i="${k}"]`) }; }, first);
-  check(dropped.inOrder && dropped.gone, 'Teil liegt nach dem Loslassen auf dem Tisch, Leisten-Element weg');
+  check(dropped.inOrder && dropped.gone, `Teil liegt nach dem Loslassen auf dem Tisch, Leisten-Element weg (${JSON.stringify(dropped)})`);
   await touch('touchEnd', []);
   await page.waitForTimeout(200);
   const tbl = await rect('.pz-table'), pp = await J((k) => window.__jigsaw.piecePoint(k), first);
@@ -127,6 +127,7 @@ try {
   check(t1 - t0 < 3500, `Zeit läuft während der Überlagerungen nicht weiter (+${Math.round((t1 - t0) / 100) / 10} s in ~8 s)`);
 
   console.log('Gewinn-Blatt: Neuladen landet im Menü');
+  await J(() => { window.__jigsaw = null; });
   await page.goto(BASE + '#play/farben%2Fa-rose@12');
   await ready();
   const started = (await stats()).started || 0;
@@ -140,6 +141,7 @@ try {
   check(started2 === started, `«Begonnen» nicht doppelt gezählt (${started} → ${started2})`);
 
   console.log('«Nächstes Bild» im Farbenzauber-Pack');
+  await J(() => { window.__jigsaw = null; });
   await page.goto(BASE + '#play/farben%2Fa-rose@24');
   await ready();
   const n24 = await J(() => window.__jigsaw.geo().count);

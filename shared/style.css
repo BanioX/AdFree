@@ -46,6 +46,7 @@ html, body {
   user-select: none;
   -webkit-touch-callout: none;
   overscroll-behavior: none;
+  touch-action: manipulation; /* kein Doppeltipp-Zoom, Taps kommen ohne Verzögerung an */
 }
 
 body { overflow: hidden; }

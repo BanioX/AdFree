@@ -223,12 +223,8 @@ export function setupPage() {
   document.addEventListener('gesturestart', stop, { passive: false });
   document.addEventListener('gesturechange', stop, { passive: false });
   document.addEventListener('gestureend', stop, { passive: false });
-  let lastTouchEnd = 0;
-  document.addEventListener('touchend', (e) => {
-    const now = Date.now();
-    if (now - lastTouchEnd <= 320 && e.target && !e.target.closest('input, textarea, select')) e.preventDefault();
-    lastTouchEnd = now;
-  }, { passive: false });
+  // Doppeltipp-Zoom verhindert CSS (touch-action: manipulation in style.css). Früher wurde hier
+  // jedes zweite touchend innerhalb von 320 ms abgefangen – das schluckte schnelle Taps in Spielen.
   document.addEventListener('dblclick', stop, { passive: false });
   document.addEventListener('contextmenu', (e) => {
     if (!e.target.closest('input, textarea')) e.preventDefault();

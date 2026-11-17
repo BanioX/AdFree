@@ -234,8 +234,150 @@ async function run() {
   await wait(page, 600);
   check((await ev(page, () => location.hash)) === '#level/2', 'gesperrtes Level wird auf freigeschaltetes begrenzt');
 
+  await qaChecks(browser, errors);
+
   check(errors.length === 0, 'keine Konsolenfehler' + (errors.length ? ': ' + errors.join(' | ') : ''));
   await browser.close();
+}
+
+/** Prüfungen zu QA-Befunden: Rückgängig, «?», Statistik, Bild, Welt geschafft, Spielstand-Schutz. */
+async function qaChecks(browser, errors) {
+  const context = await browser.newContext({ ...devices['iPhone 13'], viewport: { width: 375, height: 667 }, deviceScaleFactor: 1 });
+  const page = await context.newPage();
+  page.on('console', (m) => { if (m.type() === 'error' || m.type() === 'warning') errors.push(`${m.type()}: ${m.text()}`); });
+  page.on('pageerror', (e) => errors.push('pageerror: ' + e.message));
+  const cdp = await context.newCDPSession(page);
+  await page.goto(BASE);
+  await ev(page, () => {
+    localStorage.setItem('spielpause.blocks.adv', JSON.stringify({ max: 20, stars: Object.fromEntries(Array.from({ length: 19 }, (_, i) => [i + 1, 2])), pics: [], gems: 0, wins: 19, tries: 19 }));
+  });
+  await page.reload();
+  await wait(page, 500);
+  await page.getByRole('button', { name: 'Überspringen' }).click({ timeout: 1500 }).catch(() => {});
+  // Ton-Aufrufe mitschreiben (gleiche Modul-Instanz wie das Spiel)
+  await ev(page, async () => {
+    const { sfx } = await import('/shared/sfx.js');
+    window.__sounds = [];
+    const orig = sfx.play.bind(sfx);
+    sfx.play = (name, ...rest) => { window.__sounds.push(name); return orig(name, ...rest); };
+  });
+
+  console.log('QA: Rückgängig im Abenteuer, «?»');
+  await ev(page, () => { location.hash = 'level/5'; });
+  await wait(page, 3000);
+  const before = await ev(page, () => ({ board: JSON.stringify(window.__blocks.game.board.serialize()), tray: window.__blocks.game.tray.map((v) => v && v.key) }));
+  check(await ev(page, () => document.querySelector('.undo-btn').classList.contains('off')), 'Rückgängig anfangs inaktiv');
+  check(await playHintMove(page, cdp), 'Zug in Level 5');
+  await wait(page, 500);
+  check(await ev(page, () => !document.querySelector('.undo-btn').classList.contains('off')), 'Rückgängig aktiv nach Zug');
+  await page.getByRole('button', { name: 'Rückgängig' }).click();
+  await wait(page, 400);
+  const after = await ev(page, () => ({ moves: window.__blocks.game.moves, board: JSON.stringify(window.__blocks.game.board.serialize()), tray: window.__blocks.game.tray.map((v) => v && v.key) }));
+  check(after.moves === 0 && after.board === before.board && JSON.stringify(after.tray) === JSON.stringify(before.tray), 'Rückgängig stellt Brett und Teile wieder her');
+  // mehrere Schritte zurück (Abenteuer)
+  await ev(page, () => { for (let i = 0; i < 3; i++) { const m = window.__blocks.hint(); if (m) window.__blocks.place(m.slot, m.r, m.c); } });
+  await wait(page, 300);
+  await ev(page, () => { window.__blocks.undo(); window.__blocks.undo(); });
+  check(await ev(page, () => window.__blocks.game.moves === 1), 'Abenteuer: mehrere Züge zurück');
+  await page.reload();
+  await wait(page, 800);
+  check(await ev(page, () => window.__blocks.game.moves === 1 && window.__blocks.undoCount === 1), 'Rückgängig-Verlauf übersteht Neuladen');
+  await page.getByRole('button', { name: 'So geht\'s' }).click();
+  await wait(page, 500);
+  check(await page.locator('.tut-stage').isVisible(), '«?» im Spiel öffnet die Anleitung');
+  await page.getByRole('button', { name: 'Überspringen' }).click();
+  await wait(page, 400);
+
+  console.log('QA: Tippen ohne Ziehen');
+  const slot = await ev(page, () => { const g = window.__blocks.game; const i = g.tray.findIndex(Boolean); const L = window.__blocks.layout(); const s = L.slots[i]; return { x: s.x + s.w / 2, y: s.y + s.h / 2 }; });
+  await ev(page, () => { window.__sounds.length = 0; });
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: Math.round(slot.x), y: Math.round(slot.y), id: 1 }] });
+  await wait(page, 60);
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+  await wait(page, 300);
+  const snd = await ev(page, () => window.__sounds.slice());
+  check(snd.includes('tap') && !snd.includes('thud'), 'Tippen spielt nur einen Ton: ' + snd.join(','));
+
+  console.log('QA: Bild wird ganz aufgedeckt');
+  await ev(page, () => { const b = window.__blocks; b.game.board.cover.fill(0); b.view.requestDraw(); });
+  await wait(page, 300);
+  await shot(page, 'qa-01-pic-revealed');
+  const box = await ev(page, () => window.__blocks.view.picBox);
+  check(box && box.r0 === 4 && box.h === 4 && box.w === 8, 'Bild sitzt im verdeckten Bereich: ' + JSON.stringify(box));
+
+  console.log('QA: angefangenes Level wird nicht still verworfen');
+  await page.locator('.topbar .icon-btn').first().click();
+  await wait(page, 400);
+  await ev(page, () => { location.hash = 'karte'; });
+  await wait(page, 500);
+  await page.locator('.lv[aria-label="Level 3"]').click();
+  await wait(page, 400);
+  check((await dialogTitle(page)) === 'Level 5 ist angefangen', 'Karte fragt vor dem Verwerfen');
+  await page.getByRole('button', { name: 'Weiter mit Level 5' }).click();
+  await wait(page, 700);
+  check(await ev(page, () => location.hash === '#level/5' && window.__blocks.game.moves === 1), 'zurück im angefangenen Level 5');
+
+  console.log('QA: Welt geschafft');
+  await ev(page, () => { location.hash = 'level/20'; });
+  await wait(page, 600);
+  await ev(page, () => { const k = 'spielpause.blocks.level'; const d = JSON.parse(localStorage.getItem(k)); d.won = true; localStorage.setItem(k, JSON.stringify(d)); });
+  await page.reload();
+  await page.getByRole('button', { name: /Weiter zu Level 21/ }).click({ timeout: 4000 });
+  await wait(page, 900);
+  check((await dialogTitle(page)) === 'Welt geschafft!', 'Blatt «Welt geschafft!» nach dem letzten Level der Welt');
+  await shot(page, 'qa-02-world-done');
+  await page.locator('.sp-modal-buttons .btn.primary').click();
+  await wait(page, 700);
+  check(await ev(page, () => location.hash === '#level/21'), 'weiter in die neue Welt');
+
+  console.log('QA: Klassisch – erstes Spiel, Rückgängig, Statistik nach Rettung');
+  await ev(page, () => { location.hash = 'classic/8'; });
+  await wait(page, 800);
+  check(await ev(page, () => document.querySelector('.undo-badge').textContent === '3'), 'Klassisch: 3× Rückgängig');
+  await ev(page, () => { const m = window.__blocks.hint(); window.__blocks.place(m.slot, m.r, m.c); });
+  await wait(page, 300);
+  await page.getByRole('button', { name: 'Rückgängig' }).click();
+  await wait(page, 300);
+  check(await ev(page, () => window.__blocks.game.moves === 0 && document.querySelector('.undo-badge').textContent === '2'), 'Klassisch: Zug zurück, noch 2×');
+  const forceOver = () => ev(page, () => {
+    const b = window.__blocks;
+    const g = b.game;
+    const rows = [];
+    for (let r = 0; r < 8; r++) rows.push(r % 2 ? '.1.2.3.4' : '5.6.7.8.');
+    g.board = g.board.constructor.fromLayout(8, rows);
+    g.tray = [g.cat.find('#'), g.cat.find('##|##'), g.cat.find('###|###|###')];
+    g.over = false;
+    b.view.setGame(g);
+    b.place(0, 0, 1);
+  });
+  const stats = () => ev(page, () => JSON.parse(localStorage.getItem('spielpause.blocks.stats') || '{}').classic?.[8] || { played: 0, total: 0 });
+  const s0 = await stats();
+  await forceOver();
+  await page.locator('.over-score').waitFor({ state: 'visible', timeout: 5000 });
+  await wait(page, 300);
+  check((await dialogTitle(page)) === 'Erstes Spiel geschafft', 'erstes Spiel: kein «Neuer Rekord»');
+  await shot(page, 'qa-03-first-over');
+  const sc1 = await ev(page, () => window.__blocks.game.score);
+  const s1 = await stats();
+  check(s1.played === s0.played + 1 && s1.total === s0.total + sc1, 'Spielende gezählt');
+  await page.getByRole('button', { name: /Neue Teile/ }).click();
+  await wait(page, 500);
+  await forceOver();
+  await page.locator('.over-score').waitFor({ state: 'visible', timeout: 5000 });
+  await wait(page, 300);
+  const sc2 = await ev(page, () => window.__blocks.game.score);
+  const s2 = await stats();
+  check(sc2 > sc1 && s2.played === s1.played && s2.total === s0.total + sc2, `nach Rettung: Zuwachs gezählt (${sc1} → ${sc2})`);
+  await page.getByRole('button', { name: 'Zum Menü' }).click();
+  await wait(page, 500);
+
+  console.log('QA: Statistik passt auf 375×667');
+  await page.getByRole('button', { name: 'Statistik' }).click();
+  await wait(page, 500);
+  const closeBox = await page.getByRole('button', { name: 'Schliessen' }).boundingBox();
+  check(closeBox && closeBox.y + closeBox.height <= 667, `«Schliessen» ohne Scrollen sichtbar (unten bei ${closeBox && Math.round(closeBox.y + closeBox.height)})`);
+  await shot(page, 'qa-04-stats');
+  await context.close();
 }
 
 try {

@@ -163,7 +163,7 @@
 .key.down { transform: translateY(1px) scale(.96); filter: brightness(.94); }
 .key[data-state="correct"] { background: var(--t-correct); color: #fff; box-shadow: 0 2px 0 var(--t-correct-2); }
 .key[data-state="present"] { background: var(--t-present); color: #fff; box-shadow: 0 2px 0 var(--t-present-2); }
-.key[data-state="absent"] { background: #cfc6bb; color: #fff; box-shadow: 0 2px 0 #bdb3a6; }
+.key[data-state="absent"] { background: var(--t-absent); color: #fff; box-shadow: 0 2px 0 var(--t-absent-2); }
 .key.enter.ready { background: var(--accent); color: #fff; box-shadow: 0 2px 0 #b9860f; }
 /* Lupe über der Taste (wie auf dem iPhone) */
 .key .bubble {
@@ -199,11 +199,11 @@
 .stat-grid b { display: block; font-size: 26px; font-weight: 850; color: var(--text); letter-spacing: -.02em; }
 .stat-grid span { display: block; font-size: 12px; font-weight: 700; color: var(--text-2); line-height: 1.2; }
 
-.dist { display: flex; flex-direction: column; gap: 5px; margin: 4px 0 6px; }
+.dist { display: flex; flex-direction: column; gap: 4px; margin: 4px 0 6px; }
 .dist .dl { display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: 14px; }
 .dist .dl > span { width: 12px; text-align: right; color: var(--text-2); }
 .dist .bar {
-  min-width: 26px; height: 24px; border-radius: 7px; background: var(--t-absent); color: #fff; display: flex; align-items: center;
+  min-width: 26px; height: 21px; border-radius: 7px; background: var(--t-absent); color: #fff; display: flex; align-items: center;
   justify-content: flex-end; padding: 0 8px; font-size: 13px; transition: width .5s var(--ease-out);
 }
 .dist .dl.hi .bar { background: var(--t-correct); }
@@ -211,6 +211,7 @@
 
 .share-row { display: flex; gap: 10px; margin: 12px 0 2px; }
 .share-row .btn { flex: 1 1 0; }
+.share-row .countdown { flex: 1 1 0; margin: 0; align-self: center; font-size: 13px; line-height: 1.25; }
 .countdown { text-align: center; font-weight: 750; color: var(--text-2); font-size: 14px; margin: 8px 0 0; }
 .countdown b { color: var(--text); font-variant-numeric: tabular-nums; font-size: 18px; display: block; }
 

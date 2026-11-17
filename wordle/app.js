@@ -821,12 +821,11 @@ function openResult(g, key) {
   shareBtn.append('Teilen');
   shareBtn.addEventListener('click', () => { shareResult(g); });
   const content = h('div.sheet', null,
-    h('p.center', null, won ? `Du hast das Wort in ${n} ${n === 1 ? 'Versuch' : 'Versuchen'} erraten.` : 'Schade – diesmal hat es nicht gereicht. Das Wort war:'),
+    h('p.center', null, won ? `Erraten in ${n} ${n === 1 ? 'Versuch' : 'Versuchen'}${g.hard ? ' · schwerer Modus' : ''}` : 'Diesmal hat es nicht gereicht. Das Wort war:'),
     wordTiles(g.answer, won ? 'correct' : 'present', 'mini-row.res-word'),
     statBlock(st, key),
     distBlock(st, won ? n : 0),
-    h('div.share-row', null, shareBtn),
-    g.mode === 'daily' ? countdownEl() : null);
+    h('div.share-row', null, shareBtn, g.mode === 'daily' ? countdownEl() : null));
   const buttons = g.mode === 'daily'
     ? [{ label: 'Endlos spielen', value: 'next', primary: true, icon: 'play' }, { label: 'Zum Menü', value: 'menu', ghost: true }]
     : [{ label: 'Nächstes Wort', value: 'next', primary: true, icon: 'play' }, { label: 'Zum Menü', value: 'menu', ghost: true }];

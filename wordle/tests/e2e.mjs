@@ -123,7 +123,7 @@ try {
   await page.waitForSelector('.sp-modal-backdrop', { timeout: 10000 });
   await wait(900);
   const sheet = await page.locator('.sp-modal-backdrop').innerText();
-  assert.match(sheet, /erraten/);
+  assert.match(sheet, /Erraten in 2 Versuchen/);
   assert.match(sheet, /Teilen/);
   assert.match(sheet, /Verteilung/i);
   await shot('e2e-04-win-sheet');

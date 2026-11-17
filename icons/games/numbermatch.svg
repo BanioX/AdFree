@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <linearGradient id="b" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#e8f4fc"/><stop offset="1" stop-color="#a9d3ee"/></linearGradient>
+    <linearGradient id="s" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5aa8d6"/><stop offset="1" stop-color="#3c8dbc"/></linearGradient>
+  </defs>
+  <rect width="100" height="100" fill="url(#b)"/>
+  <ellipse cx="50" cy="89" rx="31" ry="4.5" fill="#1f5a80" opacity=".16"/>
+  <g transform="rotate(-5 50 50)">
+    <rect x="14" y="17" width="72" height="66" rx="13" fill="#fffdf8" stroke="#3a2a2a" stroke-width="2.2"/>
+    <g stroke="#3a2a2a" stroke-width="1.4" opacity=".22">
+      <path d="M38 18v64M62 18v64M15 39h70M15 61h70"/>
+    </g>
+    <rect x="17.5" y="42" width="65" height="16" rx="8" fill="url(#s)" opacity=".18"/>
+    <circle cx="26" cy="50" r="9" fill="url(#s)" stroke="#3a2a2a" stroke-width="1.8"/>
+    <circle cx="74" cy="50" r="9" fill="url(#s)" stroke="#3a2a2a" stroke-width="1.8"/>
+    <path d="M36 50h28" stroke="#3c8dbc" stroke-width="3" stroke-linecap="round" stroke-dasharray="1 5.5"/>
+    <g font-family="ui-rounded,'SF Pro Rounded',-apple-system,'Segoe UI',sans-serif" font-weight="800" font-size="15" text-anchor="middle">
+      <text x="26" y="55.3" fill="#fff">3</text>
+      <text x="74" y="55.3" fill="#fff">7</text>
+      <text x="50" y="55.3" fill="#c9bdb0">5</text>
+      <text x="26" y="33.5" fill="#3a2a2a">8</text>
+      <text x="50" y="33.5" fill="#c9bdb0">4</text>
+      <text x="74" y="33.5" fill="#3a2a2a">2</text>
+      <text x="26" y="77" fill="#3a2a2a">6</text>
+      <text x="50" y="77" fill="#3a2a2a">9</text>
+      <text x="74" y="77" fill="#c9bdb0">1</text>
+    </g>
+  </g>
+  <path d="M84 12l1.6 4.4 4.4 1.6-4.4 1.6L84 24l-1.6-4.4-4.4-1.6 4.4-1.6z" fill="#fff"/>
+  <path d="M12 80l1.1 2.9 2.9 1.1-2.9 1.1L12 88l-1.1-2.9-2.9-1.1 2.9-1.1z" fill="#fff" opacity=".9"/>
+</svg>

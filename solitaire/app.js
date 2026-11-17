@@ -13,6 +13,9 @@ import { installSprite, faceHTML } from './cardface.js';
 import { BACKS, DEFAULT_BACK, backDataURL } from './data/backs.js';
 import { TABLES, DEFAULT_TABLE, tableBackground } from './data/tables.js';
 import { nextDeal, dailyDeal, DAILY_VARIANTS, dayLabel, solve } from './deals.js';
+import { gameMenu, menuSection } from '../shared/gamemenu.js';
+import { showTutorial, maybeShowTutorial, tutorialSeen } from '../shared/tutorial.js';
+import { tutorialSteps } from './howto.js';
 
 const GAME_ID = 'solitaire';
 const app = document.getElementById('app');
@@ -92,19 +95,6 @@ function miniCard(code, { x = 0, y = 0, rot = 0, up = true } = {}) {
   return el;
 }
 
-function miniArt(kind) {
-  const box = h('div.mini');
-  const S = makeCode;
-  if (kind === 'klondike') {
-    box.append(miniCard(-1, { x: 2, y: 4, rot: -10, up: false }), miniCard(S(1, 13), { x: 22, y: 2, rot: -2 }), miniCard(S(0, 1), { x: 44, y: 6, rot: 9 }));
-  } else if (kind === 'spider') {
-    [13, 12, 11, 10].forEach((r, i) => box.append(miniCard(S(0, r), { x: 12 + i * 14, y: i * 6, rot: 0 })));
-  } else {
-    box.append(miniCard(S(3, 12), { x: 4, y: 2, rot: -8 }), miniCard(S(2, 9), { x: 26, y: 0, rot: 0 }), miniCard(S(1, 1), { x: 48, y: 4, rot: 8 }));
-  }
-  return box;
-}
-
 // ================================================================ Router
 
 let game = null;
@@ -146,120 +136,112 @@ function showMenu() {
   app.classList.add('sol-menu');
   const mode = selectedMode();
   const fam = familyOf(mode);
+  const stats = loadStats();
+  const e = Stats.entry(stats, mode);
 
-  const top = h('div.topbar', null, backButton('../'), h('div.title', null, 'Solitär'), soundButton());
-  const scroll = h('div.scroll');
-  const wrap = h('div.menu-wrap');
-  scroll.append(wrap);
-  app.append(top, scroll);
-
-  // --- Hero
   const sess = loadSession(mode);
   const running = sess && sess.started && !sess.won;
-  const heroArt = h('div.hero-art');
-  heroArt.append(
-    miniCard(-1, { x: 6, y: 18, rot: -16, up: false }),
-    miniCard(makeCode(1, 13), { x: 34, y: 4, rot: -4 }),
-    miniCard(makeCode(0, 1), { x: 62, y: 14, rot: 12 }),
-  );
-  const playBtn = h('button.btn.primary', { type: 'button' });
-  playBtn.innerHTML = icon('play', { size: 22 }) + (running ? 'Weiter' : 'Spielen');
-  playBtn.addEventListener('click', () => { sfx.play('tap'); go('play/' + mode); });
-  const row = h('div.row', null, playBtn);
-  if (running) {
-    const nb = h('button.btn.ghost', { type: 'button' }, 'Neue Partie');
-    nb.addEventListener('click', async () => {
-      sfx.play('click');
-      const ok = await askAbandon(sess);
-      if (!ok) return;
-      abandonSession(sess);
-      go('play/' + mode);
-    });
-    row.append(nb);
-  }
-  const status = running
-    ? `Partie läuft · ${Stats.formatTime(sess.time)} · ${sess.moves} ${sess.moves === 1 ? 'Zug' : 'Züge'}`
-    : (settings.solvable && mode !== 'spider4' ? 'Nur lösbare Partien' : (mode === 'spider4' ? 'Die Herausforderung' : 'Zufällige Partien'));
-  wrap.append(h('section.hero.card', null, heroArt,
-    h('div.hero-text', null, h('h2', null, MODES[mode].title), h('p', null, `${MODES[mode].game === 'freecell' ? '' : MODES[mode].sub + ' · '}${status}`)),
-    row));
+  const solvableTxt = settings.solvable && mode !== 'spider4' ? 'nur lösbare Partien' : (mode === 'spider4' ? 'die Herausforderung' : 'zufällige Partien');
+  const primary = running
+    ? { label: 'Weiterspielen', sub: `${modeLabel(mode)} · ${Stats.formatTime(sess.time)} · ${sess.moves} ${sess.moves === 1 ? 'Zug' : 'Züge'}`, onClick: () => go('play/' + mode) }
+    : { label: 'Spielen', sub: `${modeLabel(mode)} · ${solvableTxt}`, onClick: () => go('play/' + mode) };
 
-  // --- Spielarten
-  wrap.append(h('h2.section-title', null, 'Spielart'));
-  const modes = h('div.modes');
-  for (const [key, f] of Object.entries(FAMILIES)) {
-    const any = f.modes.some((m) => { const s = loadSession(m); return s && s.started && !s.won; });
-    const wins = f.modes.reduce((n, m) => n + Stats.entry(loadStats(), m).won, 0);
-    const b = h('button.mode-card' + (key === fam ? '.active' : ''), { type: 'button', 'aria-label': f.title },
-      miniArt(key), h('b', null, f.title), h('small', null, wins ? `${wins} ${wins === 1 ? 'Sieg' : 'Siege'}` : f.blurb),
-      any ? h('span.resume-dot', { title: 'Partie läuft' }) : null);
-    b.addEventListener('click', () => {
-      sfx.play('click');
-      const last = store.get('solitaire.variant.' + key, f.modes[0]);
-      store.set('solitaire.mode', f.modes.includes(last) ? last : f.modes[0]);
-      showMenu();
-    });
-    modes.append(b);
-  }
-  wrap.append(modes);
-  const fm = FAMILIES[fam].modes;
-  if (fm.length > 1) {
-    const vars = h('div.variants');
-    for (const m of fm) {
-      const c = h('button.chip' + (m === mode ? '.active' : ''), { type: 'button' }, MODES[m].sub);
-      c.addEventListener('click', () => {
-        sfx.play('click');
-        store.set('solitaire.mode', m);
-        store.set('solitaire.variant.' + fam, m);
-        showMenu();
-      });
-      vars.append(c);
-    }
-    wrap.append(vars);
-  }
+  const kd = dailyDone('klondike');
+  const kds = loadSession('daily-klondike');
+  const kdRunning = !kd && kds && kds.day === todayKey() && kds.started;
+  const daily = {
+    label: 'Klondike des Tages', done: kd, streak: dailyStreak(GAME_ID),
+    sub: kdRunning ? `Angefangen · ${kds.moves} Züge` : 'Garantiert lösbar',
+    onClick: () => go('daily'),
+  };
 
-  // --- Tagesrätsel
-  wrap.append(h('h2.section-title', null, 'Tagesrätsel'));
+  const famOptions = Object.entries(FAMILIES).map(([key, f]) => {
+    const v = store.get('solitaire.variant.' + key, f.modes[0]);
+    const m = f.modes.includes(v) ? v : f.modes[0];
+    return { id: key, label: f.title, sub: key === 'freecell' ? 'Alles offen' : MODES[m].sub };
+  });
+
+  // Weitere Tagesrätsel (Spider, FreeCell)
   const dl = h('div.daily-list');
   const now = new Date();
   const months = ['JAN', 'FEB', 'MÄR', 'APR', 'MAI', 'JUN', 'JUL', 'AUG', 'SEP', 'OKT', 'NOV', 'DEZ'];
   for (const [v, info] of Object.entries(DAILY_VARIANTS)) {
+    if (v === 'klondike') continue;
     const done = dailyDone(v);
-    const ds = v === 'klondike' ? dailyStreak(GAME_ID) : 0;
     const dsess = loadSession('daily-' + v);
     const inProgress = !done && dsess && dsess.day === todayKey() && dsess.started;
-    let sub;
-    if (done) sub = `✓ Gelöst${ds > 1 ? ` · Serie ${ds} Tage` : ''}`;
-    else if (inProgress) sub = `Angefangen · ${dsess.moves} Züge`;
-    else sub = v === 'klondike' ? (ds > 0 ? `Serie: ${ds} ${ds === 1 ? 'Tag' : 'Tage'} – weiter so!` : 'Heute neu · garantiert lösbar') : `${MODES[info.mode].game === 'spider' ? '1 Farbe · ' : ''}garantiert lösbar`;
-    const b = h('button.daily-row' + (done ? '.done' : '') + (v === 'klondike' ? '.main' : ''), { type: 'button' },
+    const sub = done ? '✓ Gelöst' : inProgress ? `Angefangen · ${dsess.moves} Züge` : `${v === 'spider' ? '1 Farbe · ' : ''}garantiert lösbar`;
+    const b = h('button.daily-row' + (done ? '.done' : ''), { type: 'button', 'data-daily': v },
       h('span.cal', null, h('i', null, months[now.getMonth()]), h('span', null, String(now.getDate()))),
       h('span.txt', null, h('b', null, info.title), h('small', null, sub)),
       h('span.state', { html: icon(done ? 'check' : 'play', { size: 18 }) }));
-    b.addEventListener('click', () => { sfx.play('tap'); go('daily' + (v === 'klondike' ? '' : '/' + v)); });
+    b.addEventListener('click', () => { sfx.play('tap'); go('daily/' + v); });
     dl.append(b);
   }
-  wrap.append(dl);
 
-  // --- Aktionen
-  const acts = h('div.menu-actions');
-  const act = (ic, label, fn) => {
-    const b = h('button.btn', { type: 'button', html: icon(ic, { size: 24 }) });
-    b.append(label);
-    b.addEventListener('click', () => { sfx.play('click'); fn(); });
-    acts.append(b);
-  };
-  act('star', 'Statistik', () => showStats(mode));
-  act('settings', 'Design', () => showSettings());
-  act('hint', "So geht's", () => showHelp(fam));
-  wrap.append(acts);
-  wrap.append(h('p.menu-foot', null, 'Werbefrei · Rückgängig und Tipps unbegrenzt'));
+  const menu = gameMenu({
+    id: GAME_ID,
+    title: 'Solitär',
+    tagline: 'Klondike, Spider & FreeCell',
+    accent: '#2f9e6e',
+    primary,
+    daily,
+    modes: {
+      label: 'Spielart', value: fam, options: famOptions,
+      onChange(key) {
+        const f = FAMILIES[key];
+        const last = store.get('solitaire.variant.' + key, f.modes[0]);
+        store.set('solitaire.mode', f.modes.includes(last) ? last : f.modes[0]);
+        const y = menu.scroller.scrollTop;
+        showMenu();
+        const sc = app.querySelector('.gm-scroll');
+        if (sc) sc.scrollTop = y;
+      },
+    },
+    secondary: [
+      { label: 'Statistik', icon: 'star', onClick: () => showStats(mode) },
+      { label: 'Design', icon: 'settings', onClick: () => showSettings() },
+      { label: 'Regeln', icon: 'grid', onClick: () => showHelp(fam) },
+    ],
+    stats: [
+      { label: 'Gewonnen', value: e.won },
+      { label: 'Quote', value: e.played ? Stats.winRate(e) + '%' : '–' },
+      { label: 'Bestzeit', value: Stats.formatTime(e.bestTime) },
+      { label: 'Serie', value: e.streak },
+    ],
+    sections: [menuSection('Weitere Tagesrätsel', dl)],
+    onHelp: () => showTutorialNow(),
+  });
+  app.append(menu);
+
+  // Variante (Ziehe 1/3, 1/2/4 Farben) direkt unter der Spielart
+  const fm = FAMILIES[fam].modes;
+  const seg = menu.querySelector('.gm-seg');
+  if (fm.length > 1 && seg) {
+    const vars = h('div.variants');
+    for (const m of fm) {
+      const c = h('button.chip' + (m === mode ? '.active' : ''), { type: 'button', 'data-mode': m }, MODES[m].sub);
+      c.addEventListener('click', () => {
+        if (m === mode) return;
+        sfx.play('click');
+        store.set('solitaire.mode', m);
+        store.set('solitaire.variant.' + fam, m);
+        const y = menu.scroller.scrollTop;
+        showMenu();
+        const sc = app.querySelector('.gm-scroll');
+        if (sc) sc.scrollTop = y;
+      });
+      vars.append(c);
+    }
+    seg.after(vars);
+  }
 
   report();
-  if (!store.get('solitaire.helpSeen', false)) {
-    store.set('solitaire.helpSeen', true);
-    setTimeout(() => showHelp(fam, true), 350);
-  }
+  maybeShowTutorial({ id: GAME_ID, steps: tutorialSteps(settings), accent: '#2f9e6e' });
+}
+
+function showTutorialNow() {
+  return showTutorial({ id: GAME_ID, steps: tutorialSteps(settings), accent: '#2f9e6e' });
 }
 
 function setThemeColor(c) {
@@ -304,10 +286,15 @@ async function openGame({ mode, daily }) {
     sess = loadSession(mode);
     if (!sess || sess.won) sess = null;
   }
-  game = new Game(sess, mode || DAILY_VARIANTS[daily].mode);
-  game.mount();
-  if (!sess) await game.deal();
-  else game.show(!!sess.fresh);
+  const g = new Game(sess, mode || DAILY_VARIANTS[daily].mode);
+  game = g;
+  g.mount();
+  if (!tutorialSeen(GAME_ID)) {
+    await maybeShowTutorial({ id: GAME_ID, steps: tutorialSteps(settings), accent: '#2f9e6e' });
+    if (g.dead) return;
+  }
+  if (!sess) await g.deal();
+  else g.show(!!sess.fresh);
 }
 
 class Game {
@@ -337,7 +324,9 @@ class Game {
     const snd = soundButton();
     snd.classList.add('white-btn');
     const hud = h('div.hud', null, this.hudTitle, h('small', null, this.hudTime, this.hudMoves));
-    this.top = h('div.topbar.game-top', null, back, hud, snd);
+    const helpB = h('button.icon-btn.white-btn', { type: 'button', 'aria-label': 'So geht’s', html: '<span class="gm-q">?</span>' });
+    helpB.addEventListener('click', () => { sfx.play('click'); showTutorialNow(); });
+    this.top = h('div.topbar.game-top', null, back, hud, helpB, snd);
     this.boardEl = h('div.sol-board');
     const tb = h('div.toolbar');
     const tool = (ic, label, fn) => {
@@ -573,6 +562,8 @@ class Game {
     this.renderHud();
     this.save();
     report();
+    if (this.s.hist.length) this.hideCoach(true);
+    else if (initial) this.showCoach();
     if (isWon(this.st)) { if (!this.s.won) this.win(); return; }
     this.updateFinish();
     const key = this.s.hist.length;
@@ -580,6 +571,45 @@ class Game {
       this.stuckAt = key;
       setTimeout(() => { if (!this.dead && this.s.hist.length === key && !this.busy) this.showStuck(); }, 700);
     }
+  }
+
+  // ---------------------------------------------------------- Erster Hinweis (Coach-Mark)
+
+  /** Beim allerersten Spiel: pulsierender Ring um den ersten sinnvollen Zug. */
+  showCoach() {
+    if (this.coachEl || this.s.won || this.s.hist.length || store.get('solitaire.coached', false)) return;
+    const st = this.st;
+    const hnt = findHint(st);
+    if (!hnt) return;
+    const g = this.board.geo;
+    const L = LAYOUTS[st.game];
+    let r;
+    if (hnt.kind === 'stock') r = this.board.pileRect(L.stock, true);
+    else {
+      const ids = st.piles[hnt.from].slice(hnt.index);
+      const T = this.board.targets();
+      const y0 = T[ids[0]].y, y1 = T[ids[ids.length - 1]].y;
+      r = { x: T[ids[0]].x, y: y0, w: g.cw, h: y1 - y0 + g.ch };
+    }
+    const tipText = hnt.kind === 'stock' ? 'Tippe auf den Talon' : 'Tippe diese Karte an';
+    const ring = h('div.coach-ring');
+    ring.style.cssText = `left:${r.x - 5}px;top:${r.y - 5}px;width:${r.w + 10}px;height:${r.h + 10}px`;
+    const bubble = h('div.coach-bubble', null, tipText);
+    const below = r.y + r.h + 46 < g.H;
+    bubble.classList.toggle('above', !below);
+    bubble.style.top = (below ? r.y + r.h + 12 : r.y - 44) + 'px';
+    bubble.style.left = Math.max(8, Math.min(g.W - 190, r.x + r.w / 2 - 95)) + 'px';
+    this.coachEl = h('div.coach', null, ring, bubble);
+    this.boardEl.append(this.coachEl);
+  }
+
+  hideCoach(done = false) {
+    if (done && !store.get('solitaire.coached', false) && this.s.hist.length) store.set('solitaire.coached', true);
+    if (!this.coachEl) return;
+    const el = this.coachEl;
+    this.coachEl = null;
+    el.classList.add('out');
+    setTimeout(() => el.remove(), 260);
   }
 
   // ---------------------------------------------------------- Tipp / Fertigstellen
@@ -958,11 +988,11 @@ const HELP = {
   },
 };
 
-function showHelp(fam = 'klondike', first = false) {
+function showHelp(fam = 'klondike') {
   const content = h('div.sheet');
   const seg = h('div.seg');
   const body = h('div.help-body');
-  let cur = first ? 'bedienung' : fam;
+  let cur = fam;
   const render = () => {
     seg.querySelectorAll('button').forEach((b) => b.classList.toggle('active', b.dataset.k === cur));
     const d = HELP[cur];
@@ -979,7 +1009,7 @@ function showHelp(fam = 'klondike', first = false) {
   }
   content.append(h('div.help-tabs', null, seg), body);
   render();
-  return showModal({ title: first ? 'Willkommen bei Solitär' : "So geht's", content, buttons: [{ label: first ? 'Los geht’s' : 'Alles klar', value: true, primary: true }] });
+  return showModal({ title: 'Regeln', content, buttons: [{ label: 'Alles klar', value: true, primary: true }] });
 }
 
 // ================================================================ Start

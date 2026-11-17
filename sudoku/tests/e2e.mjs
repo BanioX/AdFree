@@ -229,6 +229,8 @@ async function main() {
   await shot(page, '13-settings');
   // «3 Fehler»-Modus einschalten, Thema Salbei
   await tapLoc(page, page.locator('.set-row', { hasText: '3 Fehler' }).locator('input'));
+  const dotBg = await page.locator('.theme-dots button[aria-label="Salbei"]').evaluate((b) => getComputedStyle(b).backgroundColor);
+  assert.notEqual(dotBg, 'rgba(0, 0, 0, 0)', 'Farbpunkt sichtbar');
   await tapLoc(page, page.locator('.theme-dots button[aria-label="Salbei"]'));
   await closeModal(page, 'Fertig');
 
@@ -237,6 +239,8 @@ async function main() {
   await page.waitForSelector('.screen.stats');
   await page.waitForTimeout(400);
   await shot(page, '14-stats');
+  const statTxt = await page.locator('.stats-panel').textContent();
+  assert.ok(/Ø Fehler/.test(statTxt) && /Bestzeit/.test(statTxt), 'Statistik pro Stufe');
   await tapSel(page, '.screen.stats .topbar .icon-btn');
   await page.waitForSelector('.screen.menu');
 

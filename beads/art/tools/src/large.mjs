@@ -3,6 +3,23 @@ import { Grid, sym, obj, background, rles } from '../raster.mjs';
 const P = (rows, odd) => Grid.parse(sym(rows, odd));
 const H = (specs, half, odd) => Grid.parse(sym(rles(specs, half), odd));
 
+/** Herzform (Mittelpunkt cx/cy, Grösse s, Drehung rot im Bogenmass). */
+export function heart(cx, cy, s, rot = 0) {
+  const c = Math.cos(rot), si = Math.sin(rot);
+  return (px, py) => {
+    const dx = (px - cx) / s, dy = (cy - py) / s;
+    const X = dx * c - dy * si, Y = dx * si + dy * c + 0.1;
+    return (X * X + Y * Y - 1) ** 3 - X * X * Y ** 3 <= 0;
+  };
+}
+/** Punkt der Herzspitze in Rasterkoordinaten. */
+function heartTip(cx, cy, s, rot = 0) {
+  const X = 0, Y = -1.1;
+  const c = Math.cos(-rot), si = Math.sin(-rot);
+  const dx = X * c - Y * si, dy = X * si + Y * c;
+  return [Math.round(cx + dx * s - 0.5), Math.round(cy - dy * s - 0.5)];
+}
+
 export default [
   {
     id: 'kaffeetasse', title: 'Kaffeetasse', category: 'Essen',
@@ -207,4 +224,152 @@ export default [
       g.paint((px, py, x, y) => y === 23 && x % 4 !== 0, 'w', { on: 'b' });
       return g;
     },
-  },];
+  },  {
+    id: 'herzballons', title: 'Herzballons', category: 'Liebe',
+    palette: { k: '#5a1a32', r: '#f2385a', R: '#c21f45', l: '#ffc2d2', p: '#ff8fc0', v: '#a678f0', w: '#ffffff', s: '#8a7a88', B: '#d8e8ff' },
+    build() {
+      const g = new Grid(22, 24);
+      const knot = [11, 19];
+      const balloons = [
+        [5.6, 11.2, 3.6, 0.38, 'p'],
+        [16.4, 11.2, 3.6, -0.38, 'v'],
+        [11, 7.4, 5.0, 0, 'r'],
+      ];
+      for (const [cx, cy, s, rot] of balloons) {
+        const [tx, ty] = heartTip(cx, cy, s, rot);
+        g.line(tx, ty + 1, knot[0], knot[1], 's');
+      }
+      for (const [cx, cy, s, rot, c] of balloons) {
+        obj(g, (l) => l.paint(heart(cx, cy, s, rot), c));
+        const hx = cx - s * 0.45, hy = cy - s * 0.55;
+        g.ellipse(hx, hy, s * 0.22, s * 0.16, c === 'r' ? 'l' : 'w', { on: c });
+      }
+      g.rimShade('r', { lo: 'R', region: 'rl', lx: -1, ly: -1 });
+      g.stamp(9, 19, ['rr.rr', '.rkr.', '.s.s.', 's...s'], { not: '' });
+      background(g, (x, y) => 'B');
+      for (const [cx, cy, rx, ry] of [[3, 2.6, 2.6, 1.2], [19.5, 19.2, 2.8, 1.3], [3.5, 21, 2.5, 1.1], [19.5, 2, 2, 1]]) g.ellipse(cx, cy, rx, ry, 'w', { on: 'B' });
+      return g;
+    },
+  },
+  {
+    id: 'kuerbis', title: 'Kürbis', category: 'Jahreszeiten',
+    palette: { k: '#4a2a14', o: '#ff8a2a', O: '#d0582a', l: '#ffc27a', n: '#7a4a2e', g: '#5cb85a', G: '#2f7f3a', r: '#c9283e', B: '#fdeccd' },
+    build() {
+      const g = new Grid(26, 22);
+      const lobes = [[5.2, 4.2, 6.0], [9.1, 4.6, 6.9], [13, 4.8, 7.3], [16.9, 4.6, 6.9], [20.8, 4.2, 6.0]];
+      const cy = 14.1;
+      const lobeAt = (px, py) => {
+        let best = -1, bv = 1;
+        lobes.forEach(([cx, rx, ry], i) => {
+          const v = ((px - cx) / rx) ** 2 + ((py - cy) / ry) ** 2;
+          if (v <= 1 && (best < 0 || v < bv - 0.02 || (Math.abs(v - bv) <= 0.02 && Math.abs(i - 2) < Math.abs(best - 2)))) { best = i; bv = v; }
+        });
+        return best;
+      };
+      // Stiel und Blatt
+      obj(g, (l) => { l.poly([[12, 8], [12.4, 4.2], [14, 2.4], [15.2, 3.2], [14.2, 4.8], [14.2, 8]], 'n'); });
+      obj(g, (l) => { l.ellipse(18.6, 5.2, 3.6, 1.7, 'g'); l.ellipse(9.2, 6.2, 2.4, 1.2, 'g'); });
+      g.line(16, 5, 21, 5, 'G', { on: 'g' });
+      g.line(8, 6, 10, 6, 'G', { on: 'g' });
+      const body = g.layer();
+      body.paint((px, py) => lobeAt(px, py) >= 0, 'o');
+      for (let y = 0; y < g.h; y++) for (let x = 0; x < g.w; x++) {
+        const i = lobeAt(x + 0.5, y + 0.5);
+        if (i < 0) continue;
+        const j = lobeAt(x + 1.5, y + 0.5);
+        if (j >= 0 && j !== i) body.set(i < 2 ? x : x + 1, y, 'O');
+        const [cx, rx, ry] = lobes[i];
+        const dx = (x + 0.5 - cx) / rx, dy = (y + 0.5 - cy) / ry;
+        if (dx < -0.05 && dx > -0.6 && dy < -0.25 && dy > -0.8 && dx * dx + dy * dy < 0.5) body.set(x, y, 'l');
+      }
+      body.outline('k');
+      g.over(body);
+      g.paint((px, py, x, y) => y >= 20, 'O', { on: 'o' });
+      background(g, 'B');
+      for (const [x, y, c] of [[2, 2, 'r'], [3, 2, 'r'], [3, 3, 'r'], [22, 1, 'n'], [23, 1, 'n'], [22, 2, 'n'], [1, 8, 'G'], [2, 9, 'G'], [24, 9, 'r'], [24, 10, 'r'], [25, 10, 'r'], [6, 0, 'n'], [7, 1, 'n']]) g.set(x, y, c, { on: 'B' });
+      return g;
+    },
+  },
+  {
+    id: 'heissluftballon', title: 'Heissluftballon', category: 'Dinge',
+    palette: { k: '#2a2440', r: '#ef3b4f', y: '#ffd23f', b: '#3f8ef0', n: '#a8683a', N: '#7a4626', w: '#ffffff', B: '#bfe3ff' },
+    build() {
+      const g = new Grid(22, 26);
+      const cx = 11, cy = 10.2;
+      const rxAt = (py) => (py <= cy ? 9.2 * Math.sqrt(Math.max(0, 1 - ((py - cy) / 8.6) ** 2)) : 9.2 - 5.6 * Math.min(1, (py - cy) / 9) ** 1.3);
+      const inEnv = (px, py) => py >= cy - 8.6 && py <= 19.2 && Math.abs(px - cx) <= rxAt(py);
+      obj(g, (l) => {
+        l.paint(inEnv, (x, y) => {
+          const u = Math.max(-1, Math.min(1, (x + 0.5 - cx) / Math.max(0.5, rxAt(y + 0.5))));
+          const i = Math.min(6, Math.floor((Math.asin(u) / (Math.PI / 2) + 1) * 3.5));
+          return i % 2 ? 'y' : 'r';
+        });
+        l.paint((px, py) => inEnv(px, py) && py > 14.2 && py < 16.4, 'b');
+      });
+      g.line(8, 19, 9, 21, 'k'); g.line(14, 19, 13, 21, 'k');
+      obj(g, (l) => { l.rect(7.8, 21, 6.4, 4.2, 'n'); });
+      g.paint((px, py, x, y) => (x + (y % 2)) % 2 === 0, 'N', { on: 'n' });
+      g.line(8, 22, 13, 22, 'N', { on: 'nN' });
+      background(g, 'B');
+      for (const [ex, ey, rx, ry] of [[2.6, 3, 2.6, 1.1], [19.5, 15.5, 2.8, 1.2], [3.5, 20.5, 3, 1.2], [20, 2, 2, 0.9]]) g.ellipse(ex, ey, rx, ry, 'w', { on: 'B' });
+      for (const [x, y] of [[17, 22], [18, 21], [19, 22], [1, 10], [2, 9], [3, 10]]) g.set(x, y, 'k', { on: 'B' });
+      return g;
+    },
+  },
+  {
+    id: 'schildkroete', title: 'Schildkröte', category: 'Tiere',
+    palette: { k: '#3a2a1a', o: '#d98e4f', O: '#9a5a2a', y: '#f6c35a', s: '#8fd06a', p: '#ff9db5', w: '#ffffff', g: '#3f9a4a', S: '#f6e2b3', B: '#cdf3f0' },
+    build() {
+      const g = new Grid(26, 22);
+      const scx = 11.5, scy = 14.4, srx = 8.6, sry = 8.2;
+      obj(g, (l) => {
+        l.rect(4.4, 13, 3.4, 4.6, 's'); l.rect(14.6, 13, 3.4, 4.6, 's');
+        l.poly([[2, 13.6], [4.6, 12.4], [4.6, 14.6]], 's');
+      });
+      obj(g, (l) => { l.rect(17.4, 9.6, 3.2, 3.2, 's'); l.circle(21.4, 9.3, 3.1, 's'); });
+      obj(g, (l) => {
+        l.paint((px, py) => py <= scy && ((px - scx) / srx) ** 2 + ((py - scy) / sry) ** 2 <= 1, 'o');
+        l.rect(scx - srx - 0.6, scy - 1.6, 2 * srx + 1.2, 1.9, 'y');
+      });
+      g.paint((px, py) => {
+        const dx = (px - scx) / srx, dy = (py - scy) / sry;
+        const r = Math.hypot(dx, dy);
+        const a = Math.atan2(dy, dx);
+        const ring = r > 0.5 && r < 0.66;
+        const spoke = r >= 0.66 && [-2.36, -1.57, -0.78].some((t) => Math.abs(a - t) < 0.13 / r);
+        return ring || spoke;
+      }, 'O', { on: 'o' });
+      g.ellipse(scx - 1.6, scy - 5.6, 1.6, 0.8, 'y', { on: 'o' });
+      g.set(22, 8, 'k'); g.set(22, 7, 'w', { on: 's' }); g.set(23, 10, 'p');
+      g.set(20, 11, 'k'); g.set(21, 11, 'k');
+      background(g, (x, y) => (y >= 18 ? 'S' : 'B'));
+      for (const [x, y] of [[1, 17], [2, 16], [2, 17], [23, 17], [24, 16], [24, 17], [25, 17]]) g.set(x, y, 'g', { on: 'B' });
+      for (const [cx, cy, rx, ry] of [[4, 3, 2.8, 1.1], [20.5, 2.2, 2.4, 1]]) g.ellipse(cx, cy, rx, ry, 'w', { on: 'B' });
+      for (const [x, y] of [[3, 20], [4, 20], [19, 19], [11, 21], [12, 21]]) g.set(x, y, 'y', { on: 'S' });
+      return g;
+    },
+  },
+  {
+    id: 'segelboot', title: 'Segelboot', category: 'Dinge',
+    palette: { k: '#2a2a40', w: '#ffffff', c: '#e6d6b8', r: '#e8433f', n: '#8b5a3c', b: '#3f8ef0', d: '#2559b8', y: '#ffd23f', B: '#bfe3ff' },
+    build() {
+      const g = new Grid(28, 26);
+      obj(g, (l) => {
+        l.poly([[13.6, 3.4], [13.6, 16.6], [5.4, 16.6]], 'w');
+        l.poly([[15.4, 5.4], [15.4, 16.6], [22.6, 16.6]], 'w');
+      });
+      g.paint((px, py) => py > 12.5, 'c', { on: 'w' });
+      g.line(14, 2, 14, 17, 'n');
+      obj(g, (l) => l.poly([[14.5, 1.2], [18.6, 2.2], [14.5, 3.2]], 'r'));
+      obj(g, (l) => l.poly([[4.6, 17.4], [23.8, 17.4], [21, 21.4], [7.4, 21.4]], 'r'));
+      g.paint((px, py, x, y) => y === 19, 'w', { on: 'r' });
+      background(g, (x, y) => (y >= 21 ? (y >= 23 ? 'd' : 'b') : 'B'));
+      g.paint((px, py, x, y) => y >= 19 && y <= 20 && g.get(x, y) === 'B', 'b');
+      g.paint((px, py, x, y) => (y === 19 && x % 5 < 2) || (y === 22 && (x + 2) % 6 < 2) || (y === 24 && (x + 4) % 7 < 2), 'w', { on: 'bd' });
+      obj(g, (l) => l.circle(4.5, 4.5, 3, 'y'), null);
+      for (const [cx, cy, rx, ry] of [[24, 4, 3, 1.1], [9, 1.4, 2.2, 0.9], [22, 11, 2.2, 0.9]]) g.ellipse(cx, cy, rx, ry, 'w', { on: 'B' });
+      for (const [x, y] of [[19, 7], [20, 6], [21, 7], [8, 9], [9, 8], [10, 9]]) g.set(x, y, 'k', { on: 'B' });
+      return g;
+    },
+  },
+];

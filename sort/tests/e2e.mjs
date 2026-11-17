@@ -171,12 +171,15 @@ step('Viele Gläser');
 await page.evaluate(() => {
   localStorage.setItem('spielpause.sort.progress', JSON.stringify({ level: 125, stars: {} }));
 });
-await page.goto(BASE + '#replay/101');
+await page.evaluate(() => { history.replaceState(null, '', '#replay/101'); });
+await page.reload();
 await waitBoard();
 if (await modalOpen()) await closeModal();
 assert.equal(await page.evaluate(() => window.__sort.game.run.state.tubes.length), 16);
 await shot('10-sixteen');
-await page.goto(BASE + '#replay/120');
+await page.waitForTimeout(400);
+await page.evaluate(() => { location.hash = 'replay/120'; });
+await page.waitForFunction(() => window.__sort.game && window.__sort.game.run && window.__sort.game.run.n === 120, null, { timeout: 20000 });
 await waitBoard();
 while (await modalOpen()) await closeModal();
 await shot('11-geheimnis');

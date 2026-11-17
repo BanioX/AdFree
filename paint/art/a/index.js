@@ -5,4 +5,5 @@ export const pictures = [
   { id: "a-schmetterling", title: "Schmetterling auf Blüte", category: "Tiere", load: () => import('./schmetterling.js').then((m) => m.default) },
   { id: "a-seerose", title: "Seerose", category: "Blumen", load: () => import('./seerose.js').then((m) => m.default) },
   { id: "a-sonnenblumen", title: "Sonnenblumen in Vase", category: "Blumen", load: () => import('./sonnenblumen.js').then((m) => m.default) },
+  { id: "a-igel", title: "Igel mit Pilzen", category: "Tiere", load: () => import('./igel.js').then((m) => m.default) },
 ];

@@ -120,7 +120,7 @@ Mehrere KI-Agenten bauen parallel – Zuständigkeiten und Regeln stehen in [AGE
 | 72 | Schlängel (Snake) | ✅ |
 | 73 | Mauerbrecher | ✅ |
 | 74 | Turmbau – Blöcke stapeln | ✅ |
-| 75 | Fallende Blöcke | 📋 |
+| 75 | Fallende Blöcke | ✅ |
 
 ## Welle 4 · offen
 

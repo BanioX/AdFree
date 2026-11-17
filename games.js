@@ -76,6 +76,7 @@ export const games = [
   { id: 'schlange', title: 'Schlängel', title_en: 'Snake', tile: 'Schlängel', tile_en: 'Snake', subtitle: 'Tippe die Richtung, sammle Futter', subtitle_en: 'Tap a direction, gather food', category: 'action', color: '#3c8d4e', added: '2026-11-17' },
   { id: 'mauer', title: 'Mauerbrecher', title_en: 'Brick Break', tile: 'Mauer\u00ADbrecher', tile_en: 'Brick Break', subtitle: 'Schläger ziehen, Steine treffen', subtitle_en: 'Drag the paddle, hit the bricks', category: 'action', color: '#c45c26', added: '2026-11-17' },
   { id: 'turm', title: 'Turmbau', title_en: 'Tower', tile: 'Turmbau', tile_en: 'Tower', subtitle: 'Tippe, der Block fällt', subtitle_en: 'Tap, the block drops', category: 'action', color: '#c4843a', added: '2026-11-17' },
+  { id: 'bloecke', title: 'Fallende Blöcke', title_en: 'Falling Blocks', tile: 'Fallende\u00A0Blöcke', tile_en: 'Falling\u00A0Blocks', subtitle: 'Schieben, drehen, Reihen leeren', subtitle_en: 'Slide, turn, clear the rows', category: 'action', color: '#2f7de1', added: '2026-11-17' },
 ];
 
 /** Titel/Untertitel/Kachelname in der aktuellen Sprache */

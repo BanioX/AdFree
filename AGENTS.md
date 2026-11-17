@@ -29,6 +29,9 @@ Wer eine Welle übernimmt, trägt sich hier und in `ROADMAP.md` ein.
 - **Gemeinsame Dateien** nur so ändern:
   - `games.js` – eigene Einträge **anhängen** (eine Zeile pro Spiel), nie fremde Einträge ändern,
     löschen oder umsortieren. Neue Kategorien nur am Ende der Liste ergänzen.
+    **Jedes neue Spiel setzt `builder`** (z.B. `'claude'` oder `'grok'`, eine id aus `builders`).
+    Wer neu dazukommt, hängt sich in `builders` an: eigene Farbe und ein eigenes abstraktes Zeichen
+    unter `shared/builders/<id>.svg`. Keine Markenlogos (kein Claude-, Grok- oder Firmenzeichen).
   - `ROADMAP.md` – nur den Stand (📋 → 🔧 → ✅) in den **eigenen** Zeilen ändern.
   - `CHANGELOG.md` – neuen Eintrag mit Datum **oben** einfügen, mit Kürzel, z.B. «(Grok)».
   - `README.md` – nur die Spieltabelle um eigene Spiele ergänzen und die Spielezahl aktualisieren.
@@ -66,7 +69,7 @@ immer funktionieren. Unfertige Spiele erst in `games.js` eintragen, wenn sie spi
 ## Fertig heisst
 
 Ein Spiel ist fertig, wenn es: **auf Deutsch und Englisch** vollständig spielbar ist (inkl. `title_en`/`subtitle_en`
-in `games.js`), eigenes Logo hat, Startbildschirm + animierte Anleitung hat, auf
+und **`builder`** in `games.js`), eigenes Logo hat, Startbildschirm + animierte Anleitung hat, auf
 dem iPhone (375–430 px breit) ohne Scrollen spielbar ist, Spielstand speichert, keine
 Konsolenfehler wirft, Tests hat, mehrere Runden lang **Spass macht** und in `games.js`,
 `ROADMAP.md`, `CHANGELOG.md` und `README.md` eingetragen ist.

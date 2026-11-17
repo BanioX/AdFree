@@ -2,6 +2,11 @@
 
 Was in Spielpause neu dazukommt. Neueste Einträge oben.
 
+## 17. November 2026 (Katalog)
+
+### Verbessert (Grok)
+- **Startseite**: Die Spiele stehen nach Erbauer («Gebaut mit Claude», «Gebaut mit Grok»), mit Plakette, Zahl und kleinem Zeichen auf jeder Kachel. Kategorien, Suche, Favoriten und «Zuletzt gespielt» bleiben. In `games.js` hat jedes Spiel ein Feld `builder`.
+
 ## 17. November 2026 (spät)
 
 ### Neu (Grok)

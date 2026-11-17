@@ -12,10 +12,12 @@ und sie startet wie eine normale App – im Vollbild und auch offline. Alle Spie
 
 ## Die Spiele
 
-Die Startseite ist ein **Spielkatalog** mit 4 Kacheln pro Reihe: Suche, Favoriten (langes Drücken auf
-eine Kachel), «Zuletzt gespielt», Abschnitte pro Kategorie und eine Leiste mit den **Tagesrätseln**
-(jeden Tag neu, mit Serien-Zähler). Der **Ton** ist leise und sanft, hält sich an den Stumm-Schalter des
-iPhones und lässt sich mit dem Lautsprecher-Knopf auf leise / normal / aus stellen.
+Die Startseite ist ein **Spielkatalog** mit 4 Kacheln pro Reihe. Die Spiele sind nach **Erbauer**
+gruppiert («Gebaut mit Claude», «Gebaut mit Grok»), jede Kachel mit einem kleinen Zeichen. Suche,
+Favoriten (langes Drücken auf eine Kachel), «Zuletzt gespielt» und die Kategorien bleiben – als Filter
+und als Untergruppen. Dazu eine Leiste mit den **Tagesrätseln** (jeden Tag neu, mit Serien-Zähler).
+Der **Ton** ist leise und sanft, hält sich an den Stumm-Schalter des iPhones und lässt sich mit dem
+Lautsprecher-Knopf auf leise / normal / aus stellen.
 
 | Spiel | Kategorie | Worum es geht | Inhalt | Tagesrätsel |
 |---|---|---|---|:-:|
@@ -129,11 +131,12 @@ unter <https://baniox.github.io/AdFree/>.
 ## Erweitern
 
 Die App ist darauf ausgelegt, stetig zu wachsen. Mehrere KI-Agenten bauen parallel daran
-(Claude: bestehende Spiele + Welle 1, Grok: Welle 2 und Welle 3) – die gemeinsamen Regeln
-stehen in [`AGENTS.md`](AGENTS.md), Probleme in fremden Spielen in [`HINWEISE.md`](HINWEISE.md).
+(Claude: bestehende Spiele + Welle 1, Grok: Welle 2, Welle 3 und die Retro-Bosse). Die Startseite
+gruppiert danach. Die gemeinsamen Regeln stehen in [`AGENTS.md`](AGENTS.md), Probleme in fremden
+Spielen in [`HINWEISE.md`](HINWEISE.md).
 
 - **Neues Spiel:** Ordner `/<id>/` anlegen, Kachel-Icon `/icons/games/<id>.svg` zeichnen, Eintrag in
-  [`games.js`](games.js) ergänzen – die Startseite zeigt es automatisch (14 Tage mit «Neu»-Abzeichen).
+  [`games.js`](games.js) ergänzen (inkl. `builder`) – die Startseite zeigt es automatisch (14 Tage mit «Neu»-Abzeichen).
   Startbildschirm und Anleitung kommen aus den gemeinsamen Bausteinen. Details und Regeln: [`DEV.md`](DEV.md).
 - **Neuer Inhalt für ein bestehendes Spiel** (Bilder, Level, Wortlisten, Themen, Layouts): liegt als
   einfache Datendatei im Ordner `/<spiel>/data/`. Jedes Spiel erklärt in seiner `CONTENT.md`, wie man
@@ -146,7 +149,7 @@ stehen in [`AGENTS.md`](AGENTS.md), Probleme in fremden Spielen in [`HINWEISE.md
 
 ```
 index.html            Startseite (Spielkatalog)
-games.js              Verzeichnis aller Spiele (Titel, Kategorie, Farbe, Tagesrätsel)
+games.js              Verzeichnis aller Spiele (Titel, Kategorie, Erbauer, Farbe, Tagesrätsel)
 shared/               gemeinsame Bausteine: Styles, Speicher, Sounds, Dialoge,
                       Startbildschirm (gamemenu.js), Tutorial (tutorial.js)
 <spiel>/              ein Ordner pro Spiel (index.html, app.js, data/, tests/, CONTENT.md)

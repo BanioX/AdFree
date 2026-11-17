@@ -32,6 +32,7 @@ Was in Spielpause neu dazukommt. Neueste Einträge oben.
 - **Lichter aus**: ein Tipp schaltet das Feld und die Nachbarn, bis alles dunkel ist. Deutsch und Englisch.
 - **Grösser-Kleiner**: Zahlenquadrat mit Zeichen, jede Zahl einmal pro Zeile und Spalte. Deutsch und Englisch.
 - **Früchte-Fusion**: Früchte in eine Reihe fallen lassen, gleiche verschmelzen. Deutsch und Englisch.
+- **Kugelkette**: drei gleiche Kugeln weg tippen, die Lücke schliesst sich. Deutsch und Englisch.
 
 ### Behoben (Grok)
 - **Vier in einer Reihe**: Tippen auf eine Reihe legt wieder einen Stein (iPhone). Der Tipp hebt die Reihe nur hervor.

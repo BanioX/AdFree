@@ -17,6 +17,7 @@ erzeugt und von `/paint/art/index.js` mit den Bildern von Team B zusammengeführ
 | igel | a-igel | Igel mit Pilzen | Tiere |
 | fuchs | a-fuchs | Fuchs im Herbstlaub | Tiere |
 | koi | a-koi | Koi im Teich | Tiere |
+| katze | a-katze | Katze am Fenster | Tiere |
 | eule | a-eule | Eule bei Mondschein | Tiere |
 
 ## Ein neues Bild hinzufügen

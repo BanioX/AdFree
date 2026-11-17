@@ -478,7 +478,7 @@ export class BoardView {
     // Tipp
     if (this.hint && this.hint.v && !drag) {
       const t = (now - this.hint.t0) / 1000;
-      if (t > 3.2 || !game.tray[this.hint.slot]) this.hint = null;
+      if ((t > 3.2 && !this.hint.persist) || game.tray[this.hint.slot] !== this.hint.v) this.hint = null;
       else {
         busy = true;
         const a = 0.25 + 0.35 * (0.5 + 0.5 * Math.sin(t * Math.PI * 2.4));

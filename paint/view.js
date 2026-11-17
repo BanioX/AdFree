@@ -9,7 +9,7 @@ import { Stage } from './engine/stage.js';
 import { renderExport, luminance } from './engine/render.js';
 import { encodeBits, decodeBits, encodeOrder, decodeOrder, percent } from './engine/progress.js';
 import { loadProgress, saveProgress, removeProgress, updateSummary } from './state.js';
-import { onTap } from './tap.js';
+import { onTap as onPress } from './tap.js';
 import { addStats, loadStats, formatDuration } from './stats.js';
 import { TIPS } from './data/howto.js';
 import { showHowto } from './tutorial.js';
@@ -56,8 +56,8 @@ export function createPaintView(lib, { onBack, onChanged, debug = false } = {}) 
 
   // ---------- Kopfzeile ----------
   backBtn.addEventListener('click', () => { sfx.play('click'); onBack(); });
-  onTap(hintBtn, () => hint());
-  onTap(moreBtn, () => toggleMenu());
+  onPress(hintBtn, () => hint());
+  onPress(moreBtn, () => toggleMenu());
   tlBtn.addEventListener('click', () => { sfx.play('click'); timelapse(); });
   saveBtn.addEventListener('click', () => { sfx.play('click'); exportImage(); });
   galBtn.addEventListener('click', () => { sfx.play('click'); onBack(); });
@@ -219,7 +219,7 @@ export function createPaintView(lib, { onBack, onChanged, debug = false } = {}) 
       const sw = h('button.sw' + (dark ? '.light' : ''), { type: 'button', role: 'option', 'aria-label': `Farbe ${c + 1}` });
       sw.style.setProperty('--c', col);
       sw.innerHTML = `<svg class="sw-ring" viewBox="0 0 48 48" aria-hidden="true"><circle class="trk" cx="24" cy="24" r="21"/><circle class="bar" cx="24" cy="24" r="21" stroke-dasharray="${RING_C.toFixed(2)}" stroke-dashoffset="${RING_C.toFixed(2)}"/></svg><span class="sw-dot"><span class="sw-num">${c + 1}</span><span class="sw-chk">${icon('check', { size: 20, stroke: 3 })}</span></span>`;
-      onTap(sw, () => select(c, true));
+      onPress(sw, () => select(c, true));
       palette.append(sw);
       S.swatches[c] = sw;
       updateSwatch(c);
@@ -686,7 +686,7 @@ export function createPaintView(lib, { onBack, onChanged, debug = false } = {}) 
           id: S.id, selected: S.selected, left: S.left, total: S.total, done: S.done, playing: S.playing,
           cam: { ...st.cam }, fit: st.fitCam(), maxZoom: st.maxZoom, renderMs: st.lastRenderMs,
           renderCount: st.renderCount, order: S.order.slice(), remaining: S.remaining.slice(),
-          autoCount: S.M.auto.reduce((a, b) => a + b, 0), n: S.M.n,
+          autoCount: S.M.auto.reduce((a, b) => a + b, 0), n: S.M.n, coach: !!S.coach,
         };
       },
       model() { return S && S.M; },

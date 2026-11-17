@@ -25,6 +25,8 @@
   backface-visibility: hidden;
 }
 .card { will-change: transform; }
+/* shared/style.css hat eine eigene .card (weisse Kachel) – für Spielkarten neutralisieren */
+.sol-board .card { background: none; box-shadow: none; }
 
 .face, .back {
   position: absolute;
@@ -358,9 +360,10 @@
 .seg button { border: 0; background: none; border-radius: 999px; padding: 6px 12px; font-weight: 800; font-size: 14px; color: var(--text-2); }
 .seg button.active { background: #fff; color: var(--text); box-shadow: 0 1px 3px rgba(0, 0, 0, .12); }
 
-.chips-row { display: flex; gap: 6px; overflow-x: auto; margin: 0 -4px 12px; padding: 2px 4px 4px; scrollbar-width: none; }
+.chips-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin: 0 0 8px; padding: 2px 0; }
 .chips-row::-webkit-scrollbar { display: none; }
-.chips-row .chip { height: 32px; font-size: 13.5px; padding: 0 12px; flex: 0 0 auto; background: var(--surface-2); box-shadow: none; }
+.stat-mode { text-align: center; margin: 2px 0 10px !important; font-weight: 800; color: var(--text) !important; }
+.chips-row .chip { height: 36px; font-size: 13.5px; padding: 0 12px; flex: 0 0 auto; background: var(--surface-2); box-shadow: none; }
 .chips-row .chip.active { background: var(--accent); color: #fff; }
 
 .stat-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }

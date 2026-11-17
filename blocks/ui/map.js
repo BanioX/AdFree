@@ -56,7 +56,7 @@ export function mountMap(app, nav) {
       if (isCur) currentEl = b;
       grid.append(b);
     }
-    const card = h('section.world-card' + (locked ? '.locked' : ''), { style: { '--world': w.data.color, '--tint': w.data.tint } },
+    const card = h('section.world-card' + (locked ? '.locked' : ''), { style: `--world:${w.data.color};--tint:${w.data.tint}` },
       h('div.world-head', null,
         h('span.world-emoji', null, w.data.emoji),
         h('div.kv', null, h('small', null, `Welt ${wi + 1}`), h('b', null, w.title)),

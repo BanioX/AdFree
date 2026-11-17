@@ -6,4 +6,5 @@ export const pictures = [
   { id: 'b-ballone', title: 'Heissluftballone', category: 'Landschaften', load: () => import('./ballone.js').then((m) => m.default) },
   { id: 'b-leuchtturm', title: 'Leuchtturm an der Küste', category: 'Landschaften', load: () => import('./leuchtturm.js').then((m) => m.default) },
   { id: 'b-lebkuchenhaus', title: 'Lebkuchenhaus', category: 'Winter', load: () => import('./lebkuchenhaus.js').then((m) => m.default) },
+  { id: 'b-bergsee', title: 'Bergsee mit Chalet', category: 'Landschaften', load: () => import('./bergsee.js').then((m) => m.default) },
 ];

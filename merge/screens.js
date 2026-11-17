@@ -70,7 +70,7 @@ export function mountMenu(app, nav) {
       }
       const save = P.loadSave(mode.id);
       const running = save && save.state && !save.state.over && save.state.moves > 0;
-      const goal = h('div.mini-goal', null, tileFace(skin, mode.target));
+      const goal = h('div.mini-goal', null, tileFace(skin, mode.target, { value: false }));
       card.append(grid,
         h('div.card-row', null,
           h('div', null, h('div.lbl', null, 'Rekord'), h('div.big', null, p.best[mode.id] ? fmt(p.best[mode.id]) : '–')),
@@ -79,7 +79,7 @@ export function mountMenu(app, nav) {
       main = h('button.btn.primary.block.big-play', { type: 'button' });
       main.innerHTML = icon('play', { size: 22 });
       main.append(running ? 'Weiter' : 'Spielen');
-      main.addEventListener('click', () => { sfx.play('click'); nav.free(mode.id); });
+      main.addEventListener('click', () => { sfx.play('click'); P.dropFinished(mode.id); nav.free(mode.id); });
     } else {
       const n = p.levelMax;
       const lv = makeLevel(n);
@@ -92,14 +92,14 @@ export function mountMenu(app, nav) {
         h('div.lv-head', null,
           h('div.lv-icon', null, info.chapter.icon),
           h('div.grow', null, h('div.lbl', null, chapterTitle(info.gci)), h('div.big', null, `Etappe ${n}`)),
-          h('div.lv-goal', null, tileFace(lskin, lv.goal.e), lv.goal.type === 'count' ? h('b', null, `${lv.goal.n}×`) : null)),
+          h('div.lv-goal', null, tileFace(lskin, lv.goal.e, { value: false }), lv.goal.type === 'count' ? h('b', null, `${lv.goal.n}×`) : null)),
         bar,
         h('p.blurb', null, `Besondere Bretter mit Steinen und Lücken, jede Etappe mit eigenem Ziel. ★ ${P.totalStars()} Sterne gesammelt.`));
       main = h('div.btn-pair');
       const play = h('button.btn.primary.big-play', { type: 'button' });
       play.innerHTML = icon('play', { size: 22 });
       play.append(running ? 'Weiter' : `Etappe ${n}`);
-      play.addEventListener('click', () => { sfx.play('click'); nav.level(n); });
+      play.addEventListener('click', () => { sfx.play('click'); P.dropFinished('etappe'); nav.level(n); });
       const map = h('button.btn.map-btn', { type: 'button', 'aria-label': 'Karte' });
       map.innerHTML = icon('grid', { size: 22 });
       map.append('Karte');
@@ -250,6 +250,7 @@ export function mountMap(app, nav) {
           return;
         }
         sfx.play('click');
+        P.dropFinished('etappe');
         nav.level(n);
       });
       if (n === cur) curBtn = b;

@@ -395,7 +395,7 @@ class Game {
     if (animateDeal) {
       this.busy = true;
       this.board.locked = true;
-      sfx.play('whoosh');
+      if (!navigator.userActivation || navigator.userActivation.hasBeenActive) sfx.play('whoosh');
       this.board.dealIn().then(() => {
         this.busy = false;
         this.board.locked = false;
@@ -907,9 +907,11 @@ function showStats(mode) {
   const content = h('div.sheet');
   const chips = h('div.chips-row');
   const body = h('div');
+  const sub = h('p.stat-mode');
   let current = mode;
   const render = () => {
     chips.querySelectorAll('.chip').forEach((c) => c.classList.toggle('active', c.dataset.m === current));
+    sub.textContent = modeLabel(current);
     const e = Stats.entry(loadStats(), current);
     const stat = (v, l) => h('div.stat', null, h('b', null, v), h('small', null, l));
     body.replaceChildren(
@@ -923,11 +925,11 @@ function showStats(mode) {
       h('p.stat-note', null, `Tagesrätsel: ${store.get('solitaire.dailyWins', 0)} gelöst · Klondike-Serie ${dailyStreak(GAME_ID)} ${dailyStreak(GAME_ID) === 1 ? 'Tag' : 'Tage'}`));
   };
   for (const m of Object.keys(MODES)) {
-    const c = h('button.chip', { type: 'button', 'data-m': m }, m === 'freecell' ? 'FreeCell' : `${MODES[m].title} ${MODES[m].sub.replace('Ziehe ', '').replace(' Farben', 'F').replace(' Farbe', 'F')}`);
+    const c = h('button.chip', { type: 'button', 'data-m': m }, m === 'freecell' ? 'FreeCell' : m.startsWith('klondike') ? `Klondike ${MODES[m].draw}` : `Spider ${MODES[m].suits}♠`);
     c.addEventListener('click', () => { current = m; sfx.play('click'); render(); });
     chips.append(c);
   }
-  content.append(chips, body);
+  content.append(chips, sub, body);
   render();
   const v = showModal({
     title: 'Statistik', content,

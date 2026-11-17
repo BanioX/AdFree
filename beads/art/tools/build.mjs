@@ -50,7 +50,7 @@ const args = process.argv.slice(2);
 const printIds = new Set();
 for (let i = 0; i < args.length; i++) if (args[i] === '--print') printIds.add(args[++i]);
 
-for (const tier of [...TIERS, 'scratch', 'scratch2', 'scratch3']) {
+for (const tier of TIERS) {
   let mod;
   try {
     mod = await import(`./src/${tier}.mjs?t=${Date.now()}`);

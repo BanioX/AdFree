@@ -16,7 +16,8 @@ const browser = await chromium.launch();
 const ctx = await browser.newContext({ ...devices['iPhone 13'], deviceScaleFactor: 1 });
 const page = await ctx.newPage();
 const errors = [];
-page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
+// Chromium-Intervention bei synthetischen CDP-Touch-Gesten (kein App-Fehler) ignorieren
+page.on('console', (m) => { if (m.type() === 'error' && !/^Ignored attempt to cancel a touch/.test(m.text())) errors.push(m.text()); });
 page.on('pageerror', (e) => errors.push(String(e)));
 const shot = async (name) => { await page.waitForTimeout(350); await page.screenshot({ path: OUT + name + '.png' }); };
 const step = (s) => console.log('·', s);
@@ -123,12 +124,14 @@ await page.tap('[data-tool="hint"]');
 await page.waitForTimeout(300);
 const before = await cells();
 await page.waitForTimeout(400);
+step('neu laden');
 await page.reload();
 await page.waitForFunction(() => window.__nono && location.hash === '#daily');
 await page.waitForTimeout(300);
 assert.deepEqual(await cells(), before, 'Spielstand nach Neuladen identisch');
 await shot('04-daily-reload');
 // Zurück ins Menü: Tagesrätsel zeigt «Weiter»
+step('zurück ins Menü');
 await page.tap('.play-top .icon-btn >> nth=0');
 await page.waitForFunction(() => !location.hash);
 assert.match(await page.textContent('#daily-card'), /Weiter/);
@@ -153,6 +156,22 @@ await page.mouse.move(z.x, z.y);
 await page.evaluate(() => { const b = window.__nono.board; b.panBy(-200, -200); });
 await page.waitForTimeout(100);
 await shot('06-zoom-pan');
+
+// Pinch-Zoom mit zwei Fingern (CDP-Touch) – darf keine Felder verändern
+await page.tap('[data-tool="zoom"]');
+assert.ok(Math.abs((await page.evaluate(() => window.__nono.board.cs)) - fitCs) < 0.5, 'Lupe zurück auf Übersicht');
+const cellsBeforePinch = await cells();
+const cdp = await ctx.newCDPSession(page);
+const mid = await cellXY(10, 10);
+const pts = (d) => [{ x: mid.x - d, y: mid.y, id: 1 }, { x: mid.x + d, y: mid.y, id: 2 }];
+await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: pts(20) });
+for (let d = 24; d <= 80; d += 8) await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: pts(d) });
+await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+await page.waitForTimeout(100);
+const pinchCs = await page.evaluate(() => window.__nono.board.cs);
+step(`Pinch: ${fitCs.toFixed(1)} → ${pinchCs.toFixed(1)} px`);
+assert.ok(pinchCs > fitCs * 1.4, 'Pinch zoomt');
+assert.deepEqual(await cells(), cellsBeforePinch, 'Pinch verändert keine Felder');
 
 // 5) Album, Statistik, Paket
 step('Album / Statistik / Paket');

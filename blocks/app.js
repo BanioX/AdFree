@@ -8,13 +8,14 @@ import { setupPage } from '../shared/ui.js';
 import { mountMenu } from './ui/menu.js';
 import { mountPlay } from './ui/play.js';
 import { mountMap } from './ui/map.js';
-import { showHelp } from './ui/sheets.js';
+import { maybeShowHelp } from './ui/tutorial.js';
 import { getSettings, saveSettings, getAdv, SIZES } from './ui/progress.js';
 
 setupPage();
 
 const app = document.getElementById('app');
 let current = null;
+let helpChecked = false;
 
 function go(hash) {
   const target = '#' + hash;
@@ -57,9 +58,9 @@ function route() {
     console.warn('Blockpuzzle: Ansicht konnte nicht geöffnet werden', err);
     current = mountMenu(app, nav);
   }
-  if (!getSettings().seenHelp) {
-    saveSettings({ seenHelp: true });
-    setTimeout(() => showHelp(), 300);
+  if (!helpChecked) {
+    helpChecked = true;
+    maybeShowHelp();
   }
 }
 

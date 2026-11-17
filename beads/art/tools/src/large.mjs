@@ -20,7 +20,7 @@ function heartTip(cx, cy, s, rot = 0) {
   return [Math.round(cx + dx * s - 0.5), Math.round(cy + dy * s - 0.5)];
 }
 
-export default [
+const list = [
   {
     id: 'kaffeetasse', title: 'Kaffeetasse', category: 'Essen',
     palette: { k: '#4a2f2a', w: '#ffffff', c: '#b8c4d6', n: '#7a4a2e', l: '#f0cf9c', r: '#f2385a', B: '#c9ebe4', T: '#d4925f' },
@@ -229,11 +229,11 @@ export default [
     palette: { k: '#5a1a32', r: '#f2385a', R: '#c21f45', l: '#ffc2d2', p: '#ff8fc0', v: '#a678f0', w: '#ffffff', s: '#8a7a88', B: '#d8e8ff' },
     build() {
       const g = new Grid(22, 24);
-      const knot = [11, 19];
+      const knot = [11, 20];
       const balloons = [
-        [5.6, 11.2, 3.6, 0.38, 'p'],
-        [16.4, 11.2, 3.6, -0.38, 'v'],
-        [11, 7.4, 5.0, 0, 'r'],
+        [5.4, 11.6, 4.1, 0.36, 'p'],
+        [16.6, 11.6, 4.1, -0.36, 'v'],
+        [11, 7.2, 5.9, 0, 'r'],
       ];
       for (const [cx, cy, s, rot] of balloons) {
         const [tx, ty] = heartTip(cx, cy, s, rot);
@@ -245,7 +245,7 @@ export default [
         g.ellipse(hx, hy, s * 0.22, s * 0.16, c === 'r' ? 'l' : 'w', { on: c });
       }
       g.rimShade('r', { lo: 'R', region: 'rl', lx: -1, ly: -1 });
-      g.stamp(9, 19, ['rr.rr', '.rkr.', '.s.s.', 's...s'], { not: '' });
+      g.stamp(9, 20, ['rr.rr', '.rkr.', '.s.s.', 's...s'], { not: '' });
       background(g, (x, y) => 'B');
       for (const [cx, cy, rx, ry] of [[3, 2.6, 2.6, 1.2], [19.5, 19.2, 2.8, 1.3], [3.5, 21, 2.5, 1.1], [19.5, 2, 2, 1]]) g.ellipse(cx, cy, rx, ry, 'w', { on: 'B' });
       return g;
@@ -374,3 +374,7 @@ export default [
     },
   },
 ];
+
+/** Reihenfolge = Level-Reihenfolge (Fläche aufsteigend, Themen abwechselnd). */
+const ORDER = ['kaffeetasse', 'cupcake', 'pinguin', 'herzballons', 'tannenbaum', 'kuerbis', 'schildkroete', 'schneemann', 'heissluftballon', 'fuchs', 'leuchtturm', 'segelboot'];
+export default ORDER.map((id) => list.find((p) => p.id === id));

@@ -111,7 +111,7 @@
 }
 .board-wrap { position: relative; }
 .board { position: absolute; inset: 0; --rad-out: 26%; }
-.in-play .sp-toast { top: auto; bottom: calc(92px + var(--safe-bottom)); }
+.in-play .sp-toast { top: auto; bottom: calc(14px + var(--safe-bottom)); }
 .board-bg, .tiles, .fx { position: absolute; inset: 0; }
 .board-bg { filter: drop-shadow(0 8px 16px rgba(70, 45, 20, .16)); }
 .fx { pointer-events: none; }

@@ -65,7 +65,6 @@ export function createGallery(lib, { onOpen }) {
   function lastStarted() {
     let best = null, bts = -1;
     for (const it of lib.all()) {
-      if (it.kind === 'fixture') continue;
       const r = progress.get(it.id);
       if (isStarted(r) && (r.ts || 0) > bts) { best = it; bts = r.ts || 0; }
     }

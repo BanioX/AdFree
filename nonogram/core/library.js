@@ -74,27 +74,27 @@ let dailyPools = null;
 function pools() {
   if (dailyPools) return dailyPools;
   const all = packs.flatMap((p) => p.puzzles);
-  const pick = (size) => makeRng('nonogram-daily-pool-' + size).shuffle(
-    all.filter((d) => d.rows.length === size && d.rows[0].length === size).map((d) => d.id).sort());
+  const pick = (size) => all.filter((d) => d.rows.length === size && d.rows[0].length === size).map((d) => d.id).sort();
   dailyPools = { 10: pick(10), 15: pick(15) };
   return dailyPools;
 }
 
 /**
  * Tagesrätsel für einen Tag ('JJJJ-MM-TT'): unter der Woche 10×10, am Wochenende 15×15.
- * Gleiches Datum => gleiches Rätsel. Jede zweite Runde durch den Vorrat gespiegelt.
+ * Gleiches Datum => gleiches Rätsel (für alle). Der Vorrat wird pro Runde neu gemischt,
+ * so wiederholt sich innerhalb einer Runde kein Bild; jede zweite Runde gespiegelt.
  */
 export function dailyDef(key) {
   const day = dayNumber(key);
   const weekday = new Date(day * 864e5).getUTCDay(); // 0 = So, 6 = Sa
   const size = weekday === 0 || weekday === 6 ? 15 : 10;
-  const pool = pools()[size];
-  const rng = makeRng('nonogram-daily-' + key);
-  const idx = (day + rng.int(0, 2)) % pool.length;
-  const round = Math.floor(day / pool.length);
-  let def = byId.get(pool[idx]).def;
+  const base = pools()[size];
+  const round = Math.floor(day / base.length);
+  const order = makeRng(`nonogram-daily-${size}-${round}`).shuffle(base.slice());
+  const sourceId = order[day % base.length];
+  let def = byId.get(sourceId).def;
   if (round % 2 === 1) def = mirrorDef(def, '');
-  return { ...def, id: `daily-${key}`, sourceId: pool[idx], category: 'Tagesrätsel' };
+  return { ...def, id: `daily-${key}`, sourceId, category: 'Tagesrätsel' };
 }
 
 // ---------- Nachschlagen ----------

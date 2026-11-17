@@ -141,6 +141,7 @@ function renderMenu() {
 
   // Pakete
   const packList = h('div.packs');
+  const secCount = h('span', null, `${solvedLib}/${total}`);
   const packCard = (pack) => {
     const n = pack.puzzles.length;
     const s = pack.puzzles.filter((d) => solved[d.id]).length;
@@ -159,7 +160,11 @@ function renderMenu() {
   if (getBeadsPack()) packList.append(packCard(getBeadsPack()));
   else {
     loadBeadsPack(() => import('../beads/art/index.js')).then((bp) => {
-      if (bp && current && current.name === 'menu' && packList.isConnected) packList.append(packCard(bp));
+      if (!bp || !packList.isConnected) return;
+      packList.append(packCard(bp));
+      const sv = save.solvedMap();
+      secCount.textContent = `${allPacks().reduce((n, p) => n + p.puzzles.filter((d) => sv[d.id]).length, 0)}/${libraryCount()}`;
+      updateSummary();
     });
   }
 
@@ -186,7 +191,7 @@ function renderMenu() {
     small(icon('settings'), 'Optionen', () => openSettings(), 'settings-btn'));
 
   const body = h('main.menu-body', null, hero, daily,
-    h('h3.sec', null, 'Bildersammlungen', h('span', null, `${solvedLib}/${total}`)),
+    h('h3.sec', null, 'Bildersammlungen', secCount),
     packList, endless, row,
     h('p.foot', null, 'Jedes Bild lässt sich ohne Raten lösen.'));
   setScreen(h('div.screen.menu', null, top, h('div.scroll', null, body)), 'menu');

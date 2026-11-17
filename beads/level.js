@@ -358,8 +358,38 @@ export function solve(L, st0, opts = {}) {
 // Vorrat erzeugen (deterministisch, lösbar)
 // ---------------------------------------------------------------------------
 
-export function fillSequence(L) {
-  return Array.from(L.order, (i) => L.cells[i]);
+export function fillSequence(L, R = 0) {
+  return bandGroup(L, L.order, R).map((i) => L.cells[i]);
+}
+
+/**
+ * Ordnet Zellen (in Füllreihenfolge) in Bändern zu je R Zeilen (von unten) nach Farbe:
+ * Innerhalb eines Bandes ist die Reihenfolge egal (alle Zellen liegen gemeinsam in der
+ * aktiven Zone, sobald die Bänder darunter fertig sind) – so entstehen längere
+ * gleichfarbige Läufe und weniger, dafür grössere Züge.
+ */
+export function bandGroup(L, cells, R = 0) {
+  const list = Array.from(cells);
+  if (!(R > 0)) return list;
+  const out = [];
+  let i = 0;
+  while (i < list.length) {
+    const band = Math.floor(L.rbOf[list[i]] / R);
+    const byColor = new Map();
+    while (i < list.length && Math.floor(L.rbOf[list[i]] / R) === band) {
+      const k = L.cells[list[i]];
+      if (!byColor.has(k)) byColor.set(k, []);
+      byColor.get(k).push(list[i]);
+      i++;
+    }
+    for (const arr of byColor.values()) out.push(...arr);
+  }
+  return out;
+}
+
+/** Grösste Gruppe (Steine pro Zug) – wächst mit der Bildgrösse, damit grosse Bilder nicht ewig dauern. */
+export function chunkMax(L) {
+  return clamp(Math.round(4 + L.total / 160), 5, 9);
 }
 
 /** Teilt die Farbfolge in Gruppen (1..maxChunk gleichfarbige Steine). */
@@ -447,14 +477,14 @@ export function levelConfig(L, n = 1, { custom = false, round = 0 } = {}) {
   // ab der zweiten Runde durch die Bibliothek: schmalere Zone bei mittleren Bildern
   const R = L.W <= 7 ? 3 : round >= 1 && L.W >= 10 && L.W <= 22 ? 1 : 2;
   const S = DEFAULT_SLOTS;
-  if (custom) return { C, R, S, disorder: 1.5, bury: 0.2, slack: 1, maxChunk: 6 };
+  if (custom) return { C, R, S, disorder: 1.5, bury: 0.2, slack: 1, maxChunk: Math.min(9, chunkMax(L) + 1) };
   const d = Math.max(0, n - 1);
   return {
     C, R, S,
     disorder: Math.min(2.5, 0.3 * d),
     bury: n <= 1 ? 0 : Math.min(0.45, 0.06 + 0.035 * d),
     slack: n <= 3 ? 2 : n <= 10 ? 1 : 0,
-    maxChunk: n <= 5 ? 6 : 5,
+    maxChunk: n <= 5 ? 6 : chunkMax(L),
   };
 }
 
@@ -465,7 +495,7 @@ export function levelConfig(L, n = 1, { custom = false, round = 0 } = {}) {
 export function generateTray(L, cfg) {
   const { seed = 'beads', C = 6, S = DEFAULT_SLOTS, R = 2, slack = 0, disorder = 0, bury = 0, maxChunk = 5 } = cfg;
   const maxNodes = cfg.maxNodes ?? 5000;
-  const seq = fillSequence(L);
+  const seq = fillSequence(L, R);
   const verifyS = Math.max(1, S - slack);
   const attempts = 6;
   let last = null;
@@ -537,14 +567,14 @@ export function magnetPull(L, st, count = MAGNET_COUNT) {
 export function remainingTraySequence(L, st) {
   const reserved = new Int32Array(L.K);
   for (let s = 0; s < st.S; s++) if (st.slotK[s] >= 0) reserved[st.slotK[s]] += st.slotN[s];
-  const seq = [];
+  const rest = [];
   for (const cell of L.order) {
     const k = L.cells[cell];
     if (L.idxInColor[cell] < st.counts[k]) continue;
     if (reserved[k] > 0) { reserved[k]--; continue; }
-    seq.push(k);
+    rest.push(cell);
   }
-  return seq;
+  return bandGroup(L, rest, st.R).map((i) => L.cells[i]);
 }
 
 /** Mischen: ordnet den Vorrat neu, sodass gebrauchte Farben vorne liegen. */
@@ -555,7 +585,7 @@ export function reshuffle(L, st, seed, disorder = 1.2) {
   for (let a = 0; a < 4; a++) {
     const D = a === 3 ? 0 : disorder * Math.pow(0.5, a);
     const rng = makeRng(hashString(`${seed}|mix|${a}`));
-    const res = deal(perturb(chunkify(seq, rng, 5), rng, D), rng, C);
+    const res = deal(perturb(chunkify(seq, rng, chunkMax(L)), rng, D), rng, C);
     last = res;
     const t = cloneState(st);
     t.cols = res.cols;

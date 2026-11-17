@@ -21,7 +21,7 @@ const root = resolve(here, '..', '..');
 const PORT = 8101;
 const BASE = `http://127.0.0.1:${PORT}/paint/`;
 const argShots = process.argv.indexOf('--shots');
-const SHOTS = argShots > 0 ? resolve(process.argv[argShots + 1]) : join(here, 'shots');
+const SHOTS = argShots > 0 ? resolve(process.argv[argShots + 1]) : join(here, 'out');
 mkdirSync(SHOTS, { recursive: true });
 
 let failures = 0;
@@ -46,7 +46,7 @@ async function ensureServer() {
 
 const server = await ensureServer();
 const browser = await chromium.launch();
-const ctx = await browser.newContext({ ...devices['iPhone 13'] });
+const ctx = await browser.newContext({ ...devices['iPhone 13'], deviceScaleFactor: 1 });
 const page = await ctx.newPage();
 const errors = [];
 page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
@@ -106,8 +106,23 @@ async function stageCenter() {
 try {
   // ------------------------------------------------------------ Galerie
   await page.goto(BASE + '?debug=1', { waitUntil: 'load' });
-  await page.waitForSelector('.gv-card', { timeout: 20000 });
+  // Erster Start: «So geht's» erscheint automatisch
+  await page.waitForSelector('.tut-backdrop.show', { timeout: 10000 });
   await wait(1800);
+  await shot('00-so-gehts');
+  check('Erster Start: «So geht\'s» mit animierter Szene', await page.isVisible('.tut-stage .tz-pic'));
+  await page.locator('.tut-skip').tap();
+  await page.waitForSelector('.tut-backdrop', { state: 'detached', timeout: 3000 });
+  // Startbildschirm
+  await page.waitForSelector('.gv-card', { timeout: 20000 });
+  await wait(1200);
+  await shot('01-menue');
+  const primary = await page.textContent('.gm-primary');
+  check('Startbildschirm: grosser «Spielen»-Knopf', /Spielen/.test(primary || ''), primary);
+  check('Startbildschirm: Zurück zur Startseite', !!(await page.$('.gm-topbar a.icon-btn[href="../"]')));
+  check('Startbildschirm: «Eigenes Foto» und «Zufallsbild»', (await page.$$eval('.gm-sec', (e) => e.map((x) => x.textContent).join('|'))).includes('Eigenes Foto'));
+  await page.evaluate(() => { const g = document.querySelector('.gv-gal'); g.scrollIntoView(); });
+  await wait(1500);
   await shot('01-galerie');
   const chips = await page.$$eval('.gv-chips .chip', (els) => els.map((e) => e.textContent));
   check('Galerie: Chips Alle/Begonnen/Fertig', chips[0] === 'Alle' && chips.includes('Begonnen') && chips.includes('Fertig'), chips.join(', '));
@@ -124,6 +139,8 @@ try {
   await shot('03-mini-start');
   let st = await state();
   check('Mini: geladen', st.total === 7 && st.left === 7, JSON.stringify({ total: st.total, left: st.left }));
+  await wait(800);
+  check('Erstes Bild: Coach-Mark zeigt auf ein Feld', (await state()).coach === true);
 
   // falsches Tippen: Farbe 1 gewählt, Sonne (Farbe 3) antippen
   await P(() => window.__paint.select(0));
@@ -144,6 +161,7 @@ try {
   await wait(500);
   st = await state();
   check('Tippen füllt Fläche', st.left === 6, String(st.left));
+  check('Coach-Mark verschwindet nach dem ersten Feld', st.coach === false);
   check('Farbe fertig -> nächste Farbe automatisch gewählt', st.selected === 2, String(st.selected));
   await shot('04-mini-gefuellt');
 
@@ -175,8 +193,7 @@ try {
   }
   st = await state();
   check('Mini: alles gefüllt', st.left === 0 && st.done);
-  await wait(300);
-  const confetti = await page.$('.sp-confetti');
+  const confetti = await page.waitForSelector('.sp-confetti', { timeout: 4000 }).catch(() => null);
   check('Abschluss: Konfetti', !!confetti);
   await page.waitForSelector('.pv-dock[data-mode="done"]', { timeout: 8000 });
   await wait(500);
@@ -378,6 +395,90 @@ try {
   await shot('15-hochformat');
   st = await state();
   check('Hochformat: eingepasst', st.cam.s > 0 && Math.abs(st.cam.s - st.fit.s) < 1e-6);
+
+  // ------------------------------------------------------------ Startbildschirm: Weitermalen + Statistik
+  const backToMenu = async () => {
+    await page.locator('.pv-top .icon-btn').first().tap();
+    await page.waitForSelector('.gv:not(.hidden) .gm-primary', { timeout: 5000 });
+    await wait(700);
+  };
+  await backToMenu();
+  await page.evaluate(() => { document.querySelector('.gm-scroll').scrollTop = 0; });
+  await wait(900);
+  const prim2 = await page.textContent('.gm-primary');
+  check('Startbildschirm: «Weitermalen» mit zuletzt begonnenem Bild', /Weitermalen/.test(prim2) && /Voronoi/.test(prim2), prim2);
+  const statsTxt = await page.$$eval('.gm-stat', (e) => e.map((x) => x.textContent));
+  check('Statistik: fertige Bilder und Felder', statsTxt.length === 4 && /^1/.test(statsTxt[0]) && parseInt(statsTxt[2].replace(/\D/g, ''), 10) > 10, statsTxt.join(' | '));
+  check('Startbildschirm: Vorschau des Spielstands', await page.$eval('.gv-hero-art', (e) => e.classList.contains('thumb')));
+  await shot('17-menue-weiter');
+  await page.locator('.gm-primary').tap();
+  await waitReady('fx-voronoi');
+  check('«Weitermalen» öffnet das Bild', true);
+  await backToMenu();
+
+  // ------------------------------------------------------------ Generator: «Neues erzeugen»
+  await page.locator('.gv-chips .chip', { hasText: 'Mandalas' }).tap();
+  await wait(700);
+  await page.locator('.gv-new').first().tap();
+  await page.waitForFunction(() => window.__paint && window.__paint.ready && /^g-mandala-\d+$/.test(window.__paint.state().id), null, { timeout: 30000 });
+  await wait(600);
+  st = await state();
+  check('«Neues erzeugen»: neues Mandala', st.total > 100, `${st.id}, ${st.total} Flächen`);
+  await shot('18-neues-mandala');
+  await backToMenu();
+  const newCards = await page.$$eval('.gv-card[data-id^="g-mandala-"]', (e) => e.length);
+  check('Neues Mandala erscheint in der Galerie', newCards >= 13, String(newCards));
+
+  // ------------------------------------------------------------ Eigenes Foto
+  await page.evaluate(() => { document.querySelector('.gm-scroll').scrollTop = 0; });
+  await page.locator('.gm-sec', { hasText: 'Eigenes Foto' }).tap();
+  await page.waitForSelector('.ph-sheet', { timeout: 3000 });
+  const png = await P(() => {
+    const c = document.createElement('canvas');
+    c.width = 640; c.height = 480;
+    const g = c.getContext('2d');
+    const sky = g.createLinearGradient(0, 0, 0, 300);
+    sky.addColorStop(0, '#5aa7e6'); sky.addColorStop(1, '#cfe9f7');
+    g.fillStyle = sky; g.fillRect(0, 0, 640, 480);
+    g.fillStyle = '#ffd34d'; g.beginPath(); g.arc(500, 90, 50, 0, 7); g.fill();
+    g.fillStyle = '#5c9e3c'; g.beginPath(); g.moveTo(0, 300); g.bezierCurveTo(200, 230, 420, 340, 640, 270); g.lineTo(640, 480); g.lineTo(0, 480); g.fill();
+    g.fillStyle = '#3d7a2a'; g.beginPath(); g.moveTo(0, 400); g.bezierCurveTo(250, 340, 400, 430, 640, 380); g.lineTo(640, 480); g.lineTo(0, 480); g.fill();
+    g.fillStyle = '#d9483b'; g.fillRect(150, 230, 140, 110);
+    g.fillStyle = '#7a3b22'; g.beginPath(); g.moveTo(135, 232); g.lineTo(220, 160); g.lineTo(305, 232); g.fill();
+    g.fillStyle = '#fff3c4'; g.fillRect(180, 260, 34, 30);
+    g.fillStyle = '#5a3420'; g.fillRect(232, 280, 34, 60);
+    let x = 7;
+    for (let k = 0; k < 900; k++) {
+      x = (x * 16807) % 2147483647;
+      g.fillStyle = ['#e85d9a', '#ffffff', '#ffd34d'][k % 3];
+      g.fillRect(x % 640, 300 + ((x >> 8) % 180), 3, 3);
+    }
+    return c.toDataURL('image/png').split(',')[1];
+  });
+  await page.setInputFiles('.ph-sheet input[type=file]', { name: 'garten.png', mimeType: 'image/png', buffer: Buffer.from(png, 'base64') });
+  const tp = Date.now();
+  await page.waitForFunction(() => { const b = document.querySelector('.ph-sheet .btn.primary'); return b && !b.disabled; }, null, { timeout: 60000 });
+  check('Eigenes Foto: Umwandlung mit Vorschau', await page.isVisible('.ph-sheet .ph-canvas'), `${Date.now() - tp} ms`);
+  await wait(300);
+  await shot('19-foto-vorschau');
+  await page.locator('.ph-sheet .btn.primary').tap();
+  await page.waitForFunction(() => window.__paint && window.__paint.ready && /^foto-/.test(window.__paint.state().id), null, { timeout: 60000 });
+  await wait(500);
+  st = await state();
+  check('Eigenes Foto: wird zum Malbild', st.total > 60, `${st.total} Flächen`);
+  await shot('20-foto-malen');
+  await backToMenu();
+  await page.reload({ waitUntil: 'load' });
+  await page.waitForSelector('.gv:not(.hidden) .gv-card', { timeout: 20000 });
+  await page.locator('.gv-chips .chip', { hasText: 'Meine Fotos' }).tap();
+  await wait(700);
+  check('Meine Fotos: nach Neuladen gespeichert', (await page.$$('.gv-card[data-id^="foto-"]')).length === 1);
+  await page.locator('.gv-edit').tap();
+  await wait(300);
+  await page.locator('.gv-card[data-id^="foto-"]').tap();
+  await page.locator('.sp-modal .btn', { hasText: 'Löschen' }).tap();
+  await wait(900);
+  check('Meine Fotos: löschen', (await page.$$('.gv-card[data-id^="foto-"]')).length === 0);
 
   // ------------------------------------------------------------ Desktop: Mausrad-Zoom
   const dctx = await browser.newContext({ viewport: { width: 1100, height: 800 } });

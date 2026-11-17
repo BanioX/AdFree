@@ -151,7 +151,7 @@ export default [
   },
   {
     id: 'g-hase', title: 'Osterhase', category: 'Feste', bg: '#cfeccf',
-    palette: { w: '#fffaf3', o: '#c9b8a8', p: '#ffb3c2', k: '#4a3a3a', r: '#ffc9d4', g: '#e8dccf' },
+    palette: { w: '#fffaf3', o: '#c9b8a8', p: '#ffb3c2', k: '#4a3a3a' },
     rows: [
       '....oo..oo.....',
       '....oo..oo.....',

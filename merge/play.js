@@ -20,7 +20,7 @@ function tileName(skin, e) {
 /** Kleine Zieldarstellung (Kachel + Text). */
 function goalChip(skin, goal) {
   const box = h('div.goal-tile');
-  box.append(tileFace(skin, goal.e, { value: true }));
+  box.append(tileFace(skin, goal.e, { value: false }));
   return box;
 }
 
@@ -223,7 +223,7 @@ export function mountPlay(app, opts, nav) {
     let found = null;
     for (const m of res.merges) if (P.discover(skin.id, m.e) && m.e >= 4) found = m.e;
     if (res.spawn) P.discover(skin.id, res.spawn.e);
-    if (found) {
+    if (found && !res.won) {
       setTimeout(() => { if (alive) { sfx.play('sparkle'); toast('Neu im Album: ' + tileName(skin, found)); } }, SLIDE_MS + 120);
     } else if (newRecord) {
       save.recordShown = true;
@@ -293,8 +293,8 @@ export function mountPlay(app, opts, nav) {
   }
 
   // ---------- Blätter ----------
-  async function showWin() {
-    sfx.play('complete');
+  async function showWin(quiet) {
+    if (!quiet) sfx.play('complete');
     celebrate(skin.tiles.slice(3, 9).map((t) => t.color).concat(['#ffd23f', '#ff7a59']));
     const p = P.getProg();
     p.won[statKey] = (p.won[statKey] | 0) + 1;
@@ -319,8 +319,8 @@ export function mountPlay(app, opts, nav) {
     else { locked = false; }
   }
 
-  async function showOver() {
-    sfx.play('thud');
+  async function showOver(quiet) {
+    if (!quiet) sfx.play('thud');
     const s = save.state;
     const p = P.getProg();
     const canUndo = save.undos > 0 && save.hist.length > 0;
@@ -348,7 +348,7 @@ export function mountPlay(app, opts, nav) {
     else if (isLevel) nav.map(); else nav.menu();
   }
 
-  async function showLevelDone() {
+  async function showLevelDone(quiet) {
     const s = save.state;
     const stars = starsFor(level, s.moves);
     const already = save.winSeen;
@@ -361,7 +361,7 @@ export function mountPlay(app, opts, nav) {
       persist();
       P.report();
     }
-    sfx.play('complete');
+    if (!quiet) sfx.play('complete');
     celebrate(skin.tiles.slice(3, 9).map((t) => t.color).concat(['#ffd23f']));
     const row = starsRow(stars, '.big');
     const content = h('div.sheet-content', null, row,
@@ -370,7 +370,7 @@ export function mountPlay(app, opts, nav) {
     row.querySelectorAll('.star.on').forEach((el, i) => {
       el.animate([{ transform: 'scale(0) rotate(-40deg)', opacity: 0 }, { transform: 'scale(1.25)', opacity: 1, offset: 0.6 }, { transform: 'scale(1)' }],
         { duration: 420, delay: 250 + i * 180, easing: 'ease-out', fill: 'backwards' });
-      setTimeout(() => alive && sfx.play('sparkle'), 300 + i * 180);
+      if (!quiet) setTimeout(() => alive && sfx.play('sparkle'), 300 + i * 180);
     });
     const v = await showModal({
       title: `Etappe ${level.n} geschafft!`, content, dismissible: false,
@@ -394,9 +394,9 @@ export function mountPlay(app, opts, nav) {
 
   // Zustand nach dem Laden
   const s0 = save.state;
-  if (s0.won && !save.winSeen) { locked = true; setTimeout(() => alive && (isLevel ? showLevelDone() : showWin()), 300); }
-  else if (s0.won && isLevel) { locked = true; setTimeout(() => alive && showLevelDone(), 300); }
-  else if (s0.over) { locked = true; setTimeout(() => alive && showOver(), 300); }
+  if (s0.won && !save.winSeen) { locked = true; setTimeout(() => alive && (isLevel ? showLevelDone(true) : showWin(true)), 300); }
+  else if (s0.won && isLevel) { locked = true; setTimeout(() => alive && showLevelDone(true), 300); }
+  else if (s0.over) { locked = true; setTimeout(() => alive && showOver(true), 300); }
   else if (isLevel && level.tip && s0.moves === 0) setTimeout(() => alive && toast(level.tip, 3200), 400);
 
   P.report();

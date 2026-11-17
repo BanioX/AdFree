@@ -69,6 +69,12 @@ export function clearSave(slot) {
   store.remove('merge.save.' + slot);
 }
 
+/** Abgeschlossene Spielstände (Spielende, geschaffte Etappe) verwerfen, damit «Spielen» neu beginnt. */
+export function dropFinished(slot) {
+  const sv = loadSave(slot);
+  if (sv && sv.state && (sv.state.over || (slot === 'etappe' && sv.state.won))) clearSave(slot);
+}
+
 // ---------- Album ----------
 
 /** Merkt sich eine entdeckte Stufe. Gibt true zurück, wenn sie neu ist. */

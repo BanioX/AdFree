@@ -484,7 +484,7 @@ export default [
   },
   {
     id: 'k-schluessel', title: 'Schlüssel', category: 'Dinge',
-    palette: { y: '#f5b82e', d: '#c98a12' },
+    palette: { y: '#f5b82e' },
     rows: [
       '..........',
       '.yyy......',
@@ -644,7 +644,7 @@ export default [
   },
   {
     id: 'k-geschenk', title: 'Päckli', category: 'Feste',
-    palette: { r: '#e5333f', y: '#ffd23f', b: '#3f8ef0' },
+    palette: { y: '#ffd23f', b: '#3f8ef0' },
     rows: [
       '..yy..yy..',
       '.y..yy..y.',

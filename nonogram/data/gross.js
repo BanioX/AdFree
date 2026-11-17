@@ -82,7 +82,7 @@ export default [
   },
   {
     id: 'r-katzentasse', title: 'Kätzchen in der Tasse', category: 'Tiere', bg: '#fff0f5',
-    palette: { g: '#b8b2c8', p: '#ffb3c2', k: '#4a3a4a', r: '#ffc9d4', m: '#7fc8ff', d: '#5aa9e6', h: '#ff6f91' },
+    palette: { g: '#b8b2c8', p: '#ffb3c2', k: '#4a3a4a', m: '#7fc8ff', d: '#5aa9e6', h: '#ff6f91' },
     rows: [
       '....................',
       '....................',

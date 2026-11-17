@@ -71,29 +71,6 @@ export function miniBoard(skin, rows, cs = 16, opts = {}) {
   return c;
 }
 
-// ---------- So geht's ----------
-
-export function showHelp() {
-  const skin = currentSkin();
-  const step = (board, title, text) => h('div.help-step', null,
-    h('div.help-pic', null, board),
-    h('div.help-text', null, h('b', null, title), h('span', null, text)));
-  const content = h('div.help', null,
-    step(miniBoard(skin, ['_____', '_44__', '__4__', '_____', '.:::.', '..:..'], 14, { ghost: 5 }),
-      'Teile ziehen',
-      'Ziehe ein Teil von unten aufs Brett. Es schwebt über deinem Finger, die Vorschau zeigt, wo es landet.'),
-    step(miniBoard(skin, ['.1..2', 'wwwww', '..3..', '6.3..', '6....'], 14),
-      'Linien abräumen',
-      'Volle Zeilen und Spalten verschwinden. Mehrere auf einmal oder Zug um Zug hintereinander geben Extrapunkte.'),
-    step(miniBoard(skin, ['1.2.0', '.33.0', '5.6..', '56.44', '.r..7'], 14),
-      'Vorausdenken',
-      'Sind alle drei Teile gesetzt, kommen neue. Passt keines mehr, ist das Spiel vorbei – also Platz lassen!'),
-    step(miniBoard(skin, ['r.b..', '11111', '..g..', '.....', '..y..'], 14),
-      'Abenteuer',
-      'Sammle Edelsteine, decke Bilder auf oder erreiche Punkte. Je weniger Teile du brauchst, desto mehr Sterne.'));
-  return showModal({ title: 'So geht\'s', content, buttons: [{ label: 'Los geht\'s', value: true, primary: true }] });
-}
-
 // ---------- Statistik ----------
 
 export function showStats() {

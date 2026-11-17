@@ -203,7 +203,7 @@ const polyPath = (loops) => loops.map((l) => 'M' + l.map((p) => `${fmt(p[0])} ${
  * minPart: pieces smaller than this (px) are not given their own shape.
  * minVisible: shapes with less visible area than this (px) are dropped (crumbs under other shapes).
  */
-export function autoSplit(pz, { minPart = 250, minVisible = 80, log = true } = {}) {
+export function autoSplit(pz, { minPart = 250, minVisible = 300, log = true } = {}) {
   const W = pz.width, H = pz.height, N = W * H;
   const flat = pz.shapes.map((s) => flattenPath(s.d));
   const ids = new Int32Array(N).fill(-1);

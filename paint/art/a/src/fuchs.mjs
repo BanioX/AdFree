@@ -64,13 +64,14 @@ export function build() {
     else maple(x, y, 78 + R() * 26, R() * 6.28, [...sets[i % sets.length], sets[i % sets.length][0], sets[i % sets.length][1], 'l3']);
   });
 
-  // --- tail (behind the body, curling to the front)
+  // --- tail (behind the body, curling up on the right)
   const tail = smoothPoly([
-    [640, 760], [740, 640], [850, 580], [940, 630], [950, 760], [880, 880], [740, 940], [560, 960], [430, 945], [440, 900], [600, 880], [730, 840], [800, 770], [790, 700], [700, 790],
+    [600, 905], [760, 915], [880, 885], [950, 800], [965, 690], [935, 590], [875, 545], [845, 610], [858, 720], [815, 800], [730, 830], [640, 815],
   ], 1, 12);
   pic.add(poly(tail), 'o2');
-  pic.add(shapePath(intersect(tail, [[850, 0], [1000, 0], [1000, 1000], [850, 1000]])), 'o1');
-  pic.add(shapePath(intersect(tail, [[700, 860], [600, 1000], [0, 1000], [0, 860]])), 'cr');
+  pic.add(shapePath(intersect(tail, [[880, 650], [1000, 650], [1000, 1000], [850, 1000]])), 'o1');
+  pic.add(shapePath(intersect(tail, [[600, 760], [760, 1000], [0, 1000], [0, 760]])), 'o3');
+  pic.add(shapePath(intersect(tail, [[0, 0], [1000, 0], [1000, 650], [0, 680]])), 'cr');
 
   // --- body
   const body = smoothPoly([[420, 430], [580, 430], [650, 560], [690, 720], [680, 860], [600, 905], [400, 905], [320, 860], [310, 720], [350, 560]], 1, 12);

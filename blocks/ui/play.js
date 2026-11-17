@@ -10,10 +10,11 @@ import { gems as GEMS } from '../data/skins.js';
 import { BoardView } from './view.js';
 import { gemIconUrl } from './sprites.js';
 import { pictureById, pictureThumbUrl } from './picture.js';
-import { showHelp, skinPicker } from './sheets.js';
+import { skinPicker } from './sheets.js';
+import { showHelp } from './tutorial.js';
 import {
   currentSkin, loadClassic, saveClassic, loadLevelSave, saveLevelSave,
-  updateBest, bestScore, recordClassicGame, recordWin, recordTry, updateSummary,
+  updateBest, bestScore, recordClassicGame, recordWin, recordTry, updateSummary, getStats,
 } from './progress.js';
 
 const fmt = (n) => Number(n || 0).toLocaleString('de-CH');
@@ -314,11 +315,21 @@ export function mountPlay(app, opts, nav) {
     setTimeout(hideIntro, 2600);
   }
   function hideIntro() {
-    if (!introEl) return;
+    if (!introEl) { startCoach(); return; }
     const el = introEl;
     introEl = null;
     el.classList.add('out');
     setTimeout(() => el.remove(), 300);
+    startCoach();
+  }
+
+  // Coach-Mark beim allerersten Spiel: der beste erste Zug pulsiert, bis man etwas setzt.
+  let coachDone = !(game.moves === 0 && (classic ? getStats().classic[game.size].played === 0 && game.size === 8 : game.level === 1));
+  function startCoach() {
+    if (coachDone || game.moves > 0 || locked) return;
+    coachDone = true;
+    const m = bestMove(game);
+    if (m) setTimeout(() => { if (game.moves === 0 && !view.drag) view.showHint({ ...m, persist: true }); }, 350);
   }
 
   // ---------- Sieg / Ende ----------
@@ -435,6 +446,7 @@ export function mountPlay(app, opts, nav) {
 
   if (game.won) setTimeout(() => winSequence(true), 200);
   else if (game.over) setTimeout(() => overSequence(true), 200);
+  else if (classic) setTimeout(startCoach, 500);
   else showIntro();
 
   // Test-Zugang (für automatische Tests)

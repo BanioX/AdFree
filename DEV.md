@@ -89,6 +89,28 @@ Alle Spiele verwenden dieselben Bausteine, damit sich die App wie aus einem Guss
 - Im laufenden Spiel bei Level 1 zusätzlich ein dezenter Hinweis direkt am Spielfeld (Coach-Mark,
   z.B. pulsierender Ring um das erste sinnvolle Ziel), der nach der ersten Aktion verschwindet.
 
+## Spass-Standard (Pflicht für jedes Spiel)
+
+Jedes Spiel muss **Spass machen** – nicht nur funktionieren. Vor dem Abschluss mehrere Runden selbst
+spielen und ehrlich prüfen: «Würde ich gleich noch eine Runde spielen?» Dafür sorgen:
+
+- **Sofort spielbar:** ein Tipp vom Startbildschirm ins Spiel, erste Runde kurz und leicht (Erfolgserlebnis
+  in unter einer Minute), danach sanft steigende Schwierigkeit.
+- **Saftiges Feedback** bei jeder Aktion: kleine Animation (Hüpfen, Glanz, Partikel), leiser Ton bei
+  echten Ereignissen, nie eine Aktion ohne Reaktion. Fehler freundlich (Wackeln), nie bestrafend.
+- **Belohnungen:** Sterne, Kombos/Serien mit Lob («Super!», «Fantastisch!»), Rekorde, Abschluss-Feier
+  mit Konfetti, Fortschritt sichtbar (Levelkarte, Sammlung/Album, freischaltbare Designs, Themen).
+- **Abwechslung:** verschiedene Level-Formen, Themen, besondere Level (z.B. jedes 10. «Spezial»),
+  Tagesrätsel, gelegentliche Überraschungen.
+- **Keine Frustration:** kein Zeitdruck ausser als Option, Hilfen gratis (zählen nur für Sterne),
+  Rückgängig, nie ein Zustand ohne Ausweg, «Nochmal» immer mit einem Tipp.
+- **Schön:** eigene, liebevolle Grafik, weiche Farben, flüssige 60 fps.
+
+## Logo / Kachel-Icon (Pflicht für jedes Spiel)
+
+Jedes Spiel braucht ein eigenes, sofort erkennbares Logo `/icons/games/<id>.svg` – ohne eigenes Logo
+zeigt die Startseite nur einen Buchstaben, das gilt als **nicht fertig**.
+
 ## Kachel-Icon (`/icons/games/<id>.svg`)
 
 - `viewBox="0 0 100 100"`, vollflächiger Hintergrund (sanfter Verlauf in der Spielfarbe, hell),

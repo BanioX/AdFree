@@ -38,8 +38,8 @@ export function build() {
 
   // --- striped wallpaper and wainscot
   pic.add('M0 0H1000V1000H0Z', 'wall1');
-  for (let x = 50; x < 1000; x += 100) pic.add(rect(x, 0, 50, 800), 'wall2');
-  pic.add(rect(0, 780, 1000, 220), 'wall2');
+  for (let x = 50; x < 1000; x += 100) pic.add(rect(x, 0, 50, 772), 'wall2');
+  pic.add(rect(0, 772, 1000, 228), 'wall2');
   for (let i = 0; i < 4; i++) pic.add(rrect(30 + i * 245, 820, 205, 150, 16), 'wall1');
 
   // --- the view outside, clipped to the glass
@@ -83,8 +83,8 @@ export function build() {
       if (side < 0) pts = mirrorX(pts, 500);
       pic.add(poly(pts), cols[f]);
     }
-    const tie = side > 0 ? [205, 560] : [795, 560];
-    pic.add(ellipse(tie[0], tie[1], 82, 24, side * -6 * DEG), 'pink');
+    const tie = side > 0 ? [216, 560] : [784, 560];
+    pic.add(ellipse(tie[0], tie[1], 46, 21, side * -8 * DEG), 'pink');
   };
   drape(1);
   drape(-1);
@@ -151,14 +151,14 @@ export function build() {
     pic.add(poly(ear), 'cat2');
     pic.add(poly(inner), 'pink');
   }
-  const head = ellipsePoly(500, 466, 86, 72, 64);
+  const head = smoothPoly([[408, 474], [426, 424], [468, 398], [532, 398], [574, 424], [592, 474], [574, 516], [532, 536], [468, 536], [426, 516]], 1, 10);
   pic.add(poly(head), 'cat2');
   for (const dx of [-26, 0, 26]) add(intersect(head, smoothPoly([[500 + dx - 8, 392], [500 + dx + 8, 392], [500 + dx + 5, 432, 'c'], [500 + dx - 5, 432, 'c']])), 'cat3');
   for (const s of [-1, 1]) add(intersect(head, [[500 + s * 60, 470], [500 + s * 100, 456], [500 + s * 100, 476], [500 + s * 62, 486]].map((p) => p)), 'cat3');
   pic.add(shapePath(union(ellipsePoly(484, 500, 26, 19, 32), ellipsePoly(516, 500, 26, 19, 32))), 'cat1');
   for (const s of [-1, 1]) {
     pic.add(ellipse(500 + s * 32, 458, 21, 15, s * 8 * DEG), 'green');
-    pic.add(ellipse(500 + s * 32, 458, 7.5, 13), 'roof');
+    pic.add(ellipse(500 + s * 32, 458, 8.5, 14), 'roof');
   }
   pic.add(smooth([[485, 484, 'c'], [515, 484, 'c'], [500, 504, 'c']], { k: 0.6 }), 'pink');
 

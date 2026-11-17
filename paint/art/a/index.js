@@ -8,5 +8,6 @@ export const pictures = [
   { id: "a-igel", title: "Igel mit Pilzen", category: "Tiere", load: () => import('./igel.js').then((m) => m.default) },
   { id: "a-fuchs", title: "Fuchs im Herbstlaub", category: "Tiere", load: () => import('./fuchs.js').then((m) => m.default) },
   { id: "a-koi", title: "Koi im Teich", category: "Tiere", load: () => import('./koi.js').then((m) => m.default) },
+  { id: "a-katze", title: "Katze am Fenster", category: "Tiere", load: () => import('./katze.js').then((m) => m.default) },
   { id: "a-eule", title: "Eule bei Mondschein", category: "Tiere", load: () => import('./eule.js').then((m) => m.default) },
 ];

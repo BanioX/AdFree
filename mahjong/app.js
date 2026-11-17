@@ -1,7 +1,6 @@
 // Mahjong – Oberfläche: Menü, Reise, Spielfläche, Tagesrätsel, Statistik, Einstellungen.
 
 import { store, reportSummary, todayKey, markDailyDone, isDailyDone, dailyStreak } from '../shared/storage.js';
-import { makeRng } from '../shared/rng.js';
 import { sfx } from '../shared/sfx.js';
 import { icon, h, toast, showModal, confirmDialog, celebrate, setupPage, soundButton, backButton, sleep } from '../shared/ui.js';
 import { layouts } from './data/layouts.js';
@@ -12,6 +11,7 @@ import { BoardView, drawMiniLayout } from './board.js';
 import { gameMenu, menuSection } from '../shared/gamemenu.js';
 import { showTutorial, maybeShowTutorial, tutorialSeen } from '../shared/tutorial.js';
 import { tutorialSteps } from './tutorial.js';
+import { dailyDef as dailyDefFor, dailySeed } from './daily.js';
 
 setupPage();
 
@@ -92,15 +92,7 @@ function updateSummary() {
 
 // ------------------------------------------------------------ Tagesrätsel
 
-function dailyDef(date = todayKey()) {
-  const rng = makeRng('mahjong-tag-' + date);
-  if (rng.next() < 0.3) {
-    const def = generateLayoutDef('tag-' + date, rng.chance(0.5) ? 'mittel' : 'gross');
-    return { ...def, name: 'Tagesform' };
-  }
-  const pool = layouts.filter((l) => parsedLayout(l).tiles.length >= 64);
-  return rng.pick(pool);
-}
+function dailyDef(date = todayKey()) { return dailyDefFor(date); }
 
 // ------------------------------------------------------------ Navigation
 
@@ -282,7 +274,7 @@ function showMenu() {
       },
     },
     secondary: [
-      { label: 'Reise', sub: `${done}/${layouts.length} · ★ ${stars}`, icon: 'grid', onClick: () => go('reise') },
+      { label: 'Reise', sub: `${done}/${layouts.length}`, icon: 'grid', onClick: () => go('reise') },
       { label: 'Zufall', sub: 'Endlos', icon: 'shuffle', onClick: () => chooseEndless() },
       { label: 'Statistik', icon: 'star', onClick: () => showStats() },
     ],
@@ -387,7 +379,7 @@ async function openDaily() {
   let fresh = false;
   const create = () => {
     const def = dailyDef(date);
-    const ses = Session.create(parseLayout(def), { kind: 'daily', ref: def.id, seed: 'mahjong-' + date, name: 'Tagesrätsel', date, form: def.name });
+    const ses = Session.create(parseLayout(def), { kind: 'daily', ref: def.id, seed: dailySeed(date), name: 'Tagesrätsel', date, form: def.name });
     store.set(K.daily, { date, save: ses.serialize() });
     countStart();
     return ses;
@@ -517,15 +509,15 @@ function showGame(session, slot, { fresh = false } = {}) {
     if (!r) return;
     const W = view.cam.w, H = W * TILE.ratio;
     coachEl = h('div.coach');
-    let top = Infinity, bottom = 0, cx = 0;
+    let top = Infinity, bottom = 0;
     for (const i of r.pair) {
       const c = view.tileCenter(i);
       coachEl.append(h('div.coach-ring', { style: { left: c.x + 'px', top: c.y + 'px', width: W + 10 + 'px', height: H + 10 + 'px' } }));
-      top = Math.min(top, c.y - H / 2); bottom = Math.max(bottom, c.y + H / 2); cx += c.x / 2;
+      top = Math.min(top, c.y - H / 2); bottom = Math.max(bottom, c.y + H / 2);
     }
     const below = bottom + 60 < view.viewH;
     const bubble = h('div.coach-bubble', { class: 'coach-bubble ' + (below ? 'below' : 'above') }, 'Tippe die zwei gleichen Steine an');
-    bubble.style.left = Math.max(110, Math.min(view.viewW - 110, cx)) + 'px';
+    bubble.style.left = '50%';
     bubble.style.top = (below ? bottom + 12 : top - 12) + 'px';
     coachEl.append(bubble);
     wrap.append(coachEl);

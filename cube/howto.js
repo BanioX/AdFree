@@ -223,7 +223,7 @@ function steps() {
         const lv = generateLevel(1);
         const sc = cubeScene(stage, api, lv);
         const order = solve(makeCube(lv.N), lv.arrows) || [];
-        const stars = h('div.tut-stars', null, [0, 1, 2].map((i) => h('span', { html: icon('star', { size: 40 }), style: { '--i': i } })));
+        const stars = h('div.tut-stars', null, [0, 1, 2].map((i) => h('span', { html: icon('star', { size: 40 }), style: `--i:${i}` })));
         stage.append(stars);
         return api.loop(async () => {
           sc.reset();

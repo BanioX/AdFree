@@ -18,7 +18,7 @@
 }
 
 /* Titelbild im gemeinsamen Startbildschirm: Live-Würfel statt Icon */
-.cube-menu .gm-art.custom { width: 100%; animation: none; border-radius: 0; }
+.cube-menu .gm-art.custom { width: 100%; animation: none; border-radius: 0; background: none; box-shadow: none; overflow: visible; }
 .hero-stage { position: relative; width: 100%; height: 230px; }
 .hero-cube { position: absolute; inset: 0; width: 100%; height: 100%; }
 .hero-badge {

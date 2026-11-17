@@ -515,7 +515,7 @@ export function mountPlay(root, levelNum, nav) {
       : newChapter ? `Neues Kapitel: ${nth.name}` : null;
     const starRow = h('div.win-stars');
     for (let i = 0; i < 3; i++) {
-      const st = h('span.win-star' + (i < stars ? '.on' : ''), { html: icon('star', { size: 56 }), style: { '--i': i } });
+      const st = h('span.win-star' + (i < stars ? '.on' : ''), { html: icon('star', { size: 56 }), style: `--i:${i}` });
       starRow.append(st);
     }
     const content = h('div.win', null,

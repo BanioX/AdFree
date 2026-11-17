@@ -96,11 +96,11 @@ export function mountMenu(root, nav) {
       if (current) currentTile = tile;
       grid.append(tile);
     }
-    const sw = h('span.ch-swatch', { style: { '--l': th.light, '--d': th.dark, '--i': th.ink } });
+    const sw = h('span.ch-swatch', { style: `--l:${th.light};--d:${th.dark};--i:${th.ink}` });
     const head = h('div.ch-head', null, sw,
       h('span.ch-name', null, h('b', null, `Kapitel ${ch}`), h('small', null, th.name)),
       h('span.ch-stars', { html: `${icon('star', { size: 14 })}<span>${chStars}/${CHAPTER_SIZE * 3}</span>` }));
-    map.append(h('div.chapter' + (ch > curChapter ? '.locked' : ''), { style: { '--ch': th.dark } }, head, grid));
+    map.append(h('div.chapter' + (ch > curChapter ? '.locked' : ''), null, head, grid));
   }
   const legend = h('p.map-legend', { html: `<span class="legend-badge">${icon('sparkle', { size: 11 })}</span>Jedes 10. Level ist ein Spezial-Level. Neues Kapitel = neues Papier.` });
 

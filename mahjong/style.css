@@ -238,23 +238,41 @@
 .more-list { display: flex; flex-direction: column; gap: 10px; }
 
 /* ---------- Tutorial-Demos ---------- */
+.td-table {
+  position: absolute; inset: 0; border-radius: inherit;
+  background:
+    radial-gradient(110% 80% at 50% 30%, rgba(255,255,255,.6), rgba(255,255,255,0) 70%),
+    linear-gradient(180deg, var(--table-1), var(--table-2));
+  box-shadow: inset 0 2px 8px rgba(120, 80, 30, .12);
+}
 .td-tile {
   position: absolute; transform: translate(-50%, -50%); line-height: 0;
   transition: transform .25s var(--ease-out), opacity .3s, filter .25s;
 }
+.td-tile.still, .td-tile.still canvas { transition: none !important; animation: none !important; }
 .td-tile canvas { filter: drop-shadow(0 4px 5px rgba(90, 40, 20, .2)); }
 .td-tile.dim { filter: brightness(.78) saturate(.8); }
-.td-tile.sel { transform: translate(-50%, calc(-50% - 6px)) scale(1.06); }
+.td-tile.sel { transform: translate(-50%, calc(-50% - 6px)) scale(1.06); z-index: 30 !important; }
 .td-tile.sel canvas { filter: drop-shadow(0 0 0 #e7a923) drop-shadow(0 0 6px rgba(231, 169, 35, .95)) drop-shadow(0 8px 8px rgba(90, 40, 20, .25)); }
+.td-tile.fly { transition: left .34s var(--ease-in-out, ease-in-out), top .34s var(--ease-in-out, ease-in-out), transform .25s var(--ease-out), opacity .3s; }
 .td-tile.hint canvas { animation: td-hint 0.9s ease-in-out infinite; }
 @keyframes td-hint {
   0%, 100% { filter: drop-shadow(0 0 2px rgba(47, 138, 115, .6)); }
   50% { filter: drop-shadow(0 0 10px rgba(47, 138, 115, 1)); }
 }
-.td-tile.gone { opacity: 0; transform: translate(-50%, calc(-50% - 24px)) scale(.6); transition: transform .45s var(--ease-out), opacity .4s; }
+.td-tile.gone { opacity: 0; transform: translate(-50%, calc(-50% - 10px)) scale(.55); transition: transform .3s var(--ease-in, ease-in), opacity .28s; }
 .td-tile.shake { animation: td-shake .4s; }
 @keyframes td-shake {
   0%, 100% { margin-left: 0; } 20% { margin-left: -6px; } 40% { margin-left: 6px; } 60% { margin-left: -4px; } 80% { margin-left: 3px; }
+}
+.td-spark { position: absolute; width: 0; height: 0; z-index: 40; pointer-events: none; }
+.td-spark i {
+  position: absolute; left: -4px; top: -4px; width: 8px; height: 8px; border-radius: 2px;
+  transform: rotate(45deg); animation: td-spark .75s var(--ease-out) forwards;
+}
+@keyframes td-spark {
+  0% { opacity: 1; transform: translate(0, 0) rotate(45deg) scale(1.2); }
+  100% { opacity: 0; transform: translate(var(--dx), var(--dy)) rotate(225deg) scale(.4); }
 }
 .td-tools { position: absolute; left: 50%; bottom: 16px; transform: translateX(-50%); display: flex; gap: 14px; }
 .td-tools span {
@@ -264,11 +282,24 @@
 .td-tools .hint { color: #b77905; }
 .td-tools .shuffle { color: var(--jade); }
 .td-done {
-  position: absolute; left: 50%; top: 50%; width: 64px; height: 64px; margin: -32px 0 0 -32px; border-radius: 50%;
-  display: grid; place-items: center; background: var(--jade); color: #fff; box-shadow: var(--shadow);
-  opacity: 0; transform: scale(.4); transition: opacity .2s, transform .35s var(--ease-spring);
+  position: absolute; left: 50%; top: 46%; transform: translate(-50%, -50%) scale(.4); z-index: 45;
+  display: flex; flex-direction: column; align-items: center; gap: 8px; opacity: 0;
+  transition: opacity .2s, transform .35s var(--ease-spring);
 }
-.td-done.show { opacity: 1; transform: none; }
+.td-done.show { opacity: 1; transform: translate(-50%, -50%); }
+.td-check { width: 60px; height: 60px; border-radius: 50%; display: grid; place-items: center; background: var(--jade); color: #fff; box-shadow: var(--shadow); }
+.td-stars { display: flex; gap: 4px; color: var(--gold); filter: drop-shadow(0 2px 3px rgba(150, 100, 0, .3)); }
+.td-stars i { display: grid; opacity: 0; transform: scale(.3); }
+.td-done.show .td-stars i { animation: mj-star .45s var(--ease-spring) both; }
+.td-done.show .td-stars i:nth-child(1) { animation-delay: .25s; }
+.td-done.show .td-stars i:nth-child(2) { animation-delay: .4s; }
+.td-done.show .td-stars i:nth-child(3) { animation-delay: .55s; }
+.td-eq {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 40px; height: 40px; border-radius: 50%;
+  display: grid; place-items: center; background: var(--surface); box-shadow: var(--shadow);
+  font-size: 26px; font-weight: 900; color: var(--accent); transition: opacity .2s, transform .25s;
+}
+.td-eq.gone { opacity: 0; transform: translate(-50%, -50%) scale(.5); }
 
 /* ---------- Coach-Mark (erstes Layout) ---------- */
 .coach { position: absolute; inset: 0; pointer-events: none; z-index: 5; transition: opacity .25s; }

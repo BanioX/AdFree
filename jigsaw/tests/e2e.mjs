@@ -2,7 +2,7 @@
 //   Anleitung beim ersten Start → Startbildschirm → 12er-Puzzle per Touch-Ziehen lösen
 //   → Neuladen setzt den Stand fort → Gewinn-Blatt → zurück im Menü mit Statistik. Keine Konsolenfehler.
 //
-//   Server (Repo-Wurzel):  python3 -m http.server 8223 --bind 127.0.0.1
+//   Server (Repo-Wurzel):  python3 -m http.server 8146 --bind 127.0.0.1
 //   Start:                 node jigsaw/tests/e2e.mjs
 import { createRequire } from 'node:module';
 import { mkdirSync } from 'node:fs';
@@ -13,7 +13,7 @@ const { chromium, devices } = createRequire(import.meta.url)('playwright');
 const here = path.dirname(fileURLToPath(import.meta.url));
 const OUT = path.join(here, 'out');
 mkdirSync(OUT, { recursive: true });
-const BASE = process.env.BASE || 'http://127.0.0.1:8223/jigsaw/';
+const BASE = process.env.BASE || 'http://127.0.0.1:8146/jigsaw/';
 
 const errors = [];
 let failed = false;
@@ -23,7 +23,7 @@ function check(cond, msg) {
 }
 
 const browser = await chromium.launch();
-const ctx = await browser.newContext({ ...devices['iPhone 13'], deviceScaleFactor: 1 });
+const ctx = await browser.newContext({ ...devices['iPhone 13'], deviceScaleFactor: 1, locale: process.env.LOCALE || 'de-CH' });
 const page = await ctx.newPage();
 page.on('pageerror', (e) => errors.push('pageerror: ' + e.message));
 page.on('console', (m) => { if (m.type() === 'error') { errors.push('console: ' + m.text()); if (process.env.DEBUG) console.log('    [console error]', m.text().slice(0, 60)); } });

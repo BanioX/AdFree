@@ -73,8 +73,8 @@ Mehrere KI-Agenten bauen parallel – Zuständigkeiten und Regeln stehen in [AGE
 | 39 | Vier in einer Reihe | ✅ |
 | 40 | Reversi | ✅ |
 | 41 | Dame | ✅ |
-| 42 | Mühle | 📋 |
-| 43 | Eile mit Weile | 📋 |
+| 42 | Mühle | ✅ |
+| 43 | Eile mit Weile | ✅ |
 | 44 | Kalaha (Mancala) | ✅ |
 | 45 | Fünf in einer Reihe (Gomoku) | ✅ |
 | 46 | Schiffe versenken | 📋 |

@@ -1,5 +1,5 @@
 // Bergsee mit Alpen und Chalet: Gipfel mit Schnee, Tannenwald, See mit Segelboot, Chalet mit Geranien.
-import { Pic, rect, circle, smooth, poly, roundPoly, cloud, wavePts, band, between, heart, lerp, rng } from './lib.mjs';
+import { Pic, bumpy, rect, circle, smooth, poly, roundPoly, cloud, wavePts, band, between, heart, lerp, rng } from './lib.mjs';
 
 export const meta = {
   id: 'b-bergsee',
@@ -52,11 +52,11 @@ export default function build() {
   for (let i = 1; i < back.length - 1; i += 2) {
     const [x, y] = back[i];
     const nx = back[i + 1];
-    p.add(poly([[x, y], nx, [nx[0] - 20, 620], [x + 20, 620]]), 'mtn2');
+    p.filler(poly([[x, y], nx, [nx[0] - 20, 620], [x + 20, 620]]), 'mtn2');
     const k = 0.32;
     const L = [lerp(x, back[i - 1][0], k), lerp(y, back[i - 1][1], k)];
     const Rt = [lerp(x, nx[0], k), lerp(y, nx[1], k)];
-    p.add(poly([[x, y], Rt, [lerp(x, Rt[0], 0.55), Rt[1] - 10], [x + 4, Rt[1] + 12], [lerp(x, L[0], 0.5), L[1] - 6], L]), 'white');
+    p.filler(poly([[x, y], Rt, [lerp(x, Rt[0], 0.55), Rt[1] - 10], [x + 4, Rt[1] + 12], [lerp(x, L[0], 0.5), L[1] - 6], L]), 'white');
   }
 
   // vordere Gipfel mit Licht- und Schattenseite
@@ -65,6 +65,16 @@ export default function build() {
     const [tx, ty] = top;
     p.add(poly([top, [ridgeX, 640], left]), 'rock1');
     p.add(poly([top, right, [ridgeX, 640]]), 'rock2');
+    const ry = (t) => ty + (640 - ty) * t;
+    const ridge = (t0, t1, side, col) => {
+      const a = [lerp(tx, ridgeX, t0), ry(t0)];
+      const b = [lerp(tx, ridgeX, t1) + side * (t1 - t0) * 260, ry(t1)];
+      const c = [lerp(tx, ridgeX, t1) + side * (t1 - t0) * 120, ry(t1) - 10];
+      p.filler(poly([a, b, c]), col);
+    };
+    ridge(0.35, 0.8, -1, 'rock2');
+    ridge(0.5, 0.95, -0.7, 'mtn2');
+    ridge(0.3, 0.75, 1, 'rock1');
     // Schneekappe: Zacken links (Licht) und rechts (Schatten)
     const fl = (y) => lerp(tx, left[0], (y - ty) / (left[1] - ty));
     const fr = (y) => lerp(tx, right[0], (y - ty) / (right[1] - ty));
@@ -117,13 +127,15 @@ export default function build() {
   p.add(band(wavePts(-10, 1010, 770, 14, 520, 3.4), 1010), 'green1');
   p.add(band(wavePts(-10, 1010, 900, 12, 380, 0.4), 1010), 'green2');
   p.tag('blumen');
-  for (const [x, y, c] of [[70, 830, 'white'], [160, 870, 'red'], [250, 815, 'white'], [360, 860, 'red'], [450, 820, 'white'], [520, 940, 'white'], [120, 960, 'white'], [300, 970, 'red'], [940, 960, 'white'], [600, 880, 'red']]) {
-    const r = 16;
-    p.add(poly(Array.from({ length: 10 }, (_, i) => {
-      const a = (i * Math.PI) / 5;
-      const rr = i % 2 ? r * 0.55 : r;
-      return [x + rr * Math.cos(a), y + rr * Math.sin(a)];
-    })), c);
+  // Weg zum Chalet
+  p.add(smooth([[740, 872, 1], [782, 872, 1], [800, 920], [860, 1010, 1], [640, 1010, 1], [700, 930]]), 'snowS');
+  for (const [x, y, c, r] of [[70, 830, 'white', 26], [170, 875, 'red', 24], [260, 815, 'white', 22], [370, 860, 'red', 26], [470, 825, 'white', 24], [520, 950, 'white', 28], [110, 955, 'red', 28], [300, 960, 'white', 30], [940, 950, 'red', 28], [580, 870, 'white', 22], [950, 820, 'white', 22]]) {
+    const pts = Array.from({ length: 5 }, (_, i) => {
+      const a = (i * 2 * Math.PI) / 5 - Math.PI / 2;
+      return [x + r * 0.62 * Math.cos(a), y + r * 0.62 * Math.sin(a)];
+    });
+    p.add(bumpy(pts, 0.75), c);
+    p.add(circle(x, y, r * 0.36), 'wood1');
   }
 
   // Chalet
@@ -143,7 +155,7 @@ export default function build() {
     p.add(rect(x + 6, 768, 18, 50), 'sky3');
     p.add(rect(x + 28, 768, 18, 50), 'sky3');
     p.add(cloud(x - 10, x + 62, 836, [[x + 6, 822], [x + 26, 816], [x + 46, 820]], 0.55), 'red');
-    p.add(rect(x - 8, 832, 68, 16, 3), 'green2');
+    p.add(rect(x - 8, 830, 68, 20, 3), 'green2');
   }
   p.add(rect(738, 770, 44, 85, 6), 'wood2');
   p.add(rect(630, 852, 260, 24, 4), 'rock1');

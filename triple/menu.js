@@ -6,6 +6,7 @@ import { gameMenu, menuSection } from '../shared/gamemenu.js';
 import { showHelp, ACCENT } from './howto.js';
 import { themes, themeById } from './data/themes.js';
 import { generateLevel, levelParams, themeForLevel, SIZES } from './logic/generator.js';
+import { TRAY_SIZE } from './logic/rules.js';
 import { loadProgress, loadStats, loadSave, totalStars, formatTime, getPref, setPref, updateSummary } from './progress.js';
 
 export { showHelp };
@@ -41,6 +42,8 @@ export function mountMenu(root, nav) {
   const save = loadSave('play');
   const resume = save && save.levelNo === L && save.game && save.game.moves > 0;
   const pct = resume ? savedProgress(save) : 0;
+  // verlorene Runde (Ablage voll): ehrlich «Nochmal versuchen» statt «Weiterspielen»
+  const lost = resume && Array.isArray(save.game.tray) && save.game.tray.length >= TRAY_SIZE;
   const stars = totalStars(prog);
 
   root.className = 'app tr-menu';
@@ -67,8 +70,10 @@ export function mountMenu(root, nav) {
     accent: ACCENT,
     art,
     primary: {
-      label: resume ? `Weiterspielen – Level ${L}` : `Spielen – Level ${L}`,
-      sub: resume ? `${theme.title} · ${pct > 0 ? pct + " % geschafft" : "angefangen"}` : `${theme.title} · ${level.tiles.length} Steine${tag ? ' · ' + tag : ''}`,
+      label: lost ? `Nochmal versuchen – Level ${L}` : resume ? `Weiterspielen – Level ${L}` : `Spielen – Level ${L}`,
+      sub: lost ? `${theme.title} · Ablage war voll`
+        : resume ? `${theme.title} · ${pct > 0 ? pct + ' % geschafft' : 'angefangen'}`
+          : `${theme.title} · ${level.tiles.length} Steine${tag ? ' · ' + tag : ''}`,
       onClick: () => nav.go('#play'),
     },
     secondary: [

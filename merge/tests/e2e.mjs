@@ -333,8 +333,7 @@ try {
   const sec = await sp.locator('.gm-secondary').boundingBox();
   assert.ok(sec.y + sec.height <= 667, 'Nebenknöpfe ohne Scrollen sichtbar');
   await sp.evaluate(() => { const k = 'spielpause.merge.progress'; const p = JSON.parse(localStorage.getItem(k) || '{}'); p.skin = 'weltall'; p.moves = 5; localStorage.setItem(k, JSON.stringify(p)); });
-  await sp.goto(BASE + '#spiel/entspannt6');
-  await sp.reload();
+  await sp.goto(BASE + '?neu=1#spiel/entspannt6'); // volle Seitenladung (Fortschritt neu lesen)
   await sp.waitForSelector('.board .tile');
   assert.equal(await sp.locator('.app.dark-skin').count(), 1, 'Weltall-Stil aktiv');
   const valSize = await sp.evaluate(() => parseFloat(getComputedStyle(document.querySelector('.board .tile .val')).fontSize));

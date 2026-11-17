@@ -460,6 +460,7 @@
   padding: 7px 12px; border-radius: 99px; box-shadow: 0 6px 16px rgba(70, 45, 20, .22);
 }
 .tr-coach span.below { bottom: auto; top: calc(var(--ch, 54px) / 2 + 14px); }
+.tr-coach span.free { bottom: auto; transform: translate(-50%, -50%); }
 @keyframes tr-coach-pulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.1); opacity: .7; } }
 
 /* ---------- Anleitung: Mini-Demos ---------- */

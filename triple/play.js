@@ -385,6 +385,40 @@ export function mountPlay(root, ctx) {
     });
   }
 
+  /**
+   * Auslage erscheint/verschwindet: Brett sanft neu einpassen (nur wenn layout() dafür Platz freigibt).
+   * Grössen sind relativ zur Steinbreite → alle Skalen mit k umrechnen, damit nichts springt.
+   */
+  function syncShelfSpace() {
+    if (!L || !alive) return;
+    const want = !L.reclaim || game.shelf.length > 0;
+    if (want === L.shelfOn) return;
+    const old = { u: L.u, ox: L.ox, oy: L.oy, tileW: L.tileW };
+    layout();
+    const k = old.tileW / L.tileW;
+    const m = L.u / old.u;
+    for (let i = 0; i < game.n; i++) {
+      const s = sp[i];
+      if (!s) continue;
+      s.s *= k;
+      if (game.where[i] === 0) {
+        if (s.tw) {
+          s.tw.from.s *= k;
+          s.tw.to.x = L.ox + (s.tw.to.x - old.ox) * m;
+          s.tw.to.y = L.oy + (s.tw.to.y - old.oy) * m;
+        } else {
+          const p = boardPos(i);
+          tw.to(s, { x: p.x, y: p.y, s: 1 }, { dur: 320, ease: ease.inOutCubic });
+        }
+      } else if (s.tw) {
+        s.tw.from.s *= k;
+        s.tw.to.s *= k;
+      }
+      s.apply();
+    }
+    placeCoach();
+  }
+
   function updateTrayMood() {
     const count = vTray.filter((e) => !e.pending && !e.popping).length;
     trayBg.classList.toggle('warn', count === TRAY_SIZE - 2);
@@ -416,7 +450,8 @@ export function mountPlay(root, ctx) {
   let tickAt = performance.now();
   function tick() {
     const now = performance.now();
-    if (game.status === 'play' && document.visibilityState === 'visible') game.elapsed += Math.min(now - tickAt, 5000);
+    const overlay = document.querySelector('.sp-modal-backdrop, .tut-backdrop'); // Dialog/Anleitung offen → Pause
+    if (game.status === 'play' && document.visibilityState === 'visible' && !overlay) game.elapsed += Math.min(now - tickAt, 5000);
     tickAt = now;
   }
   const tickTimer = setInterval(tick, 1000);
@@ -563,7 +598,10 @@ export function mountPlay(root, ctx) {
     vTray.splice(lastSame >= 0 ? lastSame + 1 : vTray.length, 0, entry);
     if (ev.matched) vTray.forEach((e) => { if (ev.matched.includes(e.id)) e.pending = true; });
     layoutTray(id);
-    if (ev.from === 's') layoutShelf();
+    if (ev.from === 's') {
+      layoutShelf();
+      if (!game.shelf.length) later(syncShelfSpace, FLY_MS);
+    }
     refreshCovered();
     for (const f of ev.freed) {
       const s = sp[f];
@@ -572,6 +610,9 @@ export function mountPlay(root, ctx) {
     later(() => sfx.play('place'), FLY_MS - 40);
     if (ev.matched) later(() => popTriple(ev.matched), FLY_MS - 10);
     updateHud();
+    // Gewonnen: sofort verbuchen (Fortschritt, Statistik, Spielstand löschen) – das Blatt kommt erst nach
+    // der Animation. So geht der Sieg nicht verloren, wenn die App gleich danach verlassen wird.
+    if (ev.status === 'won') settleWin();
     persist();
     if (ev.status === 'lost') later(onLoss, FLY_MS + 120);
     return true;
@@ -585,7 +626,7 @@ export function mountPlay(root, ctx) {
     sfx.play('click');
     if (game.status === 'won') return;
     if (game.helpers[k] <= 0) {
-      toast('Schon benutzt – im nächsten Level wieder da');
+      toast(ctx.kind === 'free' ? 'Schon benutzt – im nächsten Spiel wieder da' : 'Schon benutzt – im nächsten Level wieder da');
       return;
     }
     if (k === 'undo') doUndo();
@@ -607,6 +648,7 @@ export function mountPlay(root, ctx) {
       s.el.style.zIndex = 600;
       tw.to(s, { x: p.x, y: p.y, s: 1, r: 0 }, { dur: 320, arc: 30, onDone: () => { s.el.style.zIndex = zBoard(ev.id); } });
     } else {
+      syncShelfSpace();
       layoutShelf();
     }
     layoutTray();
@@ -626,6 +668,7 @@ export function mountPlay(root, ctx) {
     clearHint();
     sfx.play('whoosh');
     vTray = vTray.filter((e) => !ev.moved.includes(e.id));
+    syncShelfSpace();
     layoutShelf();
     layoutTray();
     updateHud();
@@ -641,7 +684,7 @@ export function mountPlay(root, ctx) {
     clearHint();
     sfx.play('whoosh');
     const ids = game.boardIds();
-    const cx = L.W / 2, cy = (L.shelfY) / 2;
+    const cx = L.W / 2, cy = (L.bTop + L.bBot) / 2;
     ids.forEach((id, k) => {
       const s = sp[id];
       const a = Math.random() * Math.PI * 2;
@@ -688,10 +731,9 @@ export function mountPlay(root, ctx) {
   async function onWin() {
     if (!alive || winShown) return;
     winShown = true;
-    tick();
+    const res = settleWin();
     sfx.play('complete');
     celebrate([theme.color, '#ffd23f', '#ff8fb1', '#7bd389', '#8a63d2']);
-    const res = ctx.onWin(game);
     await new Promise((r) => later(r, 650));
     const starRow = h('div.tr-win-stars');
     for (let k = 0; k < 3; k++) {
@@ -713,10 +755,15 @@ export function mountPlay(root, ctx) {
     if (alive) ctx.onWinChoice(v);
   }
   let winShown = false;
+  let winRes = null;
+  function settleWin() {
+    if (!winRes) { tick(); winRes = ctx.onWin(game); }
+    return winRes;
+  }
 
   async function onLoss() {
     if (!alive || game.status !== 'lost') return;
-    sfx.play('error');
+    if (gestured()) sfx.play('error');
     trayBg.classList.remove('sp-shake');
     void trayBg.offsetWidth;
     trayBg.classList.add('sp-shake');
@@ -761,6 +808,7 @@ export function mountPlay(root, ctx) {
 
   // ---------- Start ----------
   function build() {
+    fitTitle();
     layout();
     for (let i = 0; i < game.n; i++) if (game.where[i] !== 3) makeSprite(i);
     for (const s of sp) if (s) { s.w = L.tileW; s.h = L.tileH; }
@@ -788,9 +836,9 @@ export function mountPlay(root, ctx) {
       s.x = p.x; s.y = p.y - 26 - level.tiles[i].z * 4; s.s = 0.6; s.o = 0; s.apply();
       tw.to(s, { y: p.y, s: 1, o: 1 }, { dur: 360, delay: 120 + k * step + level.tiles[i].z * 40, ease: ease.outBack });
     });
-    later(() => sfx.play('whoosh'), 80);
+    later(() => { if (gestured()) sfx.play('whoosh'); }, 80);
     const banner = h('div.tr-banner', null,
-      h('b', null, ctx.title),
+      h('b', null, ctx.bannerTitle || ctx.title),
       h('span', null, ctx.tag || theme.title));
     fx.append(banner);
     banner.animate([
@@ -800,7 +848,7 @@ export function mountPlay(root, ctx) {
       { transform: 'translate(-50%,-50%) scale(.96)', opacity: 0 },
     ], { duration: 1500, easing: 'ease-out' }).onfinish = () => banner.remove();
     banner.style.left = L.W / 2 + 'px';
-    banner.style.top = L.shelfY * 0.45 + 'px';
+    banner.style.top = (L.bTop + L.bBot) / 2 + 'px';
     later(() => { busy = false; }, 200 + order.length * step + 360 + 9 * 40);
   }
 
@@ -823,8 +871,17 @@ export function mountPlay(root, ctx) {
     coach.style.top = p.y + 'px';
     coach.style.setProperty('--cw', L.tileW + 'px');
     coach.style.setProperty('--ch', L.tileH + 'px');
+    // Hinweis nicht über die Nachbarsteine legen: in den freien Raum unter (oder über) dem Brett
     const label = coach.lastChild;
-    label.classList.toggle('below', p.y < L.H * 0.3);
+    const freeBelow = L.boardBottom - (L.bBot + 6);
+    const freeAbove = L.bTop - 2;
+    let cy = null;
+    if (freeBelow >= 40) cy = L.bBot + 6 + freeBelow / 2;
+    else if (freeAbove >= 40) cy = freeAbove / 2;
+    label.classList.toggle('free', cy != null);
+    label.classList.toggle('below', cy == null && p.y < L.H * 0.3);
+    label.style.left = cy != null ? (L.W / 2 - p.x) + 'px' : '';
+    label.style.top = cy != null ? (cy - p.y) + 'px' : '';
   }
   function removeCoach() {
     if (!coach) return;
@@ -839,7 +896,7 @@ export function mountPlay(root, ctx) {
   let resizeT = 0;
   const onResize = () => {
     clearTimeout(resizeT);
-    resizeT = setTimeout(() => { if (!alive) return; layout(); placeAll(); placeCoach(); }, 60);
+    resizeT = setTimeout(() => { if (!alive) return; fitTitle(); layout(); placeAll(); placeCoach(); }, 60);
   };
   window.addEventListener('resize', onResize);
   const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(onResize) : null;

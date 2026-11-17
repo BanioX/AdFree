@@ -1,0 +1,36 @@
+import { dict } from '../shared/i18n.js';
+
+export const tr = dict({
+  de: {
+    title: 'Kreuzworträtsel',
+    tagline: 'Ein kleines Gitter, eigene Rätsel',
+    level: 'Stufe',
+    across: 'Waagrecht',
+    down: 'Senkrecht',
+    go: 'Tippe ein Feld, dann einen Buchstaben',
+    win: 'Das Gitter stimmt',
+    hint: 'Ein Buchstabe eingesetzt',
+    tut1: 'Feld tippen',
+    tut1t: 'Tippe ein weisses Feld. Die Frage steht darunter.',
+    tut2: 'Buchstabe',
+    tut2t: 'Tippe den Buchstaben. Falsch Gesetztes kannst du überschreiben.',
+    tut3: 'Kreuzen',
+    tut3t: 'Waagrecht und senkrecht teilen sich Buchstaben. Fertig, wenn alles stimmt.',
+  },
+  en: {
+    title: 'Mini Crossword',
+    tagline: 'A small grid, its own puzzles',
+    level: 'Level',
+    across: 'Across',
+    down: 'Down',
+    go: 'Tap a square, then a letter',
+    win: 'The grid is right',
+    hint: 'One letter filled',
+    tut1: 'Tap a square',
+    tut1t: 'Tap a white square. The clue sits underneath.',
+    tut2: 'A letter',
+    tut2t: 'Tap the letter. You can overwrite a wrong one.',
+    tut3: 'They cross',
+    tut3t: 'Across and down share letters. Done when every square is right.',
+  },
+});

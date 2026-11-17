@@ -91,7 +91,7 @@ Mehrere KI-Agenten bauen parallel – Zuständigkeiten und Regeln stehen in [AGE
 | 53 | Wortleiter | ✅ |
 | 54 | Anagramm | ✅ |
 | 55 | Wortwirbel – Wörter im Buchstabenfeld | ✅ |
-| 56 | Kreuzworträtsel (Mini) | 📋 |
+| 56 | Kreuzworträtsel (Mini) | ✅ |
 | 57 | Emoji-Rätsel – Begriffe erraten | 📋 |
 
 ## Welle 3 · Gemini

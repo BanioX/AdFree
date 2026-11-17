@@ -1,0 +1,16 @@
+.xw { width: min(100%, 420px); margin: 0 auto; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.xw-grid { display: grid; grid-template-columns: repeat(7, 40px); gap: 2px; touch-action: none; }
+.xw-grid button, .xw-grid i {
+  width: 40px; height: 40px; border: 0; background: #fff; font: inherit; font-weight: 800; font-size: 16px;
+  position: relative; touch-action: none;
+}
+.xw-grid i { background: #3a6ea5; display: block; }
+.xw-grid button.on { outline: 3px solid #3a6ea5; }
+.xw-grid button s { position: absolute; left: 2px; top: 1px; font-size: 9px; text-decoration: none; font-weight: 700; }
+.xw-clues { width: 100%; max-height: 16dvh; overflow: auto; display: flex; flex-direction: column; gap: 4px; }
+.xw-clues button { border: 0; background: #fff; border-radius: 8px; text-align: left; padding: 6px 8px; font: inherit; font-size: 13px; }
+.xw-keys { display: flex; flex-wrap: wrap; gap: 3px; justify-content: center; max-width: 360px; }
+.xw-keys button { min-width: 26px; height: 32px; border: 0; border-radius: 7px; background: #fff; font: inherit; font-weight: 800; font-size: 13px; }
+.xw-demo { display: flex; gap: 4px; }
+.xw-demo b { width: 28px; height: 28px; background: #fff; display: grid; place-items: center; font-size: 14px; }
+.xw-demo .on { outline: 2px solid #3a6ea5; }

@@ -50,6 +50,7 @@ export const games = [
   { id: 'gomoku', title: 'Fünf in einer Reihe', tile: 'Fünf in\u00A0einer Reihe', subtitle: 'Fünf Steine in einer Linie', category: 'brett', color: '#8a5a2b', added: '2026-11-17' },
   { id: 'dame', title: 'Dame', subtitle: 'Schlagen, bis die Dame fliegt', category: 'brett', color: '#c45c26', added: '2026-11-17' },
   { id: 'muehle', title: 'Mühle', subtitle: 'Drei in einer Linie, Stein weg', category: 'brett', color: '#8b5a2b', added: '2026-11-17' },
+  { id: 'eile', title: 'Eile mit Weile', tile: 'Eile mit\u00A0Weile', subtitle: 'Kurze Runde, vier Farben', category: 'brett', color: '#e23d4a', added: '2026-11-17' },
 ];
 
 export function gameById(id) {

@@ -70,7 +70,7 @@ Mehrere KI-Agenten bauen parallel – Zuständigkeiten und Regeln stehen in [AGE
 **Brettspiele gegen den Computer** (gemeinsames Brett + KI in drei Stärken)
 | # | Spiel | Stand |
 |--:|---|:-:|
-| 39 | Vier in einer Reihe | 📋 |
+| 39 | Vier in einer Reihe | ✅ |
 | 40 | Reversi | 📋 |
 | 41 | Dame | 📋 |
 | 42 | Mühle | 📋 |

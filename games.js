@@ -44,6 +44,7 @@ export const games = [
   { id: 'match3', title: 'Juwelen', subtitle: 'Drei in einer Reihe', category: 'action', color: '#d0447c', added: '2026-11-17' },
   { id: 'bubbles', title: 'Blasenzauber', tile: 'Blasen\u00ADzauber', subtitle: 'Seifenblasen abschiessen', category: 'action', color: '#4fa3e3', added: '2026-11-17' },
   { id: 'jigsaw', title: 'Puzzle', subtitle: 'Bilder Teil für Teil', category: 'kreativ', color: '#9a6b4f', added: '2026-11-17' },
+  { id: 'vierer', title: 'Vier in einer Reihe', tile: 'Vier in\u00A0einer Reihe', subtitle: 'Vier Steine in einer Linie', category: 'brett', color: '#2f7de1', added: '2026-11-17' },
 ];
 
 export function gameById(id) {

@@ -201,8 +201,9 @@ const polyPath = (loops) => loops.map((l) => 'M' + l.map((p) => `${fmt(p[0])} ${
 /**
  * Split shapes whose visible area is in several pieces. Mutates nothing; returns a new puzzle.
  * minPart: pieces smaller than this (px) are not given their own shape.
+ * minVisible: shapes with less visible area than this (px) are dropped (crumbs under other shapes).
  */
-export function autoSplit(pz, { minPart = 250, log = true } = {}) {
+export function autoSplit(pz, { minPart = 250, minVisible = 80, log = true } = {}) {
   const W = pz.width, H = pz.height, N = W * H;
   const flat = pz.shapes.map((s) => flattenPath(s.d));
   const ids = new Int32Array(N).fill(-1);
@@ -237,8 +238,8 @@ export function autoSplit(pz, { minPart = 250, log = true } = {}) {
 
   const out = [];
   pz.shapes.forEach((s, i) => {
-    if (!visible[i]) {
-      if (log) console.log(`  autoSplit ${pz.id}: dropped hidden shape #${i}`);
+    if (visible[i] < minVisible) {
+      if (log) console.log(`  autoSplit ${pz.id}: dropped hidden shape #${i} (${visible[i]}px)`);
       return;
     }
     const comps = byShape[i];

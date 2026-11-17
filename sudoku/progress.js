@@ -36,9 +36,9 @@ export function saveSettings(s) { store.set(KEYS.settings, s); }
 
 // ---------- Statistik ----------
 // Pro Stufe (und 'daily'): played, won, best (ms), total (ms, Summe gewonnener Zeiten),
-// streak (Siege am Stück), bestStreak, perfect (ohne Fehler und ohne Tipps).
+// streak (Siege am Stück), bestStreak, perfect (ohne Fehler und ohne Tipps), mistakes/hints (Summen bei Siegen).
 
-const EMPTY = () => ({ played: 0, won: 0, best: 0, total: 0, streak: 0, bestStreak: 0, perfect: 0 });
+const EMPTY = () => ({ played: 0, won: 0, best: 0, total: 0, streak: 0, bestStreak: 0, perfect: 0, mistakes: 0, hints: 0 });
 
 export function loadStats() {
   const raw = store.get(KEYS.stats, {}) || {};
@@ -78,6 +78,8 @@ export function recordWin(key, { time, mistakes, hints }) {
   if (newBest) st.best = time;
   st.streak++;
   st.bestStreak = Math.max(st.bestStreak, st.streak);
+  st.mistakes += mistakes | 0;
+  st.hints += hints | 0;
   if (!mistakes && !hints) st.perfect++;
   saveStats(s);
   return { newBest: newBest && st.won > 1, prevBest, stats: st };

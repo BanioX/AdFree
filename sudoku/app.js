@@ -383,7 +383,7 @@ function renderStats() {
       return t;
     };
     const tiles = [
-      tile('grid', s.played, 'Gespielt'),
+      tile('grid', s.played, 'Begonnen'),
       tile('check', s.won, `Gelöst${finished ? ` · ${rate} %` : ''}`),
       tile('trophy', s.best ? formatTime(s.best) : '–', 'Bestzeit', 'accent'),
       tile('clock', s.won ? formatTime(s.total / s.won) : '–', 'Ø Zeit'),
@@ -395,7 +395,7 @@ function renderStats() {
       tiles.push(tile('flame', s.streak, 'Siege in Folge', 'warm'));
       tiles.push(tile('star', s.bestStreak, 'Beste Serie'));
       tiles.push(tile('target', s.perfect, 'Ohne Fehler & Tipps'));
-      tiles.push(tile('play', nextNumber(tab) - 1, 'Rätsel begonnen'));
+      tiles.push(tile('heartbreak', s.won ? (s.mistakes / s.won).toFixed(1).replace(/\.0$/, '').replace('.', ',') : '–', 'Ø Fehler'));
     }
     const kids = [h('div.stat-grid', null, tiles)];
     if (tab === 'daily') {

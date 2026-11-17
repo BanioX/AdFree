@@ -72,8 +72,6 @@ export function build() {
     pic.add(poly([...L, ...Rr.reverse()]), 'g3');
   };
   stem([[490, 700], [492, 520], [500, 340]], 11);
-  stem([[470, 700], [400, 560], [300, 470]], 10);
-  stem([[525, 700], [610, 560], [720, 430]], 10);
 
   // --- leaves
   for (const [x, y, a, len, w, bend] of [
@@ -81,7 +79,6 @@ export function build() {
     [530, 650, -15, 200, 92, -0.08],
     [420, 575, -140, 150, 70, 0.1],
     [590, 560, -38, 150, 70, -0.1],
-    [500, 470, -118, 120, 56, 0.06],
   ]) {
     const [A, B] = leafHalves(x, y, a * DEG, len, w, { bend, n: 4 });
     pic.add(A, 'g1');
@@ -112,7 +109,7 @@ export function build() {
     }
     for (let i = 0; i < nPet; i++) {
       const a = i * step;
-      pic.add(smooth(T(tf(petalPts(R * 0.86, R * 0.32, { tip: 'point', wAt: 0.5 }), { r: a }))), i % 2 ? 'y1' : 'y2');
+      pic.add(smooth(T(tf(petalPts(R * 0.8, R * 0.32, { tip: 'point', wAt: 0.5 }), { r: a }))), i % 2 ? 'y1' : 'y2');
     }
     const r0 = R * 0.46, r1 = R * 0.31, nS = 10;
     pic.add(poly(T(ellipsePoly(0, 0, r0, r0, 48))), 'b3');

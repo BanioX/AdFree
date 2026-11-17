@@ -12,7 +12,7 @@ Home-Bildschirm legen. Funktioniert danach auch offline.
 
 ## Auf dem iPhone installieren
 
-1. In **Safari** die Adresse der App öffnen (z.B. `https://<projektname>.pages.dev`).
+1. In **Safari** die Adresse der App öffnen (z.B. `https://adfree.<konto>.workers.dev`).
 2. Unten auf das Teilen-Symbol (Quadrat mit Pfeil nach oben) tippen.
 3. **«Zum Home-Bildschirm»** wählen → **Hinzufügen**.
 
@@ -26,18 +26,23 @@ automatisch auf dem Gerät gespeichert.
 
 Die App ist eine reine statische Website – sie läuft auf **Cloudflare Pages** oder **GitHub Pages**.
 
-### Cloudflare Pages (empfohlen)
+### Cloudflare (empfohlen)
 
-1. Cloudflare Dashboard → **Workers & Pages** → **Create** → **Pages** → **Connect to Git**.
-2. Repository **AdFree** wählen.
-3. Einstellungen:
-   - **Production branch:** `main` (oder der Branch, den du veröffentlichen willst)
-   - **Framework preset:** *None*
-   - **Build command:** `node tools/build-site.mjs`
-   - **Build output directory:** `dist`
-4. **Save and Deploy** – nach ca. einer Minute ist die App unter `https://<projektname>.pages.dev` erreichbar.
-   Jeder Push auf den Branch veröffentlicht automatisch eine neue Version (Updates kommen beim
-   nächsten Öffnen der App an).
+Cloudflare Dashboard → **Workers & Pages** → **Create** → Repository **BanioX/AdFree** verbinden:
+
+| Feld | Wert |
+|---|---|
+| Project name | `adfree` (muss zu `name` in `wrangler.jsonc` passen) |
+| Build command | `node tools/build-site.mjs` |
+| Deploy command | `npx wrangler deploy` |
+| Branch | der Branch mit dem App-Code (Settings → Build → Branch control) |
+
+`wrangler.jsonc` sagt Cloudflare, dass die fertige App im Ordner `dist/` liegt.
+Die App ist danach unter `https://adfree.<dein-konto>.workers.dev` erreichbar; jeder Push
+veröffentlicht automatisch eine neue Version.
+
+(Klassisches **Cloudflare Pages** geht auch: Build command `node tools/build-site.mjs`,
+Build output directory `dist`.)
 
 ### GitHub Pages (Alternative)
 

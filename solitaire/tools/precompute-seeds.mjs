@@ -94,9 +94,19 @@ async function run({ mode, count, from, name, threads, nodes }) {
 }
 
 async function writeData() {
-  const files = (await readdir(outDir)).filter((f) => f.endsWith('.json')).sort();
+  // Bestehende Listen aus data/seeds.js übernehmen (tools/out/ wird nicht eingecheckt),
+  // neu berechnete Listen aus tools/out/*.json ersetzen gleichnamige.
   const lists = {};
+  try {
+    const cur = await import(path.join(here, '..', 'data', 'seeds.js'));
+    for (const [k, d] of Object.entries(cur.SOLVABLE || {})) lists[k] = d;
+    for (const [k, d] of Object.entries(cur.DAILY || {})) lists['daily-' + k] = d;
+  } catch { /* noch keine Datei */ }
+  await mkdir(outDir, { recursive: true });
+  const files = (await readdir(outDir)).filter((f) => f.endsWith('.json')).sort();
   for (const f of files) lists[f.replace(/\.json$/, '')] = JSON.parse(await readFile(path.join(outDir, f), 'utf8'));
+  const sorted = Object.keys(lists).sort();
+  for (const k of sorted) { const d = lists[k]; delete lists[k]; lists[k] = d; }
   const lines = [
     '// Beweisbar lösbare Partie-Nummern (automatisch erzeugt von tools/precompute-seeds.mjs – nicht von Hand ändern).',
     '// Jede Nummer wurde von einem Löser gewonnen und die Lösung mit der Regel-Engine nachgespielt.',

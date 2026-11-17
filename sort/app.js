@@ -261,6 +261,26 @@ function showLevelMap() {
   });
 }
 
+/**
+ * Schnelles Antippen: Werkzeug-Knöpfe reagieren schon beim Loslassen des Fingers.
+ * (Der Doppeltipp-Schutz der Seite würde sonst einen zweiten schnellen Tipp – z.B. zweimal
+ * «Zurück» – verschlucken.) Maus/Tastatur laufen weiter über «click».
+ */
+function onPress(el, fn) {
+  let touchT = -1e9;
+  el.addEventListener('pointerup', (e) => {
+    if (e.pointerType === 'mouse' || el.disabled) return;
+    const hit = document.elementFromPoint(e.clientX, e.clientY);
+    if (!hit || !el.contains(hit)) return;
+    touchT = performance.now();
+    fn();
+  });
+  el.addEventListener('click', () => {
+    if (performance.now() - touchT < 700) return;
+    fn();
+  });
+}
+
 // ---------- Bildschirme ----------
 
 let screen = null;
@@ -708,10 +728,10 @@ function gameScreen({ mode, n }) {
     }
   }
 
-  bUndo.addEventListener('click', () => { sfx.play('click'); undo(); });
-  bRestart.addEventListener('click', () => { sfx.play('click'); restart(false); });
-  bExtra.addEventListener('click', () => { addGlass(); });
-  bHint.addEventListener('click', () => { sfx.play('click'); giveHint(); });
+  onPress(bUndo, () => { sfx.play('click'); undo(); });
+  onPress(bRestart, () => { sfx.play('click'); restart(false); });
+  onPress(bExtra, () => { addGlass(); });
+  onPress(bHint, () => { sfx.play('click'); giveHint(); });
 
   // --- Gewonnen ---
   async function onSolved() {

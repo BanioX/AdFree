@@ -9,6 +9,9 @@ import { Stage } from './engine/stage.js';
 import { renderExport, luminance } from './engine/render.js';
 import { encodeBits, decodeBits, encodeOrder, decodeOrder, percent } from './engine/progress.js';
 import { loadProgress, saveProgress, removeProgress, updateSummary } from './state.js';
+import { onTap } from './tap.js';
+import { addStats, formatDuration } from './stats.js';
+import { TIPS } from './data/howto.js';
 
 const NBSP = ' ';
 const RING_C = 2 * Math.PI * 21;
@@ -52,8 +55,8 @@ export function createPaintView(lib, { onBack, onChanged, debug = false } = {}) 
 
   // ---------- Kopfzeile ----------
   backBtn.addEventListener('click', () => { sfx.play('click'); onBack(); });
-  hintBtn.addEventListener('click', () => hint());
-  moreBtn.addEventListener('click', () => toggleMenu());
+  onTap(hintBtn, () => hint());
+  onTap(moreBtn, () => toggleMenu());
   tlBtn.addEventListener('click', () => { sfx.play('click'); timelapse(); });
   saveBtn.addEventListener('click', () => { sfx.play('click'); exportImage(); });
   galBtn.addEventListener('click', () => { sfx.play('click'); onBack(); });
@@ -165,6 +168,8 @@ export function createPaintView(lib, { onBack, onChanged, debug = false } = {}) 
       id, item, pz, M, hash, filled, order, remaining, left,
       total: M.total, done: left === 0, selected: 0, swatches: [],
       stage: null, saveTimer: 0, playing: false, skip: false, exportBlob: null, fills: 0,
+      ms: rec && +rec.ms > 0 ? +rec.ms : 0, lastAct: performance.now(), pendFills: 0, pendMs: 0,
+      countedDone: left === 0,
     };
     let sel = rec && Number.isInteger(rec.c) && remaining[rec.c] > 0 ? rec.c : remaining.findIndex((r) => r > 0);
     if (sel < 0) sel = 0;
@@ -211,7 +216,7 @@ export function createPaintView(lib, { onBack, onChanged, debug = false } = {}) 
       const sw = h('button.sw' + (dark ? '.light' : ''), { type: 'button', role: 'option', 'aria-label': `Farbe ${c + 1}` });
       sw.style.setProperty('--c', col);
       sw.innerHTML = `<svg class="sw-ring" viewBox="0 0 48 48" aria-hidden="true"><circle class="trk" cx="24" cy="24" r="21"/><circle class="bar" cx="24" cy="24" r="21" stroke-dasharray="${RING_C.toFixed(2)}" stroke-dashoffset="${RING_C.toFixed(2)}"/></svg><span class="sw-dot"><span class="sw-num">${c + 1}</span><span class="sw-chk">${icon('check', { size: 20, stroke: 3 })}</span></span>`;
-      sw.addEventListener('click', () => select(c, true));
+      onTap(sw, () => select(c, true));
       palette.append(sw);
       S.swatches[c] = sw;
       updateSwatch(c);
@@ -298,8 +303,19 @@ export function createPaintView(lib, { onBack, onChanged, debug = false } = {}) 
     sfx.play('tap');
   }
 
+  /** Malzeit: Zeit seit der letzten Aktion zählt mit (Pausen über 30 s nur als 30 s). */
+  function tick() {
+    const now = performance.now();
+    const d = Math.min(30000, Math.max(0, now - S.lastAct));
+    S.lastAct = now;
+    S.ms += d;
+    S.pendMs += d;
+  }
+
   function fill(i, ux, uy) {
     const M = S.M;
+    tick();
+    S.pendFills++;
     S.filled[i] = 1;
     S.order.push(i);
     S.stage.fillShape(i, ux, uy, ux != null);
@@ -313,9 +329,17 @@ export function createPaintView(lib, { onBack, onChanged, debug = false } = {}) 
     scheduleSave();
     if (S.remaining[c] === 0) colorDone(c);
     if (S.left === 0) complete();
-    else if (S.fills === 6 && !store.get('paint.tip.brush', false)) {
-      store.set('paint.tip.brush', true);
-      setTimeout(() => toast('Tipp: Finger kurz halten und ziehen – so malst du viele Felder auf einmal.', 3800), 400);
+    else showTip();
+  }
+
+  function showTip() {
+    for (const t of TIPS) {
+      if (S.fills !== t.after) continue;
+      const key = 'paint.tip.' + t.id;
+      if (store.get(key, false)) continue;
+      store.set(key, true);
+      setTimeout(() => toast(t.text, 3800), 400);
+      return;
     }
   }
 
@@ -455,6 +479,8 @@ export function createPaintView(lib, { onBack, onChanged, debug = false } = {}) 
     st.invalidate();
     hintBtn.disabled = true;
     setDockMode('done');
+    const title = S.M.title || S.item.title || '';
+    doneTitle.textContent = S.ms > 30000 ? `${title} · ${formatDuration(S.ms)}` : title;
     doneSheet.classList.toggle('pop', !!animated);
     prepareExport();
   }
@@ -580,9 +606,14 @@ export function createPaintView(lib, { onBack, onChanged, debug = false } = {}) 
       done: S.done,
       cam: S.stage.getCamState(),
       h: S.hash,
+      ms: Math.round(S.ms),
       ts: Date.now(),
     };
     saveProgress(S.id, rec);
+    addStats({ fills: S.pendFills, ms: S.pendMs, pics: S.done && !S.countedDone ? 1 : 0 });
+    if (S.done) S.countedDone = true;
+    S.pendFills = 0;
+    S.pendMs = 0;
     updateSummary();
     onChanged && onChanged(S.id);
   }

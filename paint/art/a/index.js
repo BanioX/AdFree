@@ -4,4 +4,5 @@ export const pictures = [
   { id: "a-tulpenfeld", title: "Tulpenfeld", category: "Blumen", load: () => import('./tulpenfeld.js').then((m) => m.default) },
   { id: "a-schmetterling", title: "Schmetterling auf Blüte", category: "Tiere", load: () => import('./schmetterling.js').then((m) => m.default) },
   { id: "a-seerose", title: "Seerose", category: "Blumen", load: () => import('./seerose.js').then((m) => m.default) },
+  { id: "a-sonnenblumen", title: "Sonnenblumen in Vase", category: "Blumen", load: () => import('./sonnenblumen.js').then((m) => m.default) },
 ];

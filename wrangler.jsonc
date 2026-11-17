@@ -1,0 +1,12 @@
+// Cloudflare Workers (statische Assets): liefert die gebaute App aus dist/ aus.
+// Build command:  node tools/build-site.mjs
+// Deploy command: npx wrangler deploy
+{
+  "name": "adfree",
+  "compatibility_date": "2025-10-01",
+  "assets": {
+    "directory": "./dist",
+    "html_handling": "auto-trailing-slash",
+    "not_found_handling": "none"
+  }
+}

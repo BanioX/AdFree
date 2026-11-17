@@ -168,3 +168,33 @@ Legende: ✅ spielbar · 🔧 in Arbeit · 📋 geplant
 - mehr handgezeichnete Bilder für Farbenzauber und Motive für Perlenbild
 - neue Themen für Wortsuche, neue Mahjong-Layouts, neue Kartenrücken und Tischfarben
 - saisonale Inhalte (Advent, Ostern, Sommer) und Tagesrätsel-Serien
+
+## Welle 5 – Retro-Ecke (nach den 100)
+
+Klassiker mit wenig Verzögerung, auf dem iPhone mit Touch-Steuerung **und** Bluetooth-Controller
+(Xbox/PlayStation über die Gamepad-Schnittstelle von Safari). Nur Open Source bzw. frei lizenzierte
+Inhalte – keine kommerziellen ROMs.
+
+**Open-Source-Klassiker**
+| # | Spiel | Grundlage | Stand |
+|--:|---|---|:-:|
+| 101 | Freedoom – Ego-Shooter-Klassiker | Doom-Engine als WebAssembly (GPL-2.0) + Freedoom-Inhalte (BSD) | 📋 |
+| 102 | Retro-Konsole 8-Bit | NES-Emulator jsnes (Apache-2.0) + frei lizenzierte Homebrew-Spiele + «eigene Sicherung laden» | 📋 |
+| 103 | Retro-Konsole 16-Bit | Emulator (z.B. EmulatorJS, GPL-3.0), nur mit eigenen Sicherungen | 📋 |
+| 104 | Warzone 2100 | offizielle Web-Edition (GPL); braucht viel Speicher und Maus – eher fürs iPad, als Link-Kachel | 📋 |
+| 105 | Weitere Kandidaten prüfen: SuperTux (Jump'n'Run), OpenTyrian (Weltraum-Shooter), Pingus (Lemminge-Art) | GPL | 📋 |
+
+**Eigene Retro-Spiele** (eigene Grafik, für Touch gemacht)
+| # | Spiel | Stand |
+|--:|---|:-:|
+| 106 | Labyrinth 3D – Schatzsuche im Stil der 90er-Ego-Perspektive | 📋 |
+| 107 | Weltraum-Shooter | 📋 |
+| 108 | Hüpfheld – Jump'n'Run | 📋 |
+| 109 | Turmverteidigung | 📋 |
+| 110 | Asteroiden | 📋 |
+| 111 | Froschsprung – sicher über die Strasse | 📋 |
+| 112 | Mini-Rennen | 📋 |
+| 113 | Labyrinth-Futter – Punkte sammeln, Geistern ausweichen | 📋 |
+
+Nicht möglich: **Neo Geo** (das System-BIOS ist urheberrechtlich geschützt) und kommerzielle
+SNES/NES-Spiele (ROMs dürfen nicht mitgeliefert werden).

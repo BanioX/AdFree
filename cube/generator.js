@@ -8,29 +8,37 @@
 
 import { makeRng } from '../shared/rng.js';
 import { makeCube } from './geometry.js';
+import { SIZES, LATE_SIZES, HEARTS, SPECIAL_EVERY, SPECIALS, CHAPTER_SIZE, THEMES } from './data/levels.js';
 
 /** Seiten, die in der Standard-Ansicht (3/4-Ansicht) sichtbar sind: +X, +Y, +Z. */
 export const FRONT_FACES = [0, 2, 4];
+
+/** Spezial-Definition für Level L (oder null). */
+export function specialFor(level) {
+  const L = Math.max(1, Math.floor(level) || 1);
+  if (L % SPECIAL_EVERY !== 0) return null;
+  return SPECIALS[(L / SPECIAL_EVERY - 1) % SPECIALS.length];
+}
+
+/** Kapitel-Thema (Papierfarbe) für Level L. */
+export function themeFor(level) {
+  const L = Math.max(1, Math.floor(level) || 1);
+  const ch = Math.floor((L - 1) / CHAPTER_SIZE);
+  return { chapter: ch + 1, ...THEMES[ch % THEMES.length] };
+}
 
 /** Parameter eines Levels (Grösse, Dichte, Herzen, Spezial). */
 export function levelParams(level) {
   const L = Math.max(1, Math.floor(level) || 1);
   const rng = makeRng(`pfeilwuerfel-param-${L}`);
-  let N;
-  if (L <= 2) N = 3;
-  else if (L <= 5) N = 4;
-  else if (L <= 10) N = 5;
-  else if (L <= 18) N = 6;
-  else if (L <= 28) N = 7;
-  else if (L <= 40) N = 8;
-  else if (L <= 55) N = 9;
-  else N = rng.pick([10, 10, 10, 9, 10, 8, 10, 9]);
+  const row = SIZES.find((r) => L <= r.to);
+  let N = row ? row.N : rng.pick(LATE_SIZES);
 
   // Kleine Verschnaufpausen: ab und zu eine Nummer kleiner
-  if (L > 12 && L % 10 !== 0 && L % 7 === 3) N = Math.max(4, N - 1);
+  if (L > 12 && L % SPECIAL_EVERY !== 0 && L % 7 === 3) N = Math.max(4, N - 1);
 
-  let special = null;
-  if (L % 10 === 0) special = (L / 10) % 2 === 1 ? 'edges' : 'big';
+  const sp = specialFor(L);
+  const special = sp ? sp.id : null;
 
   let density;
   if (L === 1) density = 0.45;
@@ -38,18 +46,21 @@ export function levelParams(level) {
   else density = 0.68 + 0.2 * Math.min(1, (L - 3) / 60);
 
   let grew = false;
-  if (special === 'big' && N < 10) { N += 1; grew = true; }
-  if (special === 'edges' && N > 7) N = 7; // Kantenlauf: kleinerer Würfel, dafür winden sich alle Pfeile um die Kanten
+  if (sp && sp.grow && N < 10) { N = Math.min(10, N + sp.grow); grew = true; }
+  if (sp && sp.maxN && N > sp.maxN) N = sp.maxN;
 
-  let hearts = N <= 5 ? 3 : N <= 8 ? 4 : 5;
-  if (special === 'big') {
-    hearts = Math.max(2, hearts - 1);
-    density = Math.min(0.9, density + 0.04);
-  }
-  if (special === 'edges') density = Math.min(density, 0.8);
+  let hearts = (HEARTS.find((r) => N <= r.maxN) || HEARTS[HEARTS.length - 1]).hearts;
+  if (sp && sp.hearts) hearts += sp.hearts;
+  hearts = Math.max(3, Math.min(5, hearts));
+  if (sp && sp.density) density += sp.density;
+  if (sp && sp.maxDensity) density = Math.min(density, sp.maxDensity);
+  density = Math.min(0.9, density);
 
-  const maxLen = L === 1 ? 3 : L === 2 ? 4 : Math.min(10, N + 2);
-  const minLen = 2;
+  let maxLen = L === 1 ? 3 : L === 2 ? 4 : Math.min(10, N + 2);
+  let minLen = 2;
+  if (sp && sp.minLen) minLen = sp.minLen;
+  if (sp && sp.maxLen) maxLen = Math.min(12, maxLen + sp.maxLen);
+  maxLen = Math.max(minLen, maxLen);
   // Höchstzahl freier Pfeile zu Beginn (auf grossen Würfeln knapp halten)
   const cells = 6 * N * N;
   const estArrows = cells * density / (N >= 6 ? 5.5 : 4.2);
@@ -57,9 +68,11 @@ export function levelParams(level) {
     : N >= 4 ? Math.max(3, Math.round(estArrows * 0.22)) : 99;
   const minFree = L <= 8 ? 3 : N >= 8 ? 4 : 3;
   // Abbiegefreude: grössere Würfel bekommen verschlungenere Pfeile
-  const turn = L <= 2 ? 0.25 : 0.32 + 0.12 * Math.min(1, L / 50);
+  let turn = L <= 2 ? 0.25 : 0.32 + 0.12 * Math.min(1, L / 50);
+  if (sp && typeof sp.turn === 'number') turn = sp.turn;
+  const mustCross = !!(sp && sp.mustCross);
 
-  return { level: L, N, density, hearts, special, grew, maxLen, minLen, maxFree, minFree, turn };
+  return { level: L, N, density, hearts, special, grew, maxLen, minLen, maxFree, minFree, turn, mustCross };
 }
 
 function sampleLen(rng, minLen, maxLen) {
@@ -156,7 +169,7 @@ function buildOnce(geo, p, rng) {
       let crosses = false;
       const f0 = geo.faceOf(cells[0]);
       for (const c of cells) if (geo.faceOf(c) !== f0) { crosses = true; break; }
-      if (p.special === 'edges' && !crosses) return null;
+      if (p.mustCross && !crosses) return null;
       // Welche bisher freien Pfeile würde er blockieren?
       const blocks = new Set();
       for (const c of cells) for (const a of rayCover[c]) if (free[a]) blocks.add(a);

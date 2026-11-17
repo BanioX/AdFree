@@ -258,9 +258,15 @@ test('Entspannt: endlos spielbar, Decke sinkt nach Fehlschüssen, Feld füllt si
   assert.ok(g.score > 3000, `Punkte ${g.score}`);
   assert.ok(refilled > 0, 'neue Blasen kommen nach');
   const miss = Game.newEndless(8);
-  for (let i = 0; i < miss.missLimit; i++) miss.shoot(i % 2 ? 9 : 171);
-  assert.ok(miss.rowsAdded >= 1, 'Decke sinkt');
-  void descended;
+  let streak = 0, sank = 0;
+  for (let i = 0; i < 40 && miss.status === 'play'; i++) {
+    const limit = miss.missLimit;
+    const before = miss.misses;
+    const ev = miss.shoot(i % 2 ? 9 : 171);
+    if (!ev.removed.length && before + 1 >= limit) { assert.ok(ev.descended, 'nach zu vielen Fehlschüssen sinkt die Decke'); sank++; }
+    streak = miss.misses;
+  }
+  assert.ok(sank + descended >= 1, 'Decke sinkt');
 });
 
 // ---------- Level & Inhalte ----------

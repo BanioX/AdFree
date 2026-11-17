@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffeef4"/><stop offset="1" stop-color="#f6b9cf"/></linearGradient>
+    <radialGradient id="r" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="#ffc2cf"/><stop offset=".5" stop-color="#ff4d6d"/><stop offset="1" stop-color="#c9184a"/></radialGradient>
+    <radialGradient id="b" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="#d3ecff"/><stop offset=".5" stop-color="#4dabf7"/><stop offset="1" stop-color="#1c6fd1"/></radialGradient>
+    <radialGradient id="y" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="#fff6cc"/><stop offset=".5" stop-color="#ffd43b"/><stop offset="1" stop-color="#f59f00"/></radialGradient>
+  </defs>
+  <rect width="100" height="100" fill="url(#bg)"/>
+  <ellipse cx="50" cy="84" rx="34" ry="5" fill="#a3215a" opacity=".14"/>
+  <!-- Raute (links) -->
+  <path d="M25 40l13 16-13 16-13-16z" fill="url(#b)" stroke="#123f86" stroke-width="2.2" stroke-linejoin="round"/>
+  <path d="M25 47l6 9-6 9-6-9z" fill="#fff" opacity=".35"/>
+  <!-- Stern (rechts) -->
+  <path d="M75 39l4.4 9.6 10.4 1.2-7.7 7.1 2.1 10.3L75 62l-9.2 5.2 2.1-10.3-7.7-7.1 10.4-1.2z" fill="url(#y)" stroke="#a86a00" stroke-width="2.2" stroke-linejoin="round"/>
+  <!-- Herz (Mitte) -->
+  <path d="M50 76C36 67 27 58 27.5 46.5 28 37.5 36 32 43 35c3 1.3 5.3 3.6 7 6.5 1.7-2.9 4-5.2 7-6.5 7-3 15 2.5 15.5 11.5C73 58 64 67 50 76z" fill="url(#r)" stroke="#8a1036" stroke-width="2.4" stroke-linejoin="round"/>
+  <ellipse cx="39" cy="44" rx="5.5" ry="3.2" fill="#fff" opacity=".85" transform="rotate(-35 39 44)"/>
+  <!-- Funkeln -->
+  <path d="M80 16l2 4.8 4.8 2-4.8 2L80 29.6l-2-4.8-4.8-2 4.8-2z" fill="#fff" stroke="#a3215a" stroke-width="1.3" stroke-linejoin="round"/>
+  <path d="M20 18l1.4 3.3 3.3 1.4-3.3 1.4L20 27.4l-1.4-3.3-3.3-1.4 3.3-1.4z" fill="#ffd43b" stroke="#a86a00" stroke-width="1.2" stroke-linejoin="round"/>
+</svg>

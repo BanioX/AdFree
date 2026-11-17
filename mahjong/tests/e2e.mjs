@@ -7,12 +7,11 @@
 
 import { createRequire } from 'node:module';
 import { mkdirSync } from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 
 const { chromium, devices } = createRequire(import.meta.url)('playwright');
 const BASE = process.env.BASE || 'http://127.0.0.1:8202';
-const SHOTS = process.env.SHOTS || path.join(os.tmpdir(), 'mahjong-e2e');
+const SHOTS = process.env.SHOTS || path.join(path.dirname(new URL(import.meta.url).pathname), 'out');
 mkdirSync(SHOTS, { recursive: true });
 
 const errors = [];
@@ -23,7 +22,7 @@ function check(cond, msg) {
 }
 
 const browser = await chromium.launch();
-const ctx = await browser.newContext({ ...devices['iPhone 13'] });
+const ctx = await browser.newContext({ ...devices['iPhone 13'], deviceScaleFactor: 1 });
 const page = await ctx.newPage();
 page.on('console', (m) => { if (m.type() === 'error') errors.push('console: ' + m.text()); });
 page.on('pageerror', (e) => errors.push('pageerror: ' + e.message));
@@ -73,10 +72,18 @@ try {
   await wait(900);
   log('Mahjong geöffnet');
 
-  // 2) «So geht's» erscheint beim ersten Start
-  check(await page.locator('.sp-modal h2', { hasText: 'So geht' }).isVisible(), '«So geht’s» fehlt beim ersten Start');
-  await shot('01-help');
-  await closeModal('Los geht');
+  // 2) «So geht's» (animiertes Tutorial) erscheint beim ersten Start
+  await page.locator('.tut-backdrop.show').waitFor({ timeout: 4000 });
+  check(await page.locator('.tut-title').innerText() === 'Paare antippen', 'Tutorial Schritt 1 fehlt');
+  await wait(2200);
+  await shot('01-tutorial');
+  for (let k = 0; k < 3; k++) { await page.locator('.tut-next').click(); await wait(400); }
+  await wait(1800);
+  await shot('01b-tutorial-last');
+  check((await page.locator('.tut-next').innerText()).includes('Los geht'), 'Letzter Tutorial-Schritt fehlt');
+  await page.locator('.tut-next').click();
+  await wait(500);
+  check(await page.locator('.tut-backdrop').count() === 0, 'Tutorial schliesst nicht');
   await shot('02-menu');
   log('Menü sichtbar');
 
@@ -85,10 +92,11 @@ try {
   check(!overflowX, 'Menü scrollt horizontal');
 
   // 3) Spielen → Level 1
-  await page.locator('.play-btn').tap();
-  await wait(1700);
+  await page.locator('.gm-primary').tap();
+  await wait(1900);
   check(await mj(() => window.__mahjong.route()) === 'spiel', 'Route #spiel erwartet');
   await shot('03-game-start');
+  check(await page.locator('.coach-ring').count() === 2, 'Coach-Mark beim ersten Layout fehlt');
   const n = await mj(() => window.__mahjong.session.n);
   log('Level 1 gestartet,', n, 'Steine, Steinbreite', (await mj(() => window.__mahjong.tileWidth())).toFixed(1), 'px');
 
@@ -119,6 +127,7 @@ try {
   await wait(500);
   const left1 = await mj(() => window.__mahjong.session.remaining);
   check(left1 === n - 2, `Nach einem Paar sollten ${n - 2} Steine übrig sein (sind ${left1})`);
+  check(await page.locator('.coach').count() === 0, 'Coach-Mark verschwindet nicht nach dem ersten Paar');
   log('Paar abgeräumt');
 
   // 6) Tipp und Rückgängig
@@ -170,8 +179,8 @@ try {
   await wait(600);
   check(await mj(() => window.__mahjong.route()) === '', 'Zurück-Button führt nicht ins Menü');
   await shot('11-menu-continue');
-  check((await page.locator('.play-btn b').innerText()).includes('Weiter'), 'Menü zeigt kein «Weiter»');
-  await page.locator('.mcard', { hasText: 'Reise' }).tap();
+  check((await page.locator('.gm-primary-label').innerText()).includes('Weiter'), 'Menü zeigt kein «Weiter»');
+  await page.locator('.gm-sec', { hasText: 'Reise' }).tap();
   await wait(700);
   await shot('12-journey');
   log('Reise sichtbar');
@@ -179,7 +188,7 @@ try {
   await wait(500);
 
   // 12) Einstellungen: Steinsätze durchprobieren
-  await page.locator('.play-btn').tap();
+  await page.locator('.gm-primary').tap();
   await wait(900);
   for (const set of ['Tiere', 'Garten', 'Naschwerk', 'Klassisch']) {
     await page.locator('.game .topbar button.icon-btn[aria-label="Einstellungen"]').tap();
@@ -196,10 +205,18 @@ try {
   // 13) Statistik
   await page.locator('.game .topbar a.icon-btn').first().tap();
   await wait(500);
-  await page.locator('.menu-row .btn', { hasText: 'Statistik' }).tap();
+  await page.locator('.gm-sec', { hasText: 'Statistik' }).tap();
   await wait(400);
   await shot('15-stats');
   await closeModal('Schliessen');
+
+  // 13b) Steinsatz im Menü wählen (Segment) und Zufallsspiel starten
+  await page.locator('.gm-seg button', { hasText: 'Tiere' }).tap();
+  await wait(300);
+  check(await mj(() => JSON.parse(localStorage.getItem('spielpause.mahjong.settings')).tileset) === 'tiere', 'Steinsatz-Wahl im Menü wirkt nicht');
+  await shot('15b-menu-tiere');
+  await page.locator('.gm-seg button', { hasText: 'Klassisch' }).tap();
+  await wait(200);
 
   // 14) Grosses Layout (Schildkröte): Passform + Zoomen
   await page.evaluate(() => {
@@ -210,7 +227,9 @@ try {
     }
     localStorage.setItem('spielpause.mahjong.progress', JSON.stringify(p));
   });
-  await page.locator('.mcard', { hasText: 'Reise' }).tap();
+  await page.reload();
+  await wait(700);
+  await page.locator('.gm-sec', { hasText: 'Reise' }).tap();
   await wait(600);
   await page.locator('.lv', { hasText: 'Schildkröte' }).tap();
   await wait(400);
@@ -253,13 +272,34 @@ try {
   check(await page.locator('.sp-modal h2', { hasText: 'Tagesrätsel gelöst' }).isVisible(), 'Gewinnblatt Tagesrätsel fehlt');
   await closeModal('Zum Menü');
   await wait(500);
-  check(await page.locator('.mcard .done-badge').isVisible(), 'Häkchen beim Tagesrätsel fehlt');
+  check(await page.locator('.gm-daily.done').isVisible(), 'Häkchen beim Tagesrätsel fehlt');
   await shot('21-menu-daily-done');
   const summary = await mj(() => JSON.parse(localStorage.getItem('spielpause.summary.mahjong')).text);
   log('Zusammenfassung:', summary);
   check(/Tagesrätsel ✓/.test(summary), 'reportSummary ohne Tagesrätsel-Häkchen');
 
-  // 16) Zurück zur Startseite
+  // 16) Zufallsspiel (klein) starten
+  await page.locator('.gm-sec', { hasText: 'Zufall' }).tap();
+  await wait(400);
+  await closeModal('Klein');
+  await wait(1700);
+  check(await mj(() => window.__mahjong.route()) === 'spiel' && window.__mahjong.session.meta.kind === 'endless', 'Zufallsspiel startet nicht');
+  await shot('22-endless');
+  log('Zufallsspiel:', await mj(() => window.__mahjong.session.n), 'Steine');
+
+  // 17) Kleines iPhone (375 px): kein Scrollen, Steine gross genug
+  await page.setViewportSize({ width: 375, height: 629 });
+  await wait(600);
+  const small = await mj(() => ({ sx: document.documentElement.scrollWidth > innerWidth, sy: document.scrollingElement.scrollHeight > innerHeight + 1, w: window.__mahjong.tileWidth() }));
+  check(!small.sx && !small.sy, '375 px: Seite scrollt');
+  check(small.w >= 26, '375 px: Steine zu klein ' + small.w);
+  await shot('23-375');
+  await page.setViewportSize(devices['iPhone 13'].viewport);
+  await wait(400);
+  await page.locator('.game .topbar a.icon-btn').first().tap();
+  await wait(500);
+
+  // 18) Zurück zur Startseite
   await page.locator('.topbar a.icon-btn').first().tap();
   await page.waitForURL(BASE + '/');
   log('Zurück auf der Startseite');

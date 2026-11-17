@@ -3,12 +3,16 @@
 import { store, reportSummary, todayKey, markDailyDone, isDailyDone } from '../shared/storage.js';
 import { sfx } from '../shared/sfx.js';
 import { icon, h, toast, showModal, confirmDialog, celebrate, setupPage, soundButton, backButton, sleep } from '../shared/ui.js';
+import { gameMenu, menuSection } from '../shared/gamemenu.js';
+import { showTutorial, tutorialSeen } from '../shared/tutorial.js';
 import * as L from './logic.js';
 import { loadWords } from './words.js';
+import { tutorialSteps } from './howto.js';
 
 setupPage();
 
 const ID = 'wordle';
+const ACCENT = '#d9a21b';
 const app = document.getElementById('app');
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const CONFETTI = ['#3f9f66', '#e6a82a', '#ffd23f', '#ff7a59', '#5b8def', '#ee6fb7'];
@@ -137,14 +141,14 @@ function wordTiles(word, state = 'correct', cls = 'mini-row') {
 function iconButton(name, label, onclick, extra = '') {
   const b = h('button.icon-btn' + extra, { type: 'button', 'aria-label': label });
   b.innerHTML = icon(name);
-  b.addEventListener('click', (e) => { sfx.play('click'); onclick(e); });
+  b.addEventListener('click', (e) => { onclick(e); });
   return b;
 }
 
 function helpButton() {
   const b = h('button.icon-btn', { type: 'button', 'aria-label': "So geht's" });
-  b.innerHTML = '<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.2 9.2a2.9 2.9 0 1 1 4.2 2.6c-.9.5-1.4 1.1-1.4 2.1v.6"/><circle cx="12" cy="17.6" r=".6" fill="currentColor"/></svg>';
-  b.addEventListener('click', () => { sfx.play('click'); openHelp(); });
+  b.innerHTML = '<span class="gm-q">?</span>';
+  b.addEventListener('click', () => { openHelp(); });
   return b;
 }
 
@@ -175,88 +179,127 @@ function countdownEl() {
 // ---------- Menü ----------
 
 let logoPlayed = false;
+let menuEl = null;
 
-function renderMenu() {
+function dailyInfo() {
   const today = todayKey();
-  const len = getLen();
-  const st = getStats('e' + len);
-  const eg = loadGame('e' + len);
-  const resume = eg && eg.status === 'playing' && eg.guesses.length > 0;
   const dg = loadGame('daily');
   const dToday = dg && dg.day === today ? dg : null;
-  const dStats = getStats('daily');
-  const dStreak = L.currentStreak(dStats, today);
-  const done = isDailyDone(ID) || (dToday && dToday.status === 'won');
+  const done = isDailyDone(ID) || !!(dToday && dToday.status === 'won');
   const lost = !done && dToday && dToday.status === 'lost';
+  let sub = L.formatDay(today);
+  if (done && dToday) sub = `${dToday.guesses.length} ${dToday.guesses.length === 1 ? 'Versuch' : 'Versuche'}`;
+  else if (lost) sub = 'Heute nicht erraten';
+  else if (dToday && dToday.guesses.length) sub = `${dToday.guesses.length} von 6 Versuchen`;
+  return {
+    label: 'Tageswort',
+    done,
+    sub,
+    streak: L.currentStreak(getStats('daily'), today),
+    onClick: () => go('daily'),
+  };
+}
 
-  let dailySub;
-  if (done) dailySub = `Gelöst${dToday ? ` in ${dToday.guesses.length} ${dToday.guesses.length === 1 ? 'Versuch' : 'Versuchen'}` : ''}${dStreak > 1 ? ` · Serie ${dStreak} Tage` : ''}`;
-  else if (lost) dailySub = 'Heute nicht erraten – morgen gibt es ein neues';
-  else if (dToday && dToday.guesses.length) dailySub = `Angefangen · ${dToday.guesses.length} von 6 Versuchen`;
-  else dailySub = `Heute noch offen${dStreak > 0 ? ` · Serie ${dStreak} ${dStreak === 1 ? 'Tag' : 'Tage'}` : ''}`;
+function menuStats(len) {
+  const st = getStats('e' + len);
+  return [
+    { label: 'Gespielt', value: st.played },
+    { label: 'Gewonnen', value: L.winRate(st) + '%' },
+    { label: 'Serie', value: st.streak || 0 },
+    { label: 'Rekord', value: st.maxStreak || 0 },
+  ];
+}
 
-  const dailyCard = h('button.daily-card' + (done ? '.done' : lost ? '.lost' : ''), { type: 'button', 'aria-label': 'Tageswort spielen' },
-    h('span.sun', null, done ? '🌟' : lost ? '🌙' : '☀️'),
-    done ? h('span.check', { html: icon('check', { size: 14 }) }) : null,
-    h('span', null, h('b', null, `Tageswort · ${L.formatDay(today)}`), h('small', null, dailySub)),
-    h('span.chev', { html: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg>' }));
-  dailyCard.addEventListener('click', () => { sfx.play('tap'); go('daily'); });
+function primaryFor(len) {
+  const eg = loadGame('e' + len);
+  const resume = eg && eg.status === 'playing' && eg.guesses.length > 0;
+  return {
+    label: resume ? 'Weiter' : 'Spielen',
+    sub: resume ? `Endlos · ${eg.guesses.length} von 6 Versuchen` : `Endlos · ${len} Buchstaben`,
+    icon: 'play',
+    onClick: () => go('endlos/' + len),
+  };
+}
 
-  const seg = h('div.seg', { role: 'radiogroup', 'aria-label': 'Wortlänge' });
-  for (const n of L.LENGTHS) {
-    const b = h('button' + (n === len ? '.on' : ''), { type: 'button', role: 'radio', 'aria-checked': String(n === len), 'data-len': n },
-      h('span.mini', null, Array.from({ length: n }, () => h('i'))),
-      `${n} Buchstaben`);
-    b.addEventListener('click', () => {
-      if (n === getLen()) return;
+function settingsCard(gameView = null) {
+  const s = getSettings();
+  const items = [
+    ['hard', 'Schwerer Modus', 'Gefundene Hinweise müssen weiter verwendet werden.'],
+    ['lenient', 'Alle Wörter erlauben', 'Auch Wörter ausserhalb der Wortliste annehmen.'],
+    ['contrast', 'Kontrastfarben', 'Orange und Blau statt Grün und Gelb.'],
+  ];
+  const box = h('div.settings-card');
+  for (const [k, title, sub] of items) {
+    const sw = h('button.switch' + (s[k] ? '.on' : ''), { type: 'button', role: 'switch', 'aria-checked': String(!!s[k]), 'aria-label': title, 'data-setting': k });
+    const row = h('div.setting', null, h('div.txt', null, h('b', null, title), h('small', null, sub)), sw);
+    const toggle = () => {
+      const cur = getSettings();
+      cur[k] = !cur[k];
+      setSettings(cur);
+      sw.classList.toggle('on', cur[k]);
+      sw.setAttribute('aria-checked', String(cur[k]));
       sfx.play('click');
-      store.set('wordle.len', n);
-      renderMenu();
-    });
-    seg.append(b);
+      if (gameView && gameView.alive) gameView.settingsChanged(cur, k);
+    };
+    sw.addEventListener('click', (e) => { e.stopPropagation(); toggle(); });
+    row.addEventListener('click', toggle);
+    box.append(row);
   }
+  return box;
+}
 
-  const play = h('button.btn.primary.block.play-btn', { type: 'button', id: 'play' },
-    h('span', null, resume ? 'Weiter' : 'Spielen'),
-    h('small', null, resume ? `Endlos · ${eg.guesses.length} von 6 Versuchen` : `Endlos · ${len} Buchstaben`));
-  play.addEventListener('click', () => { sfx.play('tap'); go('endlos/' + len); });
+const LEN_NAMES = { 4: 'Kurz', 5: 'Klassisch', 6: 'Lang' };
 
-  const mini = h('button.card.mini-stats', { type: 'button', 'aria-label': 'Statistik' },
-    h('div', null, h('b', null, st.played), h('span', null, 'Gespielt')),
-    h('div', null, h('b', null, L.winRate(st) + '%'), h('span', null, 'Gewonnen')),
-    h('div', null, h('b', null, st.streak || 0), h('span', null, 'Serie')),
-    h('div', null, h('b', null, st.maxStreak || 0), h('span', null, 'Rekord')));
-  mini.addEventListener('click', () => { sfx.play('click'); openStats('e' + len); });
-
-  const links = h('div.menu-links', null,
-    linkBtn('Statistik', 'grid', () => openStats('e' + len)),
-    linkBtn('Einstellungen', 'settings', () => openSettings()),
-    linkBtn("So geht's", 'hint', () => openHelp()));
-
+function renderMenu() {
+  const len = getLen();
+  const eg = loadGame('e' + len);
+  const resume = eg && eg.status === 'playing' && eg.guesses.length > 0;
   const logo = buildLogo();
-  const menu = h('div.menu', null,
-    logo,
-    h('p.tagline', null, 'Finde das gesuchte Wort in sechs Versuchen.'),
-    dailyCard,
-    h('div.section-label', null, 'Endlos spielen'),
-    seg,
-    play,
-    mini,
-    links);
-
-  app.replaceChildren(
-    h('div.topbar', null, backButton('../'), h('div.title', null, 'Wortrate'), h('div.btns', null, helpButton(), soundButton())),
-    h('div.scroll', null, menu));
+  const secondary = [{ label: 'Statistik', icon: 'grid', onClick: () => openStats('e' + len) }];
+  if (resume) secondary.push({ label: 'Neues Wort', icon: 'refresh', onClick: () => menuNewWord(len) });
+  menuEl = gameMenu({
+    id: ID,
+    title: 'Wortrate',
+    tagline: 'Finde das Wort in sechs Versuchen',
+    accent: ACCENT,
+    art: logo,
+    primary: primaryFor(len),
+    daily: dailyInfo(),
+    modes: {
+      label: 'Endlos · Wortlänge',
+      value: String(len),
+      options: L.LENGTHS.map((n) => ({ id: String(n), label: LEN_NAMES[n], sub: `${n} Buchstaben` })),
+      onChange(id) {
+        store.set('wordle.len', Number(id));
+        renderMenu();
+      },
+    },
+    secondary,
+    stats: menuStats(len),
+    sections: [menuSection('Einstellungen', settingsCard())],
+    onHelp: () => openHelp(),
+    backHref: '../',
+  });
+  menuEl.classList.add('wr-menu');
+  const keepScroll = app.querySelector('.gm-scroll');
+  const top = keepScroll ? keepScroll.scrollTop : 0;
+  app.replaceChildren(menuEl);
+  if (top) menuEl.scroller.scrollTop = top;
   if (!logoPlayed) { logoPlayed = true; animateLogo(logo); }
   report();
 }
 
-function linkBtn(label, ic, fn) {
-  const b = h('button.btn', { type: 'button' });
-  b.innerHTML = icon(ic, { size: 18 });
-  b.append(label);
-  b.addEventListener('click', () => { sfx.play('click'); fn(); });
-  return b;
+async function menuNewWord(len) {
+  const ok = await confirmDialog('Neues Wort?', 'Das angefangene Wort wird aufgedeckt und zählt als nicht erraten.', 'Neues Wort', 'Abbrechen');
+  if (!ok) return;
+  const key = 'e' + len;
+  const g = loadGame(key);
+  if (g && g.status === 'playing' && g.guesses.length) {
+    setStats(key, L.recordResult(getStats(key), { won: false, guesses: g.guesses.length }));
+    toast(`Das Wort war «${g.answer}»`, 2400);
+  }
+  store.remove('wordle.game.' + key);
+  go('endlos/' + len);
 }
 
 const LOGO = [['W', 'correct'], ['O', 'present'], ['R', 'absent'], ['T', 'correct']];
@@ -384,9 +427,8 @@ class GameView {
     if (!isDaily) btns.append(iconButton('refresh', 'Neues Wort', () => this.newWordRequest(), '#newword'));
     else btns.append(iconButton('grid', 'Statistik', () => openStats('daily')));
     btns.append(iconButton('settings', 'Einstellungen', () => openSettings(this)));
-    const back = backButton('#', () => { sfx.play('click'); goMenu(); });
-    const spacer = h('div', { style: { width: isDaily ? '44px' : '44px', flex: '0 0 auto' } });
-    const top = h('div.topbar', null, back, spacer, title, btns);
+    const back = backButton('#', () => { goMenu(); });
+    const top = h('div.topbar.game-top', null, h('div.btns', null, back, helpButton()), title, btns);
 
     this.board = h('div.board', { role: 'grid', 'aria-label': 'Spielfeld' });
     this.rows = [];
@@ -405,6 +447,11 @@ class GameView {
     this.renderBoard();
     if (this.game.status === 'playing') this.buildKeyboard();
     else this.buildEndbar(false);
+    // Erstes Spiel überhaupt: dezenter Hinweis am Spielfeld, verschwindet beim ersten Tippen.
+    if (this.game.status === 'playing' && !this.game.guesses.length && !this.game.input && !store.get('wordle.coached', false)) {
+      this.coach = h('div.coach', { 'aria-hidden': 'true' }, h('span', null, '⌨️'), `Tippe ein Wort mit ${this.len} Buchstaben`);
+      this.wrap.append(this.coach);
+    }
     this.fit();
     this.ro = new ResizeObserver(() => this.fit());
     this.ro.observe(this.wrap);
@@ -528,7 +575,7 @@ class GameView {
 
   handlePhysical(e) {
     if (e.metaKey || e.ctrlKey || e.altKey) return;
-    if (document.querySelector('.sp-modal-backdrop')) return;
+    if (document.querySelector('.sp-modal-backdrop, .tut-backdrop')) return;
     let k = null;
     if (e.key === 'Enter') k = 'ENTER';
     else if (e.key === 'Backspace' || e.key === 'Delete') k = 'DEL';
@@ -547,8 +594,18 @@ class GameView {
     this.press(k);
   }
 
+  dismissCoach() {
+    if (!this.coach) return;
+    store.set('wordle.coached', true);
+    const c = this.coach;
+    this.coach = null;
+    c.classList.add('gone');
+    setTimeout(() => c.remove(), 300);
+  }
+
   press(k) {
     if (this.busy || this.game.status !== 'playing') return;
+    this.dismissCoach();
     if (k === 'ENTER') { this.submit(); return; }
     if (k === 'DEL') {
       const g = L.deleteLetter(this.game);
@@ -640,7 +697,7 @@ class GameView {
     const result = h('button.btn', { type: 'button', id: 'show-result' });
     result.innerHTML = icon('star', { size: 18 });
     result.append('Ergebnis');
-    result.addEventListener('click', () => { sfx.play('click'); this.showResult(); });
+    result.addEventListener('click', () => { this.showResult(); });
     const next = h('button.btn.primary', { type: 'button', id: 'next-word' });
     next.innerHTML = icon('play', { size: 18 });
     next.append(this.mode === 'daily' ? 'Endlos spielen' : 'Nächstes Wort');
@@ -762,7 +819,7 @@ function openResult(g, key) {
   const shareBtn = h('button.btn', { type: 'button', id: 'share' });
   shareBtn.innerHTML = icon('share', { size: 19 });
   shareBtn.append('Teilen');
-  shareBtn.addEventListener('click', () => { sfx.play('click'); shareResult(g); });
+  shareBtn.addEventListener('click', () => { shareResult(g); });
   const content = h('div.sheet', null,
     h('p.center', null, won ? `Du hast das Wort in ${n} ${n === 1 ? 'Versuch' : 'Versuchen'} erraten.` : 'Schade – diesmal hat es nicht gereicht. Das Wort war:'),
     wordTiles(g.answer, won ? 'correct' : 'present', 'mini-row.res-word'),
@@ -789,7 +846,7 @@ function openStats(initial = 'e5') {
   };
   for (const [k, label] of tabs) {
     const b = h('button.chip', { type: 'button', role: 'tab', 'data-key': k }, label);
-    b.addEventListener('click', () => { sfx.play('click'); cur = k; render(); });
+    b.addEventListener('click', () => { cur = k; render(); });
     tabBar.append(b);
   }
   render();
@@ -797,31 +854,11 @@ function openStats(initial = 'e5') {
 }
 
 function openSettings(gameView = null) {
-  const s = getSettings();
-  const items = [
-    ['hard', 'Schwerer Modus', 'Gefundene Hinweise müssen in den nächsten Versuchen verwendet werden.'],
-    ['lenient', 'Alle Wörter erlauben', 'Auch Wörter, die nicht in der Wortliste stehen, werden angenommen.'],
-    ['contrast', 'Kontrastfarben', 'Orange und Blau statt Grün und Gelb – leichter zu unterscheiden.'],
-  ];
-  const box = h('div.sheet');
-  for (const [k, title, sub] of items) {
-    const sw = h('button.switch' + (s[k] ? '.on' : ''), { type: 'button', role: 'switch', 'aria-checked': String(!!s[k]), 'aria-label': title, 'data-setting': k });
-    sw.addEventListener('click', () => {
-      const cur = getSettings();
-      cur[k] = !cur[k];
-      setSettings(cur);
-      sw.classList.toggle('on', cur[k]);
-      sw.setAttribute('aria-checked', String(cur[k]));
-      sfx.play('click');
-      if (gameView && gameView.alive) gameView.settingsChanged(cur, k);
-    });
-    box.append(h('div.setting', null, h('div.txt', null, h('b', null, title), h('small', null, sub)), sw));
-  }
+  const box = h('div.sheet', null, settingsCard(gameView));
   const help = h('button.btn', { type: 'button' }, "So geht's");
-  help.addEventListener('click', () => { sfx.play('click'); closeTopModal(); setTimeout(() => openHelp(), 280); });
+  help.addEventListener('click', () => { closeTopModal(); setTimeout(() => openHelp(), 280); });
   const reset = h('button.btn.ghost', { type: 'button' }, 'Statistik löschen');
   reset.addEventListener('click', async () => {
-    sfx.play('click');
     closeTopModal();
     await sleep(280);
     if (await confirmDialog('Statistik löschen?', 'Alle Zahlen und Serien von Wortrate werden auf null gesetzt.', 'Löschen', 'Abbrechen')) {
@@ -843,26 +880,11 @@ function closeTopModal() {
   if (bd) bd.click();
 }
 
+let tutorialOpen = null;
 function openHelp() {
-  store.set('wordle.seenHelp', true);
-  const ex = (word, idx, state, text) => {
-    const row = h('div.mini-row', { style: { justifyContent: 'flex-start' } },
-      [...word].map((ch, i) => tileEl(ch, i === idx ? state : 'tbd')));
-    return h('div.ex', null, row, h('p', { html: text }));
-  };
-  const content = h('div.sheet.help', null,
-    h('p', null, 'Errate das gesuchte Wort in sechs Versuchen. Jeder Versuch muss ein echtes Wort sein – tippe die Buchstaben und bestätige mit der Pfeiltaste.'),
-    h('h3', null, 'Die Farben verraten dir:'),
-    ex('BLUME', 0, 'correct', '<b>B</b> ist im Wort und steht an der richtigen Stelle.'),
-    ex('TISCH', 1, 'present', '<b>I</b> kommt im Wort vor, aber an einer anderen Stelle.'),
-    ex('VOGEL', 3, 'absent', '<b>E</b> kommt im Wort nicht vor.'),
-    h('h3', null, 'Gut zu wissen'),
-    h('ul', null,
-      h('li', null, 'Ä, Ö und Ü sind eigene Buchstaben. Statt «ß» schreibt man «ss».'),
-      h('li', null, 'Doppelte Buchstaben sind möglich – jeder wird einzeln eingefärbt.'),
-      h('li', null, 'Das Tageswort ist für alle gleich und wechselt um Mitternacht.'),
-      h('li', null, 'Im Endlos-Modus gibt es Wörter mit 4, 5 oder 6 Buchstaben, so viele du willst.')));
-  return showModal({ title: "So geht's", content, buttons: [{ label: "Los geht's", value: true, primary: true }] });
+  if (tutorialOpen) return tutorialOpen;
+  tutorialOpen = showTutorial({ id: ID, steps: tutorialSteps(), accent: ACCENT }).finally(() => { tutorialOpen = null; });
+  return tutorialOpen;
 }
 
 // ---------- Start ----------
@@ -877,6 +899,10 @@ window.__wordle = {
   isAllowed: (word, len = 5) => loadWords(len).then((w) => w.allowed.has(L.normalizeWord(word))),
 };
 
-route().then(() => {
-  if (!store.get('wordle.seenHelp', false)) setTimeout(() => openHelp(), 350);
-});
+// Beim allerersten Start: zuerst die Anleitung, dann das Spiel.
+if (!tutorialSeen(ID)) {
+  route();
+  setTimeout(() => openHelp(), 300);
+} else {
+  route();
+}

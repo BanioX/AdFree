@@ -47,6 +47,8 @@ import { store, reportSummary } from '../shared/storage.js'; // localStorage (JS
 import { kv } from '../shared/idb.js';                        // IndexedDB key-value (grosse Daten), async
 import { makeRng, hashString } from '../shared/rng.js';       // deterministischer Zufall
 import { sfx } from '../shared/sfx.js';                       // sfx.play('tap'|'pop'|'fill'|'place'|'whoosh'|'error'|'complete'|'sparkle'|'click'|'thud')
+// Ton-Regeln: sparsam! Nur bei echten Spielereignissen (nicht bei jedem Menü-Knopf), leise und weich.
+// Eigene Klänge nie direkt an ctx.destination, sondern an sfx.output().node (gemeinsame Lautstärke leise/normal/aus).
 import { icon, h, toast, showModal, confirmDialog, celebrate, setupPage,
          soundButton, backButton, sleep, ease } from '../shared/ui.js';
 ```

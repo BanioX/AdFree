@@ -14,6 +14,7 @@ const P = {
   hint: '<path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2V16h5v-.1c0-.8.4-1.5 1-2A6 6 0 0 0 12 3z"/>',
   soundOn: '<path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/>',
   soundOff: '<path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M17 9l5 6M22 9l-5 6"/>',
+  soundLow: '<path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M16.5 9.5a3.5 3.5 0 0 1 0 5"/>',
   refresh: '<path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/>',
   undo: '<path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/>',
   plus: '<path d="M12 5v14M5 12h14"/>',
@@ -246,12 +247,22 @@ function registerServiceWorker() {
   navigator.serviceWorker.register(swUrl, { scope: new URL('../', import.meta.url).pathname }).catch(() => {});
 }
 
-/** Erzeugt einen Ton-an/aus-Button (icon-btn), der den globalen Zustand umschaltet. */
+/** Ton-Knopf (icon-btn): schaltet leise → normal → aus (für alle Spiele gemeinsam). */
 export function soundButton() {
-  const b = h('button.icon-btn', { type: 'button', 'aria-label': 'Ton an/aus' });
-  const render = () => { b.innerHTML = icon(sfx.muted ? 'soundOff' : 'soundOn'); };
+  const b = h('button.icon-btn', { type: 'button' });
+  const LABEL = { leise: 'Ton: leise', normal: 'Ton: normal', aus: 'Ton aus' };
+  const ICON = { leise: 'soundLow', normal: 'soundOn', aus: 'soundOff' };
+  const render = () => {
+    b.innerHTML = icon(ICON[sfx.level] || 'soundOn');
+    b.setAttribute('aria-label', LABEL[sfx.level] + ' – tippen zum Ändern');
+  };
   render();
-  b.addEventListener('click', () => { sfx.toggle(); render(); sfx.play('click'); });
+  b.addEventListener('click', () => {
+    sfx.cycle();
+    render();
+    toast(LABEL[sfx.level]);
+    sfx.play('tap');
+  });
   return b;
 }
 

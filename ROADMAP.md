@@ -88,7 +88,7 @@ Mehrere KI-Agenten bauen parallel – Zuständigkeiten und Regeln stehen in [AGE
 | 50 | Wabenwort – Wörter aus 7 Buchstaben | ✅ |
 | 51 | Buchstabenjagd (Galgenmännchen-Art) | ✅ |
 | 52 | Geheimschrift – Zitate entschlüsseln | 📋 |
-| 53 | Wortleiter | 📋 |
+| 53 | Wortleiter | ✅ |
 | 54 | Anagramm | ✅ |
 | 55 | Wortwirbel – Wörter im Buchstabenfeld | 📋 |
 | 56 | Kreuzworträtsel (Mini) | 📋 |

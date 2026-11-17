@@ -198,6 +198,7 @@ Inhalte – keine kommerziellen ROMs.
 | 112 | Mini-Rennen | 📋 |
 | 113 | Labyrinth-Futter – Punkte sammeln, Geistern ausweichen | 📋 |
 | 114 | Ausweichen – Laser und Kanonen überstehen | ✅ |
+| 115 | Sternkater – Held und Katze gegen Riesen | ✅ |
 
 Nicht möglich: **Neo Geo** (das System-BIOS ist urheberrechtlich geschützt) und kommerzielle
 SNES/NES-Spiele (ROMs dürfen nicht mitgeliefert werden).

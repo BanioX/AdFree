@@ -3,7 +3,7 @@
 
 export default [
   {
-    id: 'r-fuchs', title: 'Fuchs', category: 'Tiere', bg: '#e6f5d8',
+    id: 'r-fuchs', title: 'Fuchs', title_en: 'Fox', category: 'Tiere', bg: '#e6f5d8',
     palette: { o: '#f07a2a', d: '#c9581a', w: '#fff6ea', k: '#3a2418' },
     rows: [
       '....................',
@@ -29,7 +29,7 @@ export default [
     ],
   },
   {
-    id: 'r-panda', title: 'Panda', category: 'Tiere', bg: '#d8f0c8',
+    id: 'r-panda', title: 'Panda', title_en: 'Panda', category: 'Tiere', bg: '#d8f0c8',
     palette: { w: '#ffffff', k: '#2f2f38', p: '#ffb3c2', g: '#7cc36a', l: '#4cae4c', d: '#5a9a4a' },
     rows: [
       '....................',
@@ -55,7 +55,7 @@ export default [
     ],
   },
   {
-    id: 'r-papagei', title: 'Papagei', category: 'Tiere', bg: '#dff1ff',
+    id: 'r-papagei', title: 'Papagei', title_en: 'Parrot', category: 'Tiere', bg: '#dff1ff',
     palette: { r: '#e5333f', w: '#ffffff', k: '#2b2420', y: '#ffd23f', b: '#3f8ef0', g: '#45b85a', t: '#8a5a3b', l: '#5cc25a' },
     rows: [
       '....................',
@@ -81,7 +81,7 @@ export default [
     ],
   },
   {
-    id: 'r-katzentasse', title: 'Kätzchen in der Tasse', category: 'Tiere', bg: '#fff0f5',
+    id: 'r-katzentasse', title: 'Kätzchen in der Tasse', title_en: 'Kitten in a Cup', category: 'Tiere', bg: '#fff0f5',
     palette: { g: '#b8b2c8', p: '#ffb3c2', k: '#4a3a4a', m: '#7fc8ff', d: '#5aa9e6', h: '#ff6f91' },
     rows: [
       '....................',
@@ -107,7 +107,7 @@ export default [
     ],
   },
   {
-    id: 'r-einhorn', title: 'Einhorn', category: 'Tiere', bg: '#d9c8f5',
+    id: 'r-einhorn', title: 'Einhorn', title_en: 'Unicorn', category: 'Tiere', bg: '#d9c8f5',
     palette: { w: '#ffffff', p: '#ff9ec4', y: '#ffd23f', o: '#ffa62b', m: '#ff9ec4', v: '#b48cff', b: '#7fc8ff', k: '#4a3a5a', n: '#e59ab8' },
     rows: [
       '....................',
@@ -133,7 +133,7 @@ export default [
     ],
   },
   {
-    id: 'r-schiff', title: 'Segelschiff', category: 'Dinge', bg: '#bfe3ff',
+    id: 'r-schiff', title: 'Segelschiff', title_en: 'Sailing Ship', category: 'Dinge', bg: '#bfe3ff',
     palette: { r: '#e5484d', t: '#6b4a32', w: '#ffffff', b: '#a8603a', y: '#ffd23f', d: '#5a3420', a: '#3f8ef0', l: '#a9d4ff' },
     rows: [
       '....................',
@@ -159,7 +159,7 @@ export default [
     ],
   },
   {
-    id: 'r-winterhaus', title: 'Winterhaus', category: 'Feste', bg: '#b9d7f5',
+    id: 'r-winterhaus', title: 'Winterhaus', title_en: 'Winter Cottage', category: 'Feste', bg: '#b9d7f5',
     palette: { h: '#c0573e', s: '#ffffff', d: '#8a3a2a', c: '#8a5a3b', m: '#d6cfc7', y: '#ffd23f', b: '#5a3420', g: '#2f9e5b', t: '#6b4a32', f: '#ffffff' },
     rows: [
       '....................',
@@ -185,7 +185,7 @@ export default [
     ],
   },
   {
-    id: 'r-erdbeertorte', title: 'Erdbeertorte', category: 'Essen', bg: '#fff0f5',
+    id: 'r-erdbeertorte', title: 'Erdbeertorte', title_en: 'Strawberry Cake', category: 'Essen', bg: '#fff0f5',
     palette: { g: '#c9c2bb', c: '#f6d6a8', w: '#ffffff', p: '#ff9ec4', r: '#e5333f', l: '#45b85a', y: '#ffe08a' },
     rows: [
       '....................',
@@ -211,7 +211,7 @@ export default [
     ],
   },
   {
-    id: 'r-sonnenblume', title: 'Sonnenblume', category: 'Pflanzen', bg: '#bfe3ff',
+    id: 'r-sonnenblume', title: 'Sonnenblume', title_en: 'Sunflower', category: 'Pflanzen', bg: '#bfe3ff',
     palette: { g: '#3fa65a', l: '#7fd36b', y: '#ffcd2e', o: '#ffb000', b: '#7a4a2a', d: '#5a3420' },
     rows: [
       '.........yy.........',
@@ -237,7 +237,7 @@ export default [
     ],
   },
   {
-    id: 'r-strauss', title: 'Blumenstrauss', category: 'Pflanzen', bg: '#fff3e8',
+    id: 'r-strauss', title: 'Blumenstrauss', title_en: 'Bouquet', category: 'Pflanzen', bg: '#fff3e8',
     palette: { g: '#3fa65a', l: '#7fd36b', r: '#ef4f6c', v: '#9b6bff', p: '#ff7fb0', y: '#ffd23f', o: '#ff9f1c', c: '#fff3a6', b: '#5b8def', d: '#3a63b8', w: '#ffffff' },
     rows: [
       '....................',
@@ -263,7 +263,7 @@ export default [
     ],
   },
   {
-    id: 'r-herbstbaum', title: 'Herbstbaum', category: 'Pflanzen', bg: '#fff3d6',
+    id: 'r-herbstbaum', title: 'Herbstbaum', title_en: 'Autumn Tree', category: 'Pflanzen', bg: '#fff3d6',
     palette: { t: '#7a4a2a', o: '#f28c28', r: '#d9452b', y: '#ffc72c', g: '#9a7a4a' },
     rows: [
       '.........ro.........',
@@ -289,7 +289,7 @@ export default [
     ],
   },
   {
-    id: 'r-christbaum', title: 'Christbaum', category: 'Feste', bg: '#1f3b5a',
+    id: 'r-christbaum', title: 'Christbaum', title_en: 'Christmas Tree', category: 'Feste', bg: '#1f3b5a',
     palette: { g: '#2f9e5b', y: '#ffd23f', r: '#e5333f', b: '#5bc0eb', t: '#8a5a3b', w: '#ffffff' },
     rows: [
       '.........yy.........',
@@ -315,7 +315,7 @@ export default [
     ],
   },
   {
-    id: 'r-frosch', title: 'Froschkönig', category: 'Tiere', bg: '#bfe3ff',
+    id: 'r-frosch', title: 'Froschkönig', title_en: 'Frog Prince', category: 'Tiere', bg: '#bfe3ff',
     palette: { g: '#3f9e4a', f: '#7cd36a', w: '#ffffff', k: '#2b2420', d: '#2f7d3a', p: '#ff9db5', l: '#d6f5a8', r: '#ff7fb0', y: '#ffd23f' },
     rows: [
       '....................',
@@ -341,7 +341,7 @@ export default [
     ],
   },
   {
-    id: 'r-elefant', title: 'Elefant', category: 'Tiere', bg: '#fff8e8',
+    id: 'r-elefant', title: 'Elefant', title_en: 'Elephant', category: 'Tiere', bg: '#fff8e8',
     palette: { r: '#ef4f6c', w: '#ffffff', k: '#6b5a4a', e: '#9aa8c0', d: '#7a88a8', p: '#ffb3c2' },
     rows: [
       '....................',
@@ -367,7 +367,7 @@ export default [
     ],
   },
   {
-    id: 'r-flamingo', title: 'Flamingo', category: 'Tiere', bg: '#bfe3ff',
+    id: 'r-flamingo', title: 'Flamingo', title_en: 'Flamingo', category: 'Tiere', bg: '#bfe3ff',
     palette: { p: '#ff8fb0', d: '#ff6f9a', w: '#fff3f8', k: '#2b2420', l: '#e06a8a', a: '#5aa9e6', c: '#ffffff' },
     rows: [
       '....................',
@@ -393,7 +393,7 @@ export default [
     ],
   },
   {
-    id: 'r-insel', title: 'Palmeninsel', category: 'Natur', bg: '#bfe9ff',
+    id: 'r-insel', title: 'Palmeninsel', title_en: 'Palm Island', category: 'Natur', bg: '#bfe9ff',
     palette: { y: '#ffd23f', s: '#f2d49a', a: '#3f8ef0', t: '#a8703a', b: '#8a5a2b', g: '#3fa65a', l: '#6cc76a', k: '#6b4a32', r: '#ff8a7a' },
     rows: [
       '.....lg....lg.......',
@@ -419,7 +419,7 @@ export default [
     ],
   },
   {
-    id: 'r-teddy', title: 'Teddybär', category: 'Dinge', bg: '#e8f4ff',
+    id: 'r-teddy', title: 'Teddybär', title_en: 'Teddy Bear', category: 'Dinge', bg: '#e8f4ff',
     palette: { b: '#b07a4a', l: '#f1d2a4', k: '#3a2418', r: '#e5333f' },
     rows: [
       '....................',
@@ -445,7 +445,7 @@ export default [
     ],
   },
   {
-    id: 'r-pizza', title: 'Pizza', category: 'Essen', bg: '#fff8ee',
+    id: 'r-pizza', title: 'Pizza', title_en: 'Pizza', category: 'Essen', bg: '#fff8ee',
     palette: { c: '#e0a04a', t: '#e5533d', y: '#ffe08a', r: '#c8323a', g: '#45b85a' },
     rows: [
       '....................',

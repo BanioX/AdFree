@@ -3,7 +3,7 @@
 
 export default [
   {
-    id: 'm-herz', title: 'Herz', category: 'Feste',
+    id: 'm-herz', title: 'Herz', title_en: 'Heart', category: 'Feste',
     palette: { r: '#f2385a', p: '#ff9db5' },
     rows: [
       '.r.r.',
@@ -14,7 +14,7 @@ export default [
     ],
   },
   {
-    id: 'm-haus', title: 'Haus', category: 'Dinge', bg: '#dff1ff',
+    id: 'm-haus', title: 'Haus', title_en: 'House', category: 'Dinge', bg: '#dff1ff',
     palette: { r: '#e5533d', w: '#ffe7b8', b: '#8a5a3b' },
     rows: [
       '..r..',
@@ -25,7 +25,7 @@ export default [
     ],
   },
   {
-    id: 'm-pilz', title: 'Pilz', category: 'Pflanzen',
+    id: 'm-pilz', title: 'Pilz', title_en: 'Mushroom', category: 'Pflanzen',
     palette: { r: '#ec4a3c', w: '#fff8ee', c: '#f1d2a4' },
     rows: [
       '.rrr.',
@@ -36,7 +36,7 @@ export default [
     ],
   },
   {
-    id: 'm-tanne', title: 'Tanne', category: 'Pflanzen',
+    id: 'm-tanne', title: 'Tanne', title_en: 'Fir Tree', category: 'Pflanzen',
     palette: { g: '#2f9e5b', l: '#6cd18a', b: '#8a5a3b' },
     rows: [
       '..g..',
@@ -47,7 +47,7 @@ export default [
     ],
   },
   {
-    id: 'm-fisch', title: 'Fischlein', category: 'Tiere', bg: '#d6f0ff',
+    id: 'm-fisch', title: 'Fischlein', title_en: 'Little Fish', category: 'Tiere', bg: '#d6f0ff',
     palette: { o: '#ff8a3d', e: '#2b2420' },
     rows: [
       '.....',
@@ -58,7 +58,7 @@ export default [
     ],
   },
   {
-    id: 'm-stern', title: 'Stern', category: 'Natur', bg: '#2d3561',
+    id: 'm-stern', title: 'Stern', title_en: 'Star', category: 'Natur', bg: '#2d3561',
     palette: { y: '#ffd23f', l: '#fff3a6' },
     rows: [
       '..y..',
@@ -69,7 +69,7 @@ export default [
     ],
   },
   {
-    id: 'm-mond', title: 'Mondsichel', category: 'Natur', bg: '#2d3561',
+    id: 'm-mond', title: 'Mondsichel', title_en: 'Crescent Moon', category: 'Natur', bg: '#2d3561',
     palette: { y: '#ffe08a' },
     rows: [
       '.yyy.',
@@ -80,7 +80,7 @@ export default [
     ],
   },
   {
-    id: 'm-tasse', title: 'Tasse', category: 'Essen',
+    id: 'm-tasse', title: 'Tasse', title_en: 'Cup', category: 'Essen',
     palette: { c: '#5b8def', s: '#c9c2bb' },
     rows: [
       '.s.s.',
@@ -91,7 +91,7 @@ export default [
     ],
   },
   {
-    id: 'm-glocke', title: 'Glocke', category: 'Feste',
+    id: 'm-glocke', title: 'Glocke', title_en: 'Bell', category: 'Feste',
     palette: { y: '#f5b82e', l: '#ffe08a', b: '#9a5b12' },
     rows: [
       '..y..',
@@ -102,7 +102,7 @@ export default [
     ],
   },
   {
-    id: 'm-kirschen', title: 'Kirschen', category: 'Essen',
+    id: 'm-kirschen', title: 'Kirschen', title_en: 'Cherries', category: 'Essen',
     palette: { g: '#3f9e4a', r: '#d81e3c' },
     rows: [
       '..gg.',
@@ -113,7 +113,7 @@ export default [
     ],
   },
   {
-    id: 'm-blume', title: 'Blümchen', category: 'Pflanzen',
+    id: 'm-blume', title: 'Blümchen', title_en: 'Little Flower', category: 'Pflanzen',
     palette: { p: '#ff7fb0', y: '#ffd23f', g: '#45b85a' },
     rows: [
       '.ppp.',
@@ -124,7 +124,7 @@ export default [
     ],
   },
   {
-    id: 'm-apfel', title: 'Apfel', category: 'Essen',
+    id: 'm-apfel', title: 'Apfel', title_en: 'Apple', category: 'Essen',
     palette: { r: '#e83b3b', p: '#ff9a8a', b: '#7a4a2a', g: '#5cc25a' },
     rows: [
       '..bg.',
@@ -135,7 +135,7 @@ export default [
     ],
   },
   {
-    id: 'm-katze', title: 'Kätzchen', category: 'Tiere',
+    id: 'm-katze', title: 'Kätzchen', title_en: 'Kitten', category: 'Tiere',
     palette: { o: '#f5a04a', e: '#3f7d3a', n: '#ff8fa3' },
     rows: [
       'oo.oo',
@@ -146,7 +146,7 @@ export default [
     ],
   },
   {
-    id: 'm-schirm', title: 'Schirm', category: 'Dinge', bg: '#e3f1fb',
+    id: 'm-schirm', title: 'Schirm', title_en: 'Umbrella', category: 'Dinge', bg: '#e3f1fb',
     palette: { p: '#9b6bff', b: '#5a4a3a' },
     rows: [
       '.ppp.',
@@ -157,7 +157,7 @@ export default [
     ],
   },
   {
-    id: 'm-boot', title: 'Segelboot', category: 'Dinge', bg: '#cfeaff',
+    id: 'm-boot', title: 'Segelboot', title_en: 'Sailboat', category: 'Dinge', bg: '#cfeaff',
     palette: { w: '#ffffff', b: '#c0573e', r: '#e5484d' },
     rows: [
       '..r..',
@@ -168,7 +168,7 @@ export default [
     ],
   },
   {
-    id: 'm-krone', title: 'Krone', category: 'Dinge',
+    id: 'm-krone', title: 'Krone', title_en: 'Crown', category: 'Dinge',
     palette: { y: '#f5b82e', r: '#e5484d', b: '#3f8ef0' },
     rows: [
       '..y..',
@@ -179,7 +179,7 @@ export default [
     ],
   },
   {
-    id: 'm-schneemann', title: 'Schneemann', category: 'Feste', bg: '#d9ecff',
+    id: 'm-schneemann', title: 'Schneemann', title_en: 'Snowman', category: 'Feste', bg: '#d9ecff',
     palette: { h: '#3a3a4a', w: '#ffffff', o: '#ff8a3d' },
     rows: [
       '.hhh.',
@@ -190,7 +190,7 @@ export default [
     ],
   },
   {
-    id: 'm-eis', title: 'Glace', category: 'Essen',
+    id: 'm-eis', title: 'Glace', title_en: 'Ice Cream', category: 'Essen',
     palette: { p: '#ff9ec4', w: '#fff3f8', c: '#e0a85e' },
     rows: [
       '.ppp.',
@@ -201,7 +201,7 @@ export default [
     ],
   },
   {
-    id: 'm-note', title: 'Note', category: 'Dinge',
+    id: 'm-note', title: 'Note', title_en: 'Music Note', category: 'Dinge',
     palette: { n: '#5a4a8a' },
     rows: [
       '..nn.',
@@ -212,7 +212,7 @@ export default [
     ],
   },
   {
-    id: 'm-diamant', title: 'Edelstein', category: 'Dinge',
+    id: 'm-diamant', title: 'Edelstein', title_en: 'Gem', category: 'Dinge',
     palette: { b: '#3fb6e0', l: '#bff0ff' },
     rows: [
       '.lbb.',
@@ -223,7 +223,7 @@ export default [
     ],
   },
   {
-    id: 'm-blatt', title: 'Blatt', category: 'Pflanzen',
+    id: 'm-blatt', title: 'Blatt', title_en: 'Leaf', category: 'Pflanzen',
     palette: { g: '#58b94a', l: '#b7e889', b: '#8a5a3b' },
     rows: [
       '..ggg',
@@ -234,7 +234,7 @@ export default [
     ],
   },
   {
-    id: 'm-tulpe', title: 'Tulpe', category: 'Pflanzen',
+    id: 'm-tulpe', title: 'Tulpe', title_en: 'Tulip', category: 'Pflanzen',
     palette: { r: '#ef4f6c', g: '#45b85a' },
     rows: [
       'r.r.r',
@@ -245,7 +245,7 @@ export default [
     ],
   },
   {
-    id: 'm-kerze', title: 'Kerze', category: 'Feste', bg: '#3a3550',
+    id: 'm-kerze', title: 'Kerze', title_en: 'Candle', category: 'Feste', bg: '#3a3550',
     palette: { o: '#ffb42e', y: '#fff3a6', c: '#ff8fa3' },
     rows: [
       '..o..',
@@ -256,7 +256,7 @@ export default [
     ],
   },
   {
-    id: 'm-geschenk', title: 'Geschenk', category: 'Feste',
+    id: 'm-geschenk', title: 'Geschenk', title_en: 'Present', category: 'Feste',
     palette: { y: '#ffd23f', r: '#e5484d' },
     rows: [
       '.y.y.',
@@ -267,7 +267,7 @@ export default [
     ],
   },
   {
-    id: 'm-falter', title: 'Falter', category: 'Tiere',
+    id: 'm-falter', title: 'Falter', title_en: 'Little Butterfly', category: 'Tiere',
     palette: { p: '#ff7fb0', b: '#4a3a5c' },
     rows: [
       'pp.pp',
@@ -278,7 +278,7 @@ export default [
     ],
   },
   {
-    id: 'm-sonne', title: 'Sonne', category: 'Natur', bg: '#dff1ff',
+    id: 'm-sonne', title: 'Sonne', title_en: 'Sun', category: 'Natur', bg: '#dff1ff',
     palette: { y: '#ffc93c', o: '#ff9f1c' },
     rows: [
       'o.o.o',
@@ -289,7 +289,7 @@ export default [
     ],
   },
   {
-    id: 'm-regen', title: 'Regenwolke', category: 'Natur', bg: '#eef3f7',
+    id: 'm-regen', title: 'Regenwolke', title_en: 'Rain Cloud', category: 'Natur', bg: '#eef3f7',
     palette: { w: '#9aa8b8', b: '#3f8ef0' },
     rows: [
       '..ww.',
@@ -300,7 +300,7 @@ export default [
     ],
   },
   {
-    id: 'm-tropfen', title: 'Tropfen', category: 'Natur',
+    id: 'm-tropfen', title: 'Tropfen', title_en: 'Raindrop', category: 'Natur',
     palette: { b: '#3f8ef0', l: '#a9d4ff' },
     rows: [
       '..b..',
@@ -311,7 +311,7 @@ export default [
     ],
   },
   {
-    id: 'm-kaktus', title: 'Kaktus', category: 'Pflanzen',
+    id: 'm-kaktus', title: 'Kaktus', title_en: 'Cactus', category: 'Pflanzen',
     palette: { g: '#3fa65a', o: '#d9744a' },
     rows: [
       '..g..',
@@ -322,7 +322,7 @@ export default [
     ],
   },
   {
-    id: 'm-hase', title: 'Häschen', category: 'Tiere', bg: '#cfeccf',
+    id: 'm-hase', title: 'Häschen', title_en: 'Bunny', category: 'Tiere', bg: '#cfeccf',
     palette: { w: '#f7f1ea', e: '#4a3a3a', p: '#ff8fa3' },
     rows: [
       '.w.w.',
@@ -333,7 +333,7 @@ export default [
     ],
   },
   {
-    id: 'm-ente', title: 'Entlein', category: 'Tiere', bg: '#d6f0ff',
+    id: 'm-ente', title: 'Entlein', title_en: 'Duckling', category: 'Tiere', bg: '#d6f0ff',
     palette: { y: '#ffd23f', o: '#ff8a3d', e: '#2b2420' },
     rows: [
       '.yy..',
@@ -344,7 +344,7 @@ export default [
     ],
   },
   {
-    id: 'm-kuerbis', title: 'Kürbis', category: 'Feste',
+    id: 'm-kuerbis', title: 'Kürbis', title_en: 'Pumpkin', category: 'Feste',
     palette: { g: '#3f9e4a', o: '#ff8a1f', d: '#e06a10' },
     rows: [
       '..g..',
@@ -355,7 +355,7 @@ export default [
     ],
   },
   {
-    id: 'm-blitz', title: 'Blitz', category: 'Natur', bg: '#4a5068',
+    id: 'm-blitz', title: 'Blitz', title_en: 'Lightning', category: 'Natur', bg: '#4a5068',
     palette: { y: '#ffd23f' },
     rows: [
       '..yyy',
@@ -366,7 +366,7 @@ export default [
     ],
   },
   {
-    id: 'm-smiley', title: 'Lächeln', category: 'Dinge',
+    id: 'm-smiley', title: 'Lächeln', title_en: 'Smile', category: 'Dinge',
     palette: { y: '#ffcf3f', d: '#6a4a1a' },
     rows: [
       '.yyy.',

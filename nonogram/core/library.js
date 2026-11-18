@@ -2,6 +2,7 @@
 // Ohne DOM (die Perlenbild-Bibliothek wird optional dynamisch geladen).
 
 import { packs as dataPacks, themes as dataThemes } from '../data/index.js';
+import beadsEn from '../data/beads.en.js';
 import { parsePuzzle, isGoodPuzzle, mirrorDef, validateDef } from './puzzle.js';
 import { makeEndless } from './generator.js';
 import { makeRng } from '../../shared/rng.js';
@@ -39,6 +40,7 @@ export function loadBeadsPack(importer) {
         const def = {
           id: `p-${String(pat.id).toLowerCase().replace(/[^a-z0-9-]/g, '-')}`,
           title: pat.title || 'Perlenbild',
+          title_en: pat.title_en || beadsEn[pat.id] || (pat.title ? undefined : 'Bead Picture'),
           category: pat.category || 'Perlen',
           palette: pat.palette,
           rows: pat.rows,
@@ -46,7 +48,10 @@ export function loadBeadsPack(importer) {
         try { if (isGoodPuzzle(def)) puzzles.push(def); } catch { /* ungültig -> überspringen */ }
       }
       if (!puzzles.length) return null;
-      beadsPack = { id: 'perlen', title: 'Perlenbilder', subtitle: 'Aus dem Spiel «Perlenbild»', emoji: '💎', puzzles, extra: true };
+      beadsPack = {
+        id: 'perlen', title: 'Perlenbilder', subtitle: 'Aus dem Spiel «Perlenbild»',
+        title_en: 'Bead Art', subtitle_en: 'From the game “Bead Art”', emoji: '💎', puzzles, extra: true,
+      };
       for (const def of puzzles) if (!byId.has(def.id)) byId.set(def.id, { def, pack: beadsPack });
       return beadsPack;
     } catch {

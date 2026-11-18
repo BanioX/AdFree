@@ -28,6 +28,7 @@ export function parsePuzzle(def, extra = {}) {
   return {
     id: def.id,
     title: def.title,
+    title_en: def.title_en,
     category: def.category || 'Diverses',
     w, h, mask, colors,
     rowClues: rows,

@@ -1,5 +1,5 @@
 // Bilderrätsel – Endlos-Bilder: deterministisch erzeugte Pixelbilder (ohne DOM).
-//   makeEndless(size, n) => Definition { id, title, category, palette, rows, bg }
+//   makeEndless(size, n) => Definition { id, title, title_en, category, palette, rows, bg }
 // Zwei Sorten: «Pixelwesen» (spiegelsymmetrische Fantasiewesen mit Augen) und «Mosaik»
 // (vierfach symmetrische Muster). Jedes Ergebnis ist eindeutig per Zeilenlogik lösbar.
 
@@ -208,10 +208,11 @@ export function makeEndless(size, n) {
       if (f.ok) { def.rows = f.rows; res = { ok: true }; }
     }
     if (!res.ok) continue;
-    const title = def.category === 'Mosaik' ? `Mosaik Nr. ${n}` : `${def.title}`;
+    const mosaicT = def.category === 'Mosaik';
     return cleanPalette({
       id: `e${size}-${n}`,
-      title,
+      title: mosaicT ? `Mosaik Nr. ${n}` : def.title,
+      title_en: mosaicT ? `Mosaic No. ${n}` : def.title,
       category: def.category,
       palette: def.palette,
       rows: def.rows,
@@ -225,5 +226,5 @@ export function makeEndless(size, n) {
     for (let c = 0; c < size; c++) s += r === 0 || c === 0 || r === size - 1 || c === size - 1 ? 'a' : '.';
     rows.push(s);
   }
-  return { id: `e${size}-${n}`, title: `Rahmen Nr. ${n}`, category: 'Mosaik', palette: { a: '#e0699a' }, rows };
+  return { id: `e${size}-${n}`, title: `Rahmen Nr. ${n}`, title_en: `Frame No. ${n}`, category: 'Mosaik', palette: { a: '#e0699a' }, rows };
 }

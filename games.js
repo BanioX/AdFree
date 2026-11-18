@@ -14,8 +14,10 @@
 //   color     Akzentfarbe des Spiels
 //   daily     true, wenn das Spiel ein Tagesrätsel unter "<id>/#daily" anbietet
 //   added     Datum (JJJJ-MM-TT), an dem das Spiel dazukam – zeigt 14 Tage lang «Neu»
+//   folder    true für einen Ordner mit eigener Spielauswahl (Unterseite /<id>/), category 'ordner'
 
 export const categories = [
+  { id: 'ordner', title: 'Ordner', title_en: 'Folders' },
   { id: 'kreativ', title: 'Kreativ & Malen', title_en: 'Creative & Coloring' },
   { id: 'logik', title: 'Logikrätsel', title_en: 'Logic Puzzles' },
   { id: 'zahlen', title: 'Zahlen', title_en: 'Numbers' },

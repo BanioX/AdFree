@@ -119,6 +119,8 @@
       background: var(--surface-3); color: var(--text-2); font-size: 10.5px; font-weight: 850; box-shadow: 0 0 0 2px var(--bg); }
     .daily a.soon { opacity: .55; }
     .lang-btn { font-weight: 900; font-size: 14px; letter-spacing: .02em; }
+    .tile.folder .ic { box-shadow: 0 6px 14px rgba(70, 45, 20, .16), 0 0 0 3px var(--surface), 0 0 0 4.5px rgba(70, 45, 20, .10); }
+    .tile.folder .name::after { content: ' ›'; color: var(--text-3); font-weight: 900; }
     .foot { margin: 30px 0 0; text-align: center; color: var(--text-3); font-size: 14px; font-weight: 600; }
     .foot .heart { color: #ff6f7d; }
 
@@ -180,7 +182,11 @@
 
     setupPage();
     document.getElementById('sound').append(soundButton());
-    document.getElementById('tagline').textContent = L(`${games.length} Spiele – ganz ohne Werbung.`, `${games.length} games – no ads at all.`);
+    const nGames = games.filter((g) => !g.folder).length;
+    const nFolders = games.filter((g) => g.folder).length;
+    document.getElementById('tagline').textContent = nFolders
+      ? L(`${nGames} Spiele + ${nFolders} ${nFolders === 1 ? 'Ordner' : 'Ordner'} – ohne Werbung.`, `${nGames} games + ${nFolders} ${nFolders === 1 ? 'folder' : 'folders'} – no ads.`)
+      : L(`${nGames} Spiele – ganz ohne Werbung.`, `${nGames} games – no ads at all.`);
     document.getElementById('q').placeholder = L('Spiel suchen', 'Search games');
     document.getElementById('q-clear').setAttribute('aria-label', L('Suche löschen', 'Clear search'));
     document.getElementById('daily-title').textContent = L('Tagesrätsel', 'Daily puzzles');
@@ -236,7 +242,8 @@
         a.addEventListener('click', soonToast, { capture: true });
         return a;
       }
-      if (badges && isNew(g)) a.append(h('span.new', null, 'Neu'));
+      if (g.folder) a.classList.add('folder');
+      if (badges && isNew(g)) a.append(h('span.new', null, L('Neu', 'New')));
       if (badges && store.get('favorites', []).includes(g.id)) a.append(h('span.fav', null, '★'));
       a.addEventListener('click', () => { sfx.play('tap'); rememberPlay(g); });
       // Langes Drücken: Info zum Spiel

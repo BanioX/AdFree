@@ -46,7 +46,7 @@ automatisch erscheint und jederzeit über **?** erreichbar ist.
 
 > **20 handverlesene Spiele** – Qualität vor Menge. Stand und Pläne: [Fahrplan](ROADMAP.md).
 >
-> **Stand:** Alle 16 Spiele sind spielbar und getestet; Startbildschirm, Spass-Check und Englisch
+> **Stand:** Alle Spiele sind spielbar; Startbildschirm, Spass-Check und Englisch
 > werden Spiel für Spiel nachgezogen. Was neu dazukommt, steht im
 > [Versionsverlauf](CHANGELOG.md).
 
@@ -119,7 +119,7 @@ wrangler.jsonc        Cloudflare-Konfiguration
 DEV.md                Entwickler-Leitfaden (Regeln, Datenformate, Tests)
 AGENTS.md             Regeln und Zuständigkeiten für alle KI-Agenten
 CHANGELOG.md          Versionsverlauf
-ROADMAP.md            Fahrplan zu 100 Spielen
+ROADMAP.md            Fahrplan: die 20 Spiele und ihr Stand
 ```
 
 ## Lokal entwickeln

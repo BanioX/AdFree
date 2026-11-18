@@ -1,4 +1,5 @@
-// Ende-zu-Ende-Test für «Verdoppeln» (iPhone 13, Touch).
+// Ende-zu-Ende-Test für «Verdoppeln» (iPhone 13, Touch) – auf Deutsch (Sprache fest per localStorage).
+//   Englisch: tests/e2e-en.mjs
 //   Server: python3 -m http.server 8208 --bind 127.0.0.1   (aus dem Repo-Wurzelverzeichnis)
 //   Start:  node merge/tests/e2e.mjs
 // Screenshots landen in merge/tests/out/.
@@ -15,7 +16,9 @@ fs.mkdirSync(OUT, { recursive: true });
 
 const errors = [];
 const browser = await chromium.launch();
-const ctx = await browser.newContext({ ...devices['iPhone 13'], deviceScaleFactor: 1 });
+const ctx = await browser.newContext({ ...devices['iPhone 13'], deviceScaleFactor: 1, locale: 'de-CH' });
+// Sprache fest auf Deutsch (der Test prüft deutsche Texte)
+await ctx.addInitScript(() => { try { localStorage.setItem('spielpause.lang', '"de"'); } catch {} });
 const page = await ctx.newPage();
 page.on('pageerror', (e) => errors.push('pageerror: ' + e.message));
 page.on('console', (m) => { if (m.type() === 'error') errors.push('console: ' + m.text()); });
@@ -320,7 +323,8 @@ try {
 
   // ---------- Kleines iPhone (375 × 667) ----------
   step('Menü und 6×6 auf 375 × 667');
-  const small = await browser.newContext({ ...devices['iPhone SE'], viewport: { width: 375, height: 667 }, deviceScaleFactor: 1 });
+  const small = await browser.newContext({ ...devices['iPhone SE'], viewport: { width: 375, height: 667 }, deviceScaleFactor: 1, locale: 'de-CH' });
+  await small.addInitScript(() => { try { localStorage.setItem('spielpause.lang', '"de"'); } catch {} });
   const sp = await small.newPage();
   sp.on('pageerror', (e) => errors.push('pageerror: ' + e.message));
   sp.on('console', (m) => { if (m.type() === 'error') errors.push('console: ' + m.text()); });

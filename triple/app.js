@@ -7,16 +7,19 @@
 //   #levels      Levelübersicht
 
 import { setupPage } from '../shared/ui.js';
-import { themeById, themeShort } from './data/themes.js';
+import { L as loc, lang, fmt } from '../shared/i18n.js';
+import { themeById, themeShort, localizeThemes } from './data/themes.js';
 import { generateLevel, generateFree, SIZES } from './logic/generator.js';
 import { mountPlay } from './play.js';
-import { mountMenu, mountFree, mountLevels, tagLabel } from './menu.js';
+import { mountMenu, mountFree, mountLevels, tagLabel, sizeTitle, tilesText } from './menu.js';
 import { maybeShowHelp } from './howto.js';
 import {
   loadProgress, saveProgress, updateStats, loadSave, writeSave, clearSave, updateSummary,
 } from './progress.js';
 
 setupPage();
+localizeThemes(lang);
+document.title = loc('Dreierlei – Spielpause', 'Triple Tiles – Spielpause');
 const root = document.getElementById('app');
 let current = null;
 
@@ -34,13 +37,18 @@ function newSeed() {
 }
 
 function record(game, extra) {
-  updateStats((s) => {
+  return updateStats((s) => {
     s.triples += game.triples;
     s.helpers += game.used;
     s.totalTime = (s.totalTime || 0) + game.elapsed;
     if (extra) extra(s);
   });
 }
+
+const levelText = (n) => fmt(loc('Level {n}', 'Level {n}'), { n });
+const doneTitle = (n) => fmt(loc('Level {n} geschafft!', 'Level {n} complete!'), { n });
+/** Lob unter den Sternen: perfekt (ohne Hilfen) oder sanfter Hinweis. */
+const starNote = (stars) => (stars >= 3 ? loc('Perfekt – ganz ohne Hilfen!', 'Perfect – no helpers needed!') : loc('Ohne Hilfen gibt es 3 Sterne.', 'Win without helpers for 3 stars.'));
 
 // ---------- Level-Reihe ----------
 
@@ -55,7 +63,7 @@ function startMain() {
     kind: 'play',
     level,
     saved,
-    title: `Level ${L}`,
+    title: levelText(L),
     subtitle: theme.title,
     tag: tagLabel(level.tag) || theme.title,
     coach: L === 1,
@@ -72,15 +80,18 @@ function startMain() {
       if (p.level === L) p.level = L + 1;
       saveProgress(p);
       clearSave('play');
-      record(game, (s) => { s.won++; s.streak++; s.bestStreak = Math.max(s.bestStreak, s.streak); });
+      const st = record(game, (s) => { s.won++; s.streak++; s.bestStreak = Math.max(s.bestStreak, s.streak); });
+      const next = generateLevel(L + 1);
       return {
-        title: `Level ${L} geschafft!`,
+        title: doneTitle(L),
         stars,
         isNewBest,
-        note: stars < 3 ? 'Ohne Hilfen gibt es 3 Sterne.' : null,
+        streak: st.streak,
+        note: starNote(stars),
+        next: { symbol: next.symbols[0], theme: themeById(next.theme), tag: tagLabel(next.tag) },
         buttons: [
-          { label: `Weiter zu Level ${L + 1}`, value: 'next', primary: true },
-          { label: 'Zum Menü', value: 'menu', ghost: true },
+          { label: fmt(loc('Weiter zu Level {n}', 'On to level {n}'), { n: L + 1 }), value: 'next', primary: true },
+          { label: loc('Zum Menü', 'Menu'), value: 'menu', ghost: true },
         ],
       };
     },
@@ -103,8 +114,8 @@ function startReplay(L) {
     kind: 'level',
     level,
     saved,
-    title: `Level ${L}`,
-    subtitle: `${themeShort(theme)} · Wiederholung`,
+    title: levelText(L),
+    subtitle: `${themeShort(theme)} · ${loc('Wiederholung', 'Replay')}`,
     tag: theme.title,
     save: (g) => writeSave('level', { levelNo: L, seed: level.seed, game: g }),
     onStart: () => updateStats((s) => { s.played++; }),
@@ -119,17 +130,18 @@ function startReplay(L) {
       p.times[L] = prevBest != null ? Math.min(prevBest, Math.round(game.elapsed)) : Math.round(game.elapsed);
       saveProgress(p);
       clearSave('level');
-      record(game, (s) => { s.won++; s.streak++; s.bestStreak = Math.max(s.bestStreak, s.streak); });
+      const st = record(game, (s) => { s.won++; s.streak++; s.bestStreak = Math.max(s.bestStreak, s.streak); });
       const nextL = L + 1;
       return {
-        title: `Level ${L} geschafft!`,
+        title: doneTitle(L),
         stars,
         isNewBest,
-        note: stars > before ? `Neuer Rekord: ${stars} Sterne!` : null,
+        streak: st.streak,
+        note: stars > before ? fmt(loc('Neuer Rekord: {n} Sterne!', 'New record: {n} stars!'), { n: stars }) : starNote(stars),
         buttons: [
-          { label: nextL < p.level ? `Level ${nextL} spielen` : `Weiter zu Level ${p.level}`, value: 'next', primary: true },
-          { label: 'Levelübersicht', value: 'levels' },
-          { label: 'Zum Menü', value: 'menu', ghost: true },
+          { label: nextL < p.level ? fmt(loc('Level {n} spielen', 'Play level {n}'), { n: nextL }) : fmt(loc('Weiter zu Level {n}', 'On to level {n}'), { n: p.level }), value: 'next', primary: true },
+          { label: loc('Levelübersicht', 'All levels'), value: 'levels' },
+          { label: loc('Zum Menü', 'Menu'), value: 'menu', ghost: true },
         ],
       };
     },
@@ -158,15 +170,15 @@ function startFree(themeId, sizeId, seed) {
     saved,
     title: themeShort(theme),
     bannerTitle: theme.title,
-    subtitle: `Freies Spiel · ${SIZES[sizeId].title}`,
-    tag: `${SIZES[sizeId].title} · ${level.tiles.length} Steine`,
+    subtitle: `${loc('Freies Spiel', 'Free play')} · ${sizeTitle(sizeId)}`,
+    tag: `${sizeTitle(sizeId)} · ${tilesText(level.tiles.length)}`,
     save: (g) => writeSave('free', { theme: themeId, size: sizeId, seed, game: g }),
     onStart: () => updateStats((s) => { s.freePlayed++; }),
     onLoss: () => updateStats((s) => { s.streak = 0; }),
     onWin: (game) => {
       let isNewBest = false;
       clearSave('free');
-      record(game, (s) => {
+      const st = record(game, (s) => {
         s.freeWon++;
         s.streak++;
         s.bestStreak = Math.max(s.bestStreak, s.streak);
@@ -175,13 +187,15 @@ function startFree(themeId, sizeId, seed) {
         s.freeBest[sizeId] = prev != null ? Math.min(prev, Math.round(game.elapsed)) : Math.round(game.elapsed);
       });
       return {
-        title: 'Geschafft!',
+        title: loc('Geschafft!', 'Well done!'),
         stars: game.stars,
         isNewBest,
+        streak: st.streak,
+        note: game.stars >= 3 ? starNote(3) : null,
         buttons: [
-          { label: 'Neues Spiel', value: 'again', primary: true },
-          { label: 'Anderes Thema', value: 'free' },
-          { label: 'Zum Menü', value: 'menu', ghost: true },
+          { label: loc('Neues Spiel', 'New game'), value: 'again', primary: true },
+          { label: loc('Anderes Thema', 'Other theme'), value: 'free' },
+          { label: loc('Zum Menü', 'Menu'), value: 'menu', ghost: true },
         ],
       };
     },

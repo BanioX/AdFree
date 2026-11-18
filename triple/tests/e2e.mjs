@@ -20,11 +20,12 @@ try { pw = require('playwright'); } catch { pw = createRequire('/opt/node22/lib/
 const { chromium, devices } = pw;
 
 const BASE = process.env.BASE || 'http://127.0.0.1:8203/';
+const LOCALE = process.env.LOCALE || 'de-CH'; // Texte unten sind Deutsch
 const SHOTS = process.env.SHOTS || path.join(path.dirname(fileURLToPath(import.meta.url)), 'out');
 mkdirSync(SHOTS, { recursive: true });
 
 const browser = await chromium.launch();
-const context = await browser.newContext({ ...devices['iPhone 13'], deviceScaleFactor: 1 });
+const context = await browser.newContext({ ...devices['iPhone 13'], deviceScaleFactor: 1, locale: LOCALE });
 const page = await context.newPage();
 
 const problems = [];
@@ -227,7 +228,7 @@ try {
   await page.locator('.gm-primary').waitFor();
   assert.ok(page.url().includes('/triple/'), 'Zurück darf nicht zur Startseite durchtippen');
   const label = await page.locator('.gm-primary').textContent();
-  assert.match(label, /Weiterspielen – Level 2/);
+  assert.match(label, /Weiterspielen\s*Level 2/);
   await shot('13-menu-weiter');
 
   // ---------- Verlieren ----------
@@ -317,7 +318,7 @@ try {
 
   // ---------- kleiner Bildschirm ----------
   step('Kleiner Bildschirm (iPhone SE) ohne Scrollen');
-  const small = await browser.newContext({ ...devices['iPhone SE'], deviceScaleFactor: 1 });
+  const small = await browser.newContext({ ...devices['iPhone SE'], deviceScaleFactor: 1, locale: LOCALE });
   const p2 = await small.newPage();
   p2.on('pageerror', (e) => problems.push('SE pageerror: ' + e.message));
   await p2.goto(BASE + 'triple/');

@@ -1,6 +1,7 @@
 // Fortschritt, Statistik und Spielstände von Dreierlei (localStorage über shared/storage.js).
 
 import { store, reportSummary } from '../shared/storage.js';
+import { L } from '../shared/i18n.js';
 
 const P = 'triple.';
 
@@ -74,7 +75,7 @@ export function setPref(key, value) {
 export function updateSummary(p = loadProgress()) {
   const stars = totalStars(p);
   const done = p.level - 1;
-  reportSummary('triple', done > 0 ? `Level ${p.level} · ${stars} ★` : 'Level 1 – los geht\'s!');
+  reportSummary('triple', done > 0 ? `Level ${p.level} · ${stars} ★` : L('Level 1 – los geht’s!', 'Level 1 – let’s go!'));
 }
 
 export function formatTime(ms) {

@@ -6,6 +6,7 @@ import { store, reportSummary } from '../shared/storage.js';
 import { sfx } from '../shared/sfx.js';
 import { icon, h, toast, showModal, celebrate, setupPage, soundButton, backButton } from '../shared/ui.js';
 import { gameMenu, menuSection } from '../shared/gamemenu.js';
+import { L } from '../shared/i18n.js';
 import { showTutorial, maybeShowTutorial } from '../shared/tutorial.js';
 import { Game, zenLevel, SP } from './engine.js';
 import { getLevel, setLevelStore, worldIndex, worldInfo, PER_WORLD, MIN_LEVELS, HANDMADE, features, VERSION as LEVEL_VERSION } from './levels.js';
@@ -74,6 +75,7 @@ function go(hash) {
 function route() {
   if (teardown) { try { teardown(); } catch { /* egal */ } teardown = null; }
   document.querySelectorAll('.sp-modal-backdrop').forEach((m) => m.remove());
+  document.querySelectorAll('.sp-toast.show').forEach((t) => t.classList.remove('show'));
   const [name, arg] = location.hash.replace(/^#/, '').split('/');
   // Ein gewonnenes Level bleibt nur gespeichert, solange sein Gewinn-Blatt offen ist.
   const run = store.get(K.run, null);
@@ -126,7 +128,7 @@ function heroArt(mode) {
       src: spriteURL(String(c), 96), alt: '', draggable: 'false',
       style: css({ animationDelay: k * 0.12 + 's', '--rot': ((k - 2.5) * 7) + 'deg', '--lift': (Math.abs(k - 2.5) * 7) + 'px' }),
     })));
-    card.append(row);
+    card.append(row, ...[0, 1, 2].map((k) => h('i.m3-twinkle', { style: css({ animationDelay: k * 0.9 + 's' }) }, '✦')));
   }
   return card;
 }
@@ -138,14 +140,14 @@ function levelPreview(n, theme) {
   if (n > HANDMADE && !store.get(`${ID}.lv.${LEVEL_VERSION}:${n}`, null)) return null;
   const canvas = boardPreview(getLevel(n), run.s, theme);
   const m = run.s.movesLeft;
-  return canvas && { canvas, pill: `${m} ${m === 1 ? 'Zug' : 'Züge'}` };
+  return canvas && { canvas, pill: movesText(m) };
 }
 
 function zenPreview(theme) {
   const z = store.get(K.zen, null);
   if (!z || !z.s) return null;
   const canvas = boardPreview(zenLevel(z.seed), z.s, theme);
-  return canvas && { canvas, pill: `${fmt(z.s.score || 0)} Punkte` };
+  return canvas && { canvas, pill: L(`${fmt(z.s.score || 0)} Punkte`, `${fmt(z.s.score || 0)} points`) };
 }
 
 /** Kleines Abbild eines gespeicherten Bretts (gleiche Sprites und Farben wie im Spiel). */
@@ -182,13 +184,17 @@ function boardPreview(L, save, theme) {
   return cv;
 }
 
+const movesText = (m) => L(`${m} ${m === 1 ? 'Zug' : 'Züge'}`, `${m} ${m === 1 ? 'move' : 'moves'}`);
+
 function primaryFor(mode) {
   if (mode === 'zen') {
     const z = store.get(K.zen, null);
     const best = getStats().zenBest;
     return {
-      label: z ? 'Weiterspielen' : 'Spielen', icon: 'play',
-      sub: z && z.s && z.s.score ? `Entspannt · ${fmt(z.s.score)} Punkte` : `Entspannt · ohne Zuglimit${best ? ` · Rekord ${fmt(best)}` : ''}`,
+      label: z ? L('Weiterspielen', 'Continue') : L('Spielen', 'Play'), icon: 'play',
+      sub: z && z.s && z.s.score
+        ? L(`Entspannt · ${fmt(z.s.score)} Punkte`, `Relaxed · ${fmt(z.s.score)} points`)
+        : L(`Entspannt · ohne Zuglimit${best ? ` · Rekord ${fmt(best)}` : ''}`, `Relaxed · no move limit${best ? ` · best ${fmt(best)}` : ''}`),
       onClick: () => start(() => go('zen')),
     };
   }
@@ -197,10 +203,10 @@ function primaryFor(mode) {
   const live = run && !run.won && run.n === n && run.s;
   const w = worldInfo(worldIndex(n));
   let sub = `Level ${n} · ${w.title}`;
-  if (live) sub = `Level ${n} · noch ${run.s.movesLeft} ${run.s.movesLeft === 1 ? 'Zug' : 'Züge'}`;
+  if (live) sub = L(`Level ${n} · noch ${movesText(run.s.movesLeft)}`, `Level ${n} · ${movesText(run.s.movesLeft)} left`);
   else if (isFinale(n)) sub = `Level ${n} · Finale 👑`;
   return {
-    label: getProg().max > 1 || live ? 'Weiterspielen' : 'Spielen', icon: 'play',
+    label: getProg().max > 1 || live ? L('Weiterspielen', 'Continue') : L('Spielen', 'Play'), icon: 'play',
     sub,
     onClick: () => start(() => go(`level/${n}`)),
   };
@@ -226,13 +232,13 @@ function worldCard() {
     const fin = i === w.last;
     path.append(h(`i.${state}${fin ? '.fin' : ''}`, null, i === p.max && !fin ? String(i) : fin ? '👑' : ''));
   }
-  const card = h('button.m3-worldcard', { type: 'button', 'aria-label': `Levelkarte – ${w.title}`, style: css({ '--wacc': w.accent, background: `linear-gradient(135deg, ${w.sky[0]}, ${w.sky[1]})` }) },
+  const card = h('button.m3-worldcard', { type: 'button', 'aria-label': `${L('Levelkarte', 'Level map')} – ${w.title}`, style: css({ '--wacc': w.accent, background: `linear-gradient(135deg, ${w.sky[0]}, ${w.sky[1]})` }) },
     h('span.m3-wc-head', null,
       h('span.m3-wc-emoji', null, w.emoji),
-      h('span.m3-wc-text', null, h('b', null, w.title), h('small', null, `Level ${w.first}–${w.last}`)),
+      h('span.m3-wc-text', null, h('b', null, w.title), h('small', null, `${L('Level', 'Levels')} ${w.first}–${w.last}`)),
       h('span.m3-wc-stars', null, `★ ${stars}/${PER_WORLD * 3}`)),
     path,
-    h('span.m3-wc-next', null, h('span', null, `Danach: ${next.emoji} ${next.title}`), h('span.m3-wc-go', { html: icon('back', { size: 16 }) })));
+    h('span.m3-wc-next', null, h('span', null, `${L('Danach', 'Next')}: ${next.emoji} ${next.title}`), h('span.m3-wc-go', { html: icon('back', { size: 16 }) })));
   card.addEventListener('click', () => go('karte'));
   return card;
 }
@@ -240,10 +246,10 @@ function worldCard() {
 function menuStats() {
   const p = getProg(), s = getStats();
   return [
-    { label: 'Geschafft', value: Object.keys(p.stars).length },
-    { label: 'Sterne', value: totalStars(p) },
-    { label: '3 Sterne', value: threeStars(p) },
-    { label: 'Beste Kette', value: s.combo ? `${s.combo}×` : '–' },
+    { label: L('Geschafft', 'Cleared'), value: Object.keys(p.stars).length },
+    { label: L('Sterne', 'Stars'), value: totalStars(p) },
+    { label: L('3 Sterne', '3 stars'), value: threeStars(p) },
+    { label: L('Beste Kette', 'Best chain'), value: s.combo ? `${s.combo}×` : '–' },
   ];
 }
 
@@ -253,14 +259,17 @@ function showMenu() {
   const heroBox = h('div.m3-herobox', null, heroArt(set.mode));
   const menu = gameMenu({
     id: ID,
-    title: 'Juwelen',
-    tagline: 'Drei gleiche in einer Reihe',
+    title: L('Juwelen', 'Jewels'),
+    tagline: L('Drei gleiche in einer Reihe', 'Match three in a row'),
     accent: ACCENT,
     art: heroBox,
     primary: primaryFor(set.mode),
     modes: {
-      label: 'Modus', value: set.mode,
-      options: [{ id: 'levels', label: 'Abenteuer', sub: `${levelsShown()}+ Level` }, { id: 'zen', label: 'Entspannt', sub: 'ohne Zuglimit' }],
+      label: L('Modus', 'Mode'), value: set.mode,
+      options: [
+        { id: 'levels', label: L('Abenteuer', 'Adventure'), sub: L(`${levelsShown()}+ Level`, `${levelsShown()}+ levels`) },
+        { id: 'zen', label: L('Entspannt', 'Relaxed'), sub: L('ohne Zuglimit', 'no move limit') },
+      ],
       onChange(id) {
         setSettings({ mode: id });
         heroBox.replaceChildren(heroArt(id));
@@ -268,11 +277,11 @@ function showMenu() {
       },
     },
     secondary: [
-      { label: 'Levelkarte', icon: 'grid', onClick: () => go('karte') },
-      { label: 'Statistik', icon: 'star', onClick: showStatsSheet },
+      { label: L('Levelkarte', 'Level map'), icon: 'grid', onClick: () => go('karte') },
+      { label: L('Statistik', 'Statistics'), icon: 'star', onClick: showStatsSheet },
     ],
     stats: menuStats(),
-    sections: [menuSection('Deine Welt', worldCard())],
+    sections: [menuSection(L('Deine Welt', 'Your world'), worldCard())],
     onHelp: showHowTo,
     backHref: '../',
   });
@@ -565,13 +574,13 @@ function playLevel(n) {
     const content = h('div.m3-win', null,
       finale ? h('div.m3-win-world', { style: css({ '--wacc': nextW.accent, background: `linear-gradient(135deg, ${nextW.sky[0]}, ${nextW.sky[1]})` }) },
         h('span', null, nextW.emoji),
-        h('span', null, h('small', null, `${w.title} ist geschafft!`), h('b', null, `Neue Welt: ${nextW.title}`))) : null,
+        h('span', null, h('small', null, L(`${w.title} ist geschafft!`, `${w.title} complete!`)), h('b', null, `${L('Neue Welt', 'New world')}: ${nextW.title}`))) : null,
       starRow,
       h('div.m3-win-score', null, h('small', null, 'Punkte'), h('b', null, fmt(game.score))),
       game.score > prevBest && prevBest > 0 ? h('div.m3-win-rec', null, 'Neuer Rekord!') : null,
       h('p.m3-win-sub', null, stars < 3 ? 'Mit mehr Punkten gibt es mehr Sterne.' : 'Alle drei Sterne – grossartig!'));
     const v = await showModal({
-      title: finale ? `${w.emoji} Welt geschafft!` : winTitles[n % winTitles.length], content, dismissible: false,
+      title: finale ? `${w.emoji} ${L('Welt geschafft!', 'World complete!')}` : winTitles[n % winTitles.length], content, dismissible: false,
       buttons: [
         { label: `Weiter zu Level ${n + 1}`, value: 'next', primary: true, icon: 'play' },
         { label: 'Nochmal spielen', value: 'again', icon: 'refresh' },
@@ -683,10 +692,10 @@ function levelIntro(ui, L, n) {
       h('span', null, goalLabel(g, g.n || 0))));
     const card = h('div.m3-intro', null,
       h('div.m3-intro-card' + (isFinale(n) ? '.finale' : ''), null,
-        h('small', null, isFinale(n) ? `👑 Finale · Level ${n}` : `Level ${n}`),
+        h('small', null, isFinale(n) ? `👑 ${L('Finale', 'Finale')} · Level ${n}` : `Level ${n}`),
         h('b', null, `${L.moves} Züge`),
         ...goals,
-        isFinale(n) ? h('p', null, 'Zum Abschluss der Welt startest du mit drei Sonderjuwelen!') : L.tip ? h('p', null, L.tip) : null));
+        isFinale(n) ? h('p', null, L('Zum Abschluss der Welt startest du mit drei Sonderjuwelen!', 'To finish the world, you start with three special jewels!')) : L.tip ? h('p', null, L.tip) : null));
     ui.wrap.append(card);
     let done = false;
     const close = () => {

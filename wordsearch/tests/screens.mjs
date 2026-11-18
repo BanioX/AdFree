@@ -13,7 +13,7 @@ mkdirSync(OUT, { recursive: true });
 const errors = [];
 
 async function open(browser, viewport) {
-  const ctx = await browser.newContext({ ...devices['iPhone 13'], deviceScaleFactor: 1, ...(viewport ? { viewport } : {}) });
+  const ctx = await browser.newContext({ ...devices['iPhone 13'], locale: 'de-CH', deviceScaleFactor: 1, ...(viewport ? { viewport } : {}) });
   const page = await ctx.newPage();
   page.on('pageerror', (e) => errors.push('pageerror: ' + e.message));
   page.on('console', (m) => { if (m.type() === 'error' && !/Failed to load resource/.test(m.text())) errors.push('console: ' + m.text()); });

@@ -74,10 +74,13 @@ Ein Eintrag pro Wochentag (0 = Sonntag): `name` (Untertitel im Menü), `colors`,
 - `praise` – Lob im Gewinnblatt, `tips` – Tipps unten im Menü, `stuck` – Meldung bei einer
   Sackgasse (erscheint, wenn nur noch Hin-und-her-Züge möglich sind), `featureIntro` –
   Erklärungen beim ersten Geheimnis-/Grosse-Gläser-Level und das Angebot der Farbsymbole.
+- `corkPraise` – kurzes Lob über einem Glas, das gerade fertig wird (Korken);
+  `comboPraise[k]` – Lob, wenn k Gläser direkt nacheinander fertig werden (Kombo ab 2).
 - `howTo` – die 3–4 Schritte des animierten Tutorials «So geht's» (gemeinsames
   `/shared/tutorial.js`): `title` (2–4 Wörter), `text` (ein kurzer Satz) und `demo` = Name der
-  Mini-Szene in `view/tutorial.js` (`tap`, `rule`, `goal`, `help`). Eine neue Szene dort im
-  Objekt `DEMOS` ergänzen (kleine SVG-Gläser über `demoTube`, Finger über `api.finger.tap`).
+  Mini-Szene in `view/tutorial.js` (`tap`, `goal`, `rule`, `help`). Eine neue Szene dort im
+  Objekt `DEMOS` ergänzen: `boardScene(stage, api, gläser)` baut das echte Spielfeld in klein,
+  `scene.pour(a, b)` lässt den Finger zwei Gläser antippen und giessen.
 - Schweizer Rechtschreibung: immer «ss» (kein scharfes S), Anführungszeichen «so».
 
 ## Sterne

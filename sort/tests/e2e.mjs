@@ -17,7 +17,8 @@ const OUT = new URL('./out/', import.meta.url).pathname;
 mkdirSync(OUT, { recursive: true });
 
 const browser = await chromium.launch();
-const ctx = await browser.newContext({ ...devices['iPhone 13'], deviceScaleFactor: 1 });
+// Farbfluss ist (noch) nur deutsch – Gerätesprache Deutsch, damit auch die gemeinsamen Bausteine deutsch sind
+const ctx = await browser.newContext({ ...devices['iPhone 13'], locale: 'de-CH', deviceScaleFactor: 1 });
 const page = await ctx.newPage();
 const errors = [];
 page.on('console', (m) => { if (m.type() === 'error') errors.push('console: ' + m.text()); });
@@ -292,7 +293,7 @@ assert.ok(hidden, 'verdeckte Schichten');
 // 8) Kleines iPhone (375×667): Hauptknopf ohne Scrollen sichtbar
 step('Kleiner Bildschirm');
 {
-  const small = await browser.newContext({ ...devices['iPhone 13'], viewport: { width: 375, height: 667 }, deviceScaleFactor: 1 });
+  const small = await browser.newContext({ ...devices['iPhone 13'], locale: 'de-CH', viewport: { width: 375, height: 667 }, deviceScaleFactor: 1 });
   const p2 = await small.newPage();
   p2.on('pageerror', (e) => errors.push('pageerror: ' + e.message));
   await p2.goto(BASE);

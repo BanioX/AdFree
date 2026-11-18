@@ -7,6 +7,8 @@ import { makeRng } from '../shared/rng.js';
 import { Game, TRAY_SIZE, SHELF_SIZE, HELPER_KEYS } from './logic/rules.js';
 import { solve, findHint } from './logic/solver.js';
 import { showHelp } from './howto.js';
+import { L as loc, fmt } from '../shared/i18n.js';
+import { HELPER_INFO, miniTile, sparkBurst, floatText as floatAt } from './bits.js';
 import { bounds } from './logic/board.js';
 import { themeById, themes } from './data/themes.js';
 import { formatTime } from './progress.js';
@@ -17,16 +19,8 @@ const SHIFT = 0.11;    // optischer Seitenversatz für Turm-Ebenen (Anteil der S
 const FLY_MS = 290;
 const POP_MS = 300;
 
-const STASH_ICON = '<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 13.5h16v6a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 19.5z"/><path d="M9 17h6"/><path d="M12 3.5v7M8.8 6.7L12 3.5l3.2 3.2"/></svg>';
-
-const HELPER_INFO = {
-  undo: { label: 'Zurück', icon: () => icon('undo') },
-  stash: { label: 'Auslagern', icon: () => STASH_ICON },
-  shuffle: { label: 'Mischen', icon: () => icon('shuffle') },
-  hint: { label: 'Tipp', icon: () => icon('hint') },
-};
-
-const PRAISE = ['Super!', 'Toll!', 'Wunderbar!', 'Klasse!', 'Fantastisch!', 'Bravo!'];
+/** Lob für Drilling-Serien (steigend). */
+const PRAISE = () => loc(['Super!', 'Toll!', 'Wunderbar!', 'Klasse!', 'Fantastisch!', 'Bravo!'], ['Great!', 'Nice!', 'Wonderful!', 'Brilliant!', 'Fantastic!', 'Bravo!']);
 
 /**
  * Knopf-Auslösung über Pointer-Events: robust auch bei schnellen Folgetipps
@@ -196,16 +190,16 @@ export function mountPlay(root, ctx) {
   root.style.setProperty('--t-bg', theme.bg);
   root.innerHTML = '';
 
-  const backBtn = h('button.icon-btn', { type: 'button', 'aria-label': 'Zurück zum Menü' });
+  const backBtn = h('button.icon-btn', { type: 'button', 'aria-label': loc('Zurück zum Menü', 'Back to menu') });
   backBtn.innerHTML = icon('back');
-  onPress(backBtn, () => { sfx.play('click'); ctx.menu(); });
-  const restartBtn = h('button.icon-btn', { type: 'button', 'aria-label': 'Neu beginnen' });
+  onPress(backBtn, () => ctx.menu());
+  const restartBtn = h('button.icon-btn', { type: 'button', 'aria-label': loc('Neu beginnen', 'Start over') });
   restartBtn.innerHTML = icon('refresh');
   onPress(restartBtn, onRestartClick);
   const soundBtn = soundButton();
-  const helpBtn = h('button.icon-btn', { type: 'button', 'aria-label': 'So geht’s' });
+  const helpBtn = h('button.icon-btn', { type: 'button', 'aria-label': loc('So geht’s', 'How to play') });
   helpBtn.innerHTML = '<span class="tr-q">?</span>';
-  onPress(helpBtn, () => { sfx.play('click'); showHelp(); });
+  onPress(helpBtn, () => showHelp());
 
   const titleB = h('b', null, ctx.title);
   const top = h('header.topbar.tr-top', null,
@@ -219,7 +213,7 @@ export function mountPlay(root, ctx) {
 
   const progFill = h('i');
   const progText = h('span.tr-prog-text');
-  const starsEl = h('div.tr-stars', { 'aria-label': 'Sterne' });
+  const starsEl = h('div.tr-stars', { 'aria-label': loc('Sterne', 'Stars') });
   for (let i = 0; i < 3; i++) starsEl.append(h('span', { html: icon('star', { size: 18 }) }));
   const hud = h('div.tr-hud', null,
     h('div.tr-prog', null, h('div.tr-prog-bar', null, progFill), progText),
@@ -236,9 +230,9 @@ export function mountPlay(root, ctx) {
   for (const k of HELPER_KEYS) {
     const info = HELPER_INFO[k];
     const badge = h('span.tr-badge');
-    const b = h('button.tr-helper', { type: 'button', 'data-helper': k, 'aria-label': info.label },
+    const b = h('button.tr-helper', { type: 'button', 'data-helper': k, 'aria-label': info.label() },
       h('span.tr-helper-ic', { html: info.icon() }, badge),
-      h('span.tr-helper-label', null, info.label));
+      h('span.tr-helper-label', null, info.label()));
     onPress(b, () => onHelper(k));
     helperBtns[k] = { b, badge };
     helpers.append(b);
@@ -437,7 +431,7 @@ export function mountPlay(root, ctx) {
     const done = game.cleared;
     progFill.style.width = (100 * done / game.n).toFixed(1) + '%';
     progText.textContent = `${game.remaining}`;
-    progText.setAttribute('aria-label', `Noch ${game.remaining} Steine`);
+    progText.setAttribute('aria-label', fmt(loc('Noch {n} Steine', '{n} tiles left'), { n: game.remaining }));
     const st = game.stars;
     [...starsEl.children].forEach((e, k) => e.classList.toggle('on', k < st));
     for (const k of HELPER_KEYS) {
@@ -475,24 +469,7 @@ export function mountPlay(root, ctx) {
 
   // ---------- Effekte ----------
   function burst(x, y, colors) {
-    const n = 12;
-    for (let k = 0; k < n; k++) {
-      const a = (k / n) * Math.PI * 2 + Math.random() * 0.4;
-      const d = 34 + Math.random() * 30;
-      const star = k % 3 === 0;
-      const el = h('span.tr-spark' + (star ? '.star' : ''));
-      el.style.left = x + 'px';
-      el.style.top = y + 'px';
-      el.style.background = star ? 'none' : colors[k % colors.length];
-      if (star) { el.innerHTML = icon('sparkle', { size: 16 }); el.style.color = colors[k % colors.length]; }
-      fx.append(el);
-      const anim = el.animate([
-        { transform: 'translate(-50%,-50%) scale(.4)', opacity: 1 },
-        { transform: `translate(calc(-50% + ${Math.cos(a) * d}px), calc(-50% + ${Math.sin(a) * d}px)) scale(1)`, opacity: 1, offset: 0.6 },
-        { transform: `translate(calc(-50% + ${Math.cos(a) * d * 1.25}px), calc(-50% + ${Math.sin(a) * d * 1.25 + 10}px)) scale(.6)`, opacity: 0 },
-      ], { duration: 620 + Math.random() * 200, easing: 'cubic-bezier(.2,.8,.3,1)' });
-      anim.onfinish = () => el.remove();
-    }
+    sparkBurst(fx, x, y, colors);
     const ring = h('span.tr-ring');
     ring.style.left = x + 'px';
     ring.style.top = y + 'px';
@@ -504,21 +481,11 @@ export function mountPlay(root, ctx) {
     ], { duration: 480, easing: 'cubic-bezier(.2,.8,.3,1)' }).onfinish = () => ring.remove();
   }
 
-  function floatText(text, x, y, big = false) {
-    const el = h('div.tr-float' + (big ? '.big' : ''), null, text);
-    el.style.left = x + 'px';
-    el.style.top = y + 'px';
-    fx.append(el);
-    el.animate([
-      { transform: 'translate(-50%,-20%) scale(.6)', opacity: 0 },
-      { transform: 'translate(-50%,-70%) scale(1.08)', opacity: 1, offset: 0.25 },
-      { transform: 'translate(-50%,-90%) scale(1)', opacity: 1, offset: 0.7 },
-      { transform: 'translate(-50%,-140%) scale(.96)', opacity: 0 },
-    ], { duration: big ? 1500 : 1000, easing: 'ease-out' }).onfinish = () => el.remove();
-  }
+  function floatText(text, x, y, big = false) { floatAt(fx, text, x, y, { big }); }
 
   let combo = 0;
   let lastPopAt = 0;
+  let halfShown = game.cleared * 2 >= game.n;
 
   function popTriple(ids) {
     const entries = vTray.filter((e) => ids.includes(e.id));
@@ -546,7 +513,13 @@ export function mountPlay(root, ctx) {
       lastPopAt = now;
       if (combo >= 1) {
         sfx.play('sparkle');
-        floatText(PRAISE[Math.min(PRAISE.length - 1, combo - 1)], cx, cy - L.trayTileW * 0.9);
+        const words = PRAISE();
+        floatText(words[Math.min(words.length - 1, combo - 1)], cx, cy - L.trayTileW * 0.9);
+      }
+      if (!halfShown && game.cleared * 2 >= game.n && game.remaining > 0) {
+        // Halbzeit: kleines Etappenziel mitten auf dem Brett (ohne Ton)
+        halfShown = true;
+        floatText(loc('Halbzeit!', 'Halfway!'), L.W / 2, (L.bTop + L.bBot) / 2, true);
       }
     }, 230);
     later(() => {
@@ -590,7 +563,7 @@ export function mountPlay(root, ctx) {
       if (game.where[id] === 0) {
         wiggle(id);
         sfx.play('thud');
-        if (coveredTips < 1 && game.moves < 12) { coveredTips++; toast('Dieser Stein ist noch verdeckt'); }
+        if (coveredTips < 1 && game.moves < 12) { coveredTips++; toast(loc('Dieser Stein ist noch verdeckt', 'This tile is still covered')); }
       }
       return false;
     }
@@ -631,10 +604,9 @@ export function mountPlay(root, ctx) {
   // ---------- Hilfen ----------
   function onHelper(k) {
     if (!alive || busy) return;
-    sfx.play('click');
     if (game.status === 'won') return;
     if (game.helpers[k] <= 0) {
-      toast(ctx.kind === 'free' ? 'Schon benutzt – im nächsten Spiel wieder da' : 'Schon benutzt – im nächsten Level wieder da');
+      toast(ctx.kind === 'free' ? loc('Schon benutzt – im nächsten Spiel wieder da', 'Used up – back next game') : loc('Schon benutzt – im nächsten Level wieder da', 'Used up – back next level'));
       return;
     }
     if (k === 'undo') doUndo();
@@ -644,7 +616,7 @@ export function mountPlay(root, ctx) {
   }
 
   function doUndo() {
-    if (!game.canUndo()) { toast(game.last ? 'Geht gerade nicht' : 'Nichts zum Zurücknehmen'); return false; }
+    if (!game.canUndo()) { toast(game.last ? loc('Geht gerade nicht', 'Not possible right now') : loc('Nichts zum Zurücknehmen', 'Nothing to undo')); return false; }
     const ev = game.undo();
     if (!ev) return false;
     clearHint();
@@ -668,7 +640,7 @@ export function mountPlay(root, ctx) {
 
   function doStash(extra) {
     if (!game.canStash(extra)) {
-      toast(game.tray.length ? 'Die Auslage ist voll' : 'Die Ablage ist leer');
+      toast(game.tray.length ? loc('Die Auslage ist voll', 'The side shelf is full') : loc('Die Ablage ist leer', 'The tray is empty'));
       return false;
     }
     const ev = game.stash(extra);
@@ -685,7 +657,7 @@ export function mountPlay(root, ctx) {
   }
 
   function doShuffle() {
-    if (!game.canShuffle()) { toast('Hier gibt es nichts zu mischen'); return false; }
+    if (!game.canShuffle()) { toast(loc('Hier gibt es nichts zu mischen', 'Nothing to shuffle here')); return false; }
     busy = true;
     const ev = game.shuffle(rng);
     if (!ev) { busy = false; return false; }
@@ -720,7 +692,7 @@ export function mountPlay(root, ctx) {
   function doHint() {
     if (!game.canHint()) return false;
     const r = game.hint();
-    if (!r) { toast('Gerade kein Tipp möglich'); return false; }
+    if (!r) { toast(loc('Gerade kein Tipp möglich', 'No hint available right now')); return false; }
     sfx.play('sparkle');
     showHint(r.ids);
     updateHud();
@@ -751,15 +723,24 @@ export function mountPlay(root, ctx) {
     }
     for (let k = 0; k < res.stars; k++) later(() => sfx.play('sparkle'), 300 + k * 220);
     const facts = h('div.tr-win-facts', null,
-      h('div', null, h('b', null, formatTime(game.elapsed)), h('small', null, 'Zeit')),
-      h('div', null, h('b', null, String(game.triples)), h('small', null, 'Drillinge')),
-      h('div', null, h('b', null, String(game.used)), h('small', null, game.used === 1 ? 'Hilfe' : 'Hilfen')));
+      h('div', null, h('b', null, formatTime(game.elapsed)), h('small', null, loc('Zeit', 'Time'))),
+      h('div', null, h('b', null, String(game.triples)), h('small', null, loc('Drillinge', 'Triples'))),
+      h('div', null, h('b', null, String(game.used)), h('small', null, game.used === 1 ? loc('Hilfe', 'Helper') : loc('Hilfen', 'Helpers'))));
+    const badges = h('div.tr-win-badges', null,
+      res.isNewBest ? h('span.best', null, '⏱️ ' + loc('Neue Bestzeit!', 'New best time!')) : null,
+      res.streak >= 2 ? h('span.streak', null, '🔥 ' + fmt(loc('{n} Siege in Folge', '{n} wins in a row'), { n: res.streak })) : null);
+    // Vorfreude: was als Nächstes kommt
+    const next = res.next && res.next.theme ? h('div.tr-win-next', null,
+      miniTile(res.next.symbol),
+      h('span', null, h('small', null, loc('Als Nächstes', 'Up next')),
+        h('b', null, res.next.theme.title + (res.next.tag ? ' · ' + res.next.tag : '')))) : null;
     const content = h('div.tr-win', null,
       starRow,
-      res.isNewBest ? h('p.tr-win-best', null, 'Neue Bestzeit!') : null,
+      res.note ? h('p.tr-win-note', null, res.note) : null,
+      badges.children.length ? badges : null,
       facts,
-      res.note ? h('p.tr-win-note', null, res.note) : null);
-    const v = await ask({ title: res.title || 'Geschafft!', content, buttons: res.buttons, dismissible: false });
+      next);
+    const v = await ask({ title: res.title || loc('Geschafft!', 'Well done!'), content, buttons: res.buttons, dismissible: false });
     if (alive) ctx.onWinChoice(v);
   }
   let winShown = false;
@@ -778,14 +759,14 @@ export function mountPlay(root, ctx) {
     ctx.onLoss && ctx.onLoss();
     await new Promise((r) => later(r, 520));
     const buttons = [];
-    if (game.canStash()) buttons.push({ label: 'Auslagern (3 Steine)', value: 'stash', primary: true });
-    if (game.canUndo()) buttons.push({ label: 'Letzten Stein zurück', value: 'undo', primary: !buttons.length });
-    if (!buttons.length && game.canStash(true)) buttons.push({ label: 'Zweite Chance', value: 'extra', primary: true });
-    buttons.push({ label: 'Nochmal', value: 'restart', primary: !buttons.length });
-    buttons.push({ label: 'Zum Menü', value: 'menu', ghost: true });
+    if (game.canStash()) buttons.push({ label: loc('Auslagern (3 Steine)', 'Set aside (3 tiles)'), value: 'stash', primary: true });
+    if (game.canUndo()) buttons.push({ label: loc('Letzten Stein zurück', 'Undo last tile'), value: 'undo', primary: !buttons.length });
+    if (!buttons.length && game.canStash(true)) buttons.push({ label: loc('Zweite Chance', 'Second chance'), value: 'extra', primary: true });
+    buttons.push({ label: loc('Nochmal', 'Try again'), value: 'restart', primary: !buttons.length });
+    buttons.push({ label: loc('Zum Menü', 'Menu'), value: 'menu', ghost: true });
     const v = await ask({
-      title: 'Ablage voll!',
-      html: `<p>Kein Problem${buttons.length > 2 ? ' – eine Hilfe rettet die Runde' : ''}.</p>`,
+      title: loc('Ablage voll!', 'Tray full!'),
+      html: `<p>${buttons.length > 2 ? loc('Kein Problem – eine Hilfe rettet die Runde.', 'No worries – a helper saves the round.') : loc('Kein Problem.', 'No worries.')}</p>`,
       buttons,
       dismissible: false,
     });
@@ -804,12 +785,11 @@ export function mountPlay(root, ctx) {
   }
 
   async function onRestartClick() {
-    sfx.play('click');
     if (game.moves === 0) return;
     const ok = await ask({
-      title: 'Neu beginnen?',
-      text: 'Dieses Level startet nochmal von vorn.',
-      buttons: [{ label: 'Neu beginnen', value: true, primary: true }, { label: 'Weiterspielen', value: false, ghost: true }],
+      title: loc('Neu beginnen?', 'Start over?'),
+      text: loc('Dieses Level startet nochmal von vorn.', 'This level starts again from the beginning.'),
+      buttons: [{ label: loc('Neu beginnen', 'Start over'), value: true, primary: true }, { label: loc('Weiterspielen', 'Keep playing'), value: false, ghost: true }],
     });
     if (ok && alive) restart();
   }
@@ -868,7 +848,7 @@ export function mountPlay(root, ctx) {
     const r = findHint(game.position(), { nodeLimit: 20000, timeLimit: 150 });
     coachId = r.ids.length ? r.ids[0] : (game.freeTiles()[0] ?? -1);
     if (coachId < 0 || !sp[coachId]) return;
-    coach = h('div.tr-coach', { 'aria-hidden': 'true' }, h('i'), h('span', null, 'Tippe einen hellen Stein an'));
+    coach = h('div.tr-coach', { 'aria-hidden': 'true' }, h('i'), h('span', null, loc('Tippe einen hellen Stein an', 'Tap a bright tile')));
     fx.append(coach);
     placeCoach();
   }

@@ -57,4 +57,12 @@ Stufe mehrere Rätsel: Jedes Wort muss **genau einmal** im Raster stehen (keine 
 auch nicht rückwärts) und in einer erlaubten Richtung liegen. Schlägt etwas fehl, steht im Text,
 welches Wort oder Thema das Problem ist.
 
-Die Oberfläche testet `node wordsearch/tests/e2e.mjs` (Server auf Port 8209 nötig, siehe `DEV.md`).
+Die Oberfläche testet `node wordsearch/tests/e2e.mjs` (Server auf Port 8142 nötig, siehe `DEV.md`),
+Screenshots zur Sichtkontrolle macht `node wordsearch/tests/screens.mjs` (→ `tests/out/s-*.png`).
+
+## Besondere Rätsel (automatisch, keine Daten nötig)
+
+- **Erstes Rätsel:** Thema «Tiere», nur 7×7 mit 6 Wörtern – ein schnelles Erfolgserlebnis.
+- **Bonusrätsel:** jedes dritte Rätsel (`BONUS_EVERY` in `app.js`) versteckt ein zusätzliches Wort
+  des Themas, das nicht in der Liste steht («✨ Bonuswort ?»). Gefunden gibt es einen Extrastern.
+  Das Wort stammt aus der normalen Wortliste des Themas – neue Themen funktionieren also automatisch.

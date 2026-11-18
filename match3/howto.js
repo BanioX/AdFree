@@ -2,6 +2,7 @@
 // Die Mini-Bretter benutzen dieselben Juwelen-Bilder, Feldfarben und Effekte wie das Spiel.
 
 import { h } from '../shared/ui.js';
+import { L } from '../shared/i18n.js';
 import { spriteURL, gemMain } from './sprites.js';
 import { worlds } from './data/worlds.js';
 
@@ -158,8 +159,8 @@ async function swipe(api, board, a, b) {
 
 export const tutorialSteps = [
   {
-    title: 'Juwelen tauschen',
-    text: 'Wische ein Juwel zum Nachbarn, damit drei gleiche in einer Reihe stehen.',
+    title: L('Juwelen tauschen', 'Swap jewels'),
+    text: L('Wische ein Juwel zum Nachbarn, damit drei gleiche in einer Reihe stehen.', 'Swipe a jewel to its neighbour to line up three of a kind.'),
     demo(stage, api) {
       const start = [[4, 3, 5, 2], [1, 2, 0, 3], [0, 0, 3, 5], [5, 1, 4, 4]];
       const board = new MiniBoard(start);
@@ -168,24 +169,24 @@ export const tutorialSteps = [
         board.load(start, true);
         await api.sleep(350);
         await swipe(api, board, [1, 2], [2, 2]);
-        api.finger.hide();
         board.pop([[2, 0], [2, 1], [2, 2]]);
         floatText(board, 2, 1, '+30');
         await api.sleep(380);
+        api.finger.hide();
         board.fall({ 0: [2], 1: [5], 2: [1] });
         await api.sleep(1500);
       }, 200);
     },
   },
   {
-    title: 'Ziele erfüllen',
-    text: 'Sammle, was oben steht, bevor die Züge ausgehen.',
+    title: L('Ziele erfüllen', 'Reach the goals'),
+    text: L('Sammle, was oben steht, bevor die Züge ausgehen.', 'Collect what the top bar shows before you run out of moves.'),
     demo(stage, api) {
       const start = [[0, 0, 4, 2], [1, 5, 0, 3], [0, 0, 3, 5]];
       const board = new MiniBoard(start);
       const moves = h('b', null, '5');
       const count = h('b', null, '6');
-      const movesBox = h('div.m3t-moves', null, moves, h('small', null, 'Züge'));
+      const movesBox = h('div.m3t-moves', null, moves, h('small', null, L('Züge', 'Moves')));
       const goal = h('div.m3t-goal', null, h('img', { src: spriteURL('0', 72), alt: '' }), count);
       const stars = h('div.m3t-stars', null, ...[0, 1, 2].map(() => h('span', null, '★')));
       scene(stage, h('div.m3t-hud', null, movesBox, goal), board.el, stars);
@@ -219,13 +220,13 @@ export const tutorialSteps = [
     },
   },
   {
-    title: 'Sonderjuwelen bauen',
-    text: 'Vier oder mehr gleiche ergeben ein Sonderjuwel mit Extra-Kraft.',
+    title: L('Sonderjuwelen bauen', 'Make special jewels'),
+    text: L('Vier oder mehr gleiche ergeben ein Sonderjuwel mit Extra-Kraft.', 'Match four or more to create a special jewel with extra power.'),
     demo(stage, api) {
       const start = [[2, 5, 4, 3, 1], [4, 4, 1, 4, 2], [3, 4, 5, 4, 3]];
       const board = new MiniBoard(start);
       const legend = h('div.m3t-legend', null,
-        ...[['h4', '4 in Reihe'], ['b0', 'L oder T'], ['rainbow', '5 in Reihe']].map(([k, label]) =>
+        ...[['h4', L('4 in Reihe', '4 in a row')], ['b0', L('L oder T', 'L or T')], ['rainbow', L('5 in Reihe', '5 in a row')]].map(([k, label]) =>
           h('span', null, h('img', { src: spriteURL(k, 72), alt: '' }), h('small', null, label))));
       scene(stage, board.el, legend);
       return api.loop(async () => {
@@ -236,7 +237,7 @@ export const tutorialSteps = [
         await swipe(api, board, [0, 2], [1, 2]);
         board.pop([[1, 0], [1, 1], [1, 3]]);
         board.morph(1, 2, 'h4');
-        floatText(board, 1, 2, 'Blitz!', '#1c6fd1');
+        floatText(board, 1, 2, L('Blitz!', 'Zap!'), '#1c6fd1');
         legend.firstChild.classList.add('on');
         await api.sleep(420);
         board.fall({ 0: [1], 1: [2], 3: [5] });
@@ -255,13 +256,13 @@ export const tutorialSteps = [
     },
   },
   {
-    title: 'Hilfen sind gratis',
-    text: 'Hammer, Mischen und Tipp helfen dir – ohne Warten, ohne Leben.',
+    title: L('Hilfen sind gratis', 'Free helpers'),
+    text: L('Hammer, Mischen und Tipp helfen dir – ohne Warten, ohne Leben.', 'Hammer, shuffle and hint help you – no waiting, no lives.'),
     demo(stage, api) {
       const start = [[2, 5, 3, 1], [1, 'stone', 4, 2], [3, 4, 1, 5]];
       const board = new MiniBoard(start);
       const tool = (ic, label) => h('div.m3-tool.m3t-tool', null, h('span.m3-tool-ic', null, ic), h('small', null, label));
-      const hammer = tool('🔨', 'Hammer'), shuffle = tool('🔀', 'Mischen'), hint = tool('💡', 'Tipp');
+      const hammer = tool('🔨', 'Hammer'), shuffle = tool('🔀', L('Mischen', 'Shuffle')), hint = tool('💡', L('Tipp', 'Hint'));
       scene(stage, board.el, h('div.m3t-tools', null, hammer, shuffle, hint));
       return api.loop(async () => {
         board.load(start, true);

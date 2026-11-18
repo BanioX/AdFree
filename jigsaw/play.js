@@ -3,12 +3,23 @@
 
 import { h, icon, celebrate, sleep, soundButton, backButton, ease } from '../shared/ui.js';
 import { sfx } from '../shared/sfx.js';
+import { L as tr } from '../shared/i18n.js';
 import * as L from './logic.js';
 import { cutPieces, paintPlaced, makeGhost, drawTrayPiece, piecePath2D, cellOrigin } from './pieces.js';
 import { makeCanvas } from './images.js';
 
 const TRAY_BOX = 72;
 const HALF_PI = Math.PI / 2;
+
+/** Lob für Serien von Teilen, die nacheinander direkt einrasten. */
+function praiseFor(n) {
+  if (n === 3) return tr('Super!', 'Great!');
+  if (n === 5) return tr('Klasse!', 'Awesome!');
+  if (n === 8) return tr('Fantastisch!', 'Fantastic!');
+  if (n === 12) return tr('Unglaublich!', 'Incredible!');
+  if (n > 12 && n % 6 === 0) return tr('Meisterhaft!', 'Masterful!');
+  return null;
+}
 
 /**
  * opts: { desc, title, slot, tier, rotate, saved, coach, prefs: { ghost, filter },
@@ -25,27 +36,29 @@ export function createPlay(app, opts) {
   const titleEl = h('div.pz-title', null, opts.title || desc.title || 'Puzzle');
   const progEl = h('span.pz-prog', null, '');
   const timeEl = h('span.pz-time', null, '0:00');
-  const helpBtn = h('button.icon-btn', { type: 'button', 'aria-label': 'So geht’s', html: '<span class="gm-q">?</span>' });
+  const helpBtn = h('button.icon-btn', { type: 'button', 'aria-label': tr('So geht’s', 'How to play'), html: '<span class="gm-q">?</span>' });
+  const hintBtn = h('button.icon-btn.pz-hint-btn', { type: 'button', 'aria-label': tr('Tipp: wohin passt ein Teil?', 'Hint: where does a piece go?'), html: icon('hint') });
   const top = h('header.topbar.pz-top', null,
-    backButton('#', () => { sfx.play('click'); leave(); }),
+    backButton('#', () => leave()),
     h('div.pz-head', null, titleEl, h('div.pz-sub', null, progEl, h('span.pz-dot', null, '·'), timeEl)),
-    helpBtn, soundButton());
+    hintBtn, helpBtn, soundButton());
 
   const board = h('canvas.pz-board');
   const table = h('div.pz-table', null, board);
-  const fitBtn = h('button.icon-btn.pz-fit', { type: 'button', 'aria-label': 'Ganzes Brett zeigen', html: icon('zoomOut') });
-  table.append(fitBtn);
+  const fitBtn = h('button.icon-btn.pz-fit', { type: 'button', 'aria-label': tr('Ganzes Brett zeigen', 'Show whole board'), html: icon('zoomOut') });
+  const fx = h('div.pz-fx');   // Lob, Meilensteine
+  table.append(fitBtn, fx);
 
   const chips = {};
   const filterRow = h('div.pz-filter', { role: 'tablist' });
-  for (const [id, label] of [['rand', 'Rand'], ['innen', 'Innen'], ['alle', 'Alle']]) {
+  for (const [id, label] of [['rand', tr('Rand', 'Edge')], ['innen', tr('Innen', 'Inner')], ['alle', tr('Alle', 'All')]]) {
     const b = h('button.pz-chip', { type: 'button', 'data-id': id }, h('span', null, label), h('b', null, ''));
     b.addEventListener('click', () => setFilter(id, true));
     chips[id] = b;
     filterRow.append(b);
   }
-  const ghostBtn = h('button.icon-btn.pz-tool', { type: 'button', 'aria-label': 'Vorlage auf dem Brett', html: icon('image') });
-  const previewBtn = h('button.icon-btn.pz-tool', { type: 'button', 'aria-label': 'Bild ansehen', html: icon('expand') });
+  const ghostBtn = h('button.icon-btn.pz-tool', { type: 'button', 'aria-label': tr('Vorlage auf dem Brett', 'Template on the board'), html: icon('image') });
+  const previewBtn = h('button.icon-btn.pz-tool', { type: 'button', 'aria-label': tr('Bild ansehen', 'View picture'), html: icon('expand') });
   const toolbar = h('div.pz-toolbar', null, filterRow, h('div.spacer'), ghostBtn, previewBtn);
   const trayEl = h('div.pz-tray');
   const trayEmpty = h('div.pz-tray-empty', null, '');
@@ -53,7 +66,7 @@ export function createPlay(app, opts) {
   const over = h('canvas.pz-over');
   const loadBar = h('i');
   const loading = h('div.pz-loading', null, h('div.pz-load-card', null,
-    h('div.pz-load-icon', { html: '🧩' }), h('div.pz-load-text', null, 'Teile werden zugeschnitten …'), h('div.pz-load-bar', null, loadBar)));
+    h('div.pz-load-icon', { html: '🧩' }), h('div.pz-load-text', null, tr('Teile werden zugeschnitten …', 'Cutting the pieces …')), h('div.pz-load-bar', null, loadBar)));
   const stage = h('div.pz-stage', null, table, dock, over, loading);
   const root = h('div.pz-root', null, top, stage);
   app.replaceChildren(root);
@@ -83,6 +96,9 @@ export function createPlay(app, opts) {
   const pts = new Map();
   let lastTap = { t: 0, x: 0, y: 0 };
   let coachEl = null;
+  let hint = null;              // { i, t0, until, coach } – leuchtender Zielplatz auf dem Brett
+  let hintTimer = 0;
+  let streak = 0;               // Teile in Folge, die direkt eingerastet sind
   let saveTimer = 0;
   let winning = false;
   let isReady = false;
@@ -101,7 +117,11 @@ export function createPlay(app, opts) {
       else { ({ cols, rows } = L.gridFor(opts.tier, aspect)); seed = (Math.random() * 2 ** 31) >>> 0; }
       geo = L.makeGeometry({ cols, rows, seed, aspect });
       state = saved ? L.deserialize(saved, geo) : null;
-      if (!state) state = L.newGame({ cols, rows, seed, aspect, rotate: opts.rotate });
+      if (!state) {
+        state = L.newGame({ cols, rows, seed, aspect, rotate: opts.rotate });
+        // allererstes Puzzle: die Ecke oben links liegt vorne in der Leiste (sanfter Einstieg mit Hinweis)
+        if (opts.coach) { state.tray = [0, ...state.tray.filter((i) => i !== 0)]; if (state.rotate) state.pieces[0].r = 0; }
+      }
       edgeSet = new Set();
       for (let i = 0; i < geo.count; i++) if (L.isEdgePiece(i, cols, rows)) edgeSet.add(i);
       zMax = geo.count >= 70 ? 3.2 : geo.count >= 40 ? 2.6 : geo.count >= 20 ? 2 : 1.6;
@@ -276,14 +296,13 @@ export function createPlay(app, opts) {
       trayItems.get(i).classList.toggle('hide', !show);
     }
     let msg = '';
-    if (c.alle === 0) msg = L.isComplete(state) ? '' : 'Alle Teile liegen auf dem Tisch.';
-    else if (c[filter] === 0) msg = filter === 'rand' ? 'Alle Randteile sind draussen – weiter mit «Innen».' : 'Keine Innenteile mehr – schau bei «Rand».';
+    if (c.alle === 0) msg = L.isComplete(state) ? '' : tr('Alle Teile liegen auf dem Tisch.', 'All pieces are on the table.');
+    else if (c[filter] === 0) msg = filter === 'rand' ? tr('Alle Randteile sind draussen – weiter mit «Innen».', 'All edge pieces are out – continue with “Inner”.') : tr('Keine Innenteile mehr – schau bei «Rand».', 'No inner pieces left – check “Edge”.');
     trayEmpty.textContent = msg;
     trayEmpty.classList.toggle('show', !!msg);
   }
 
   function setFilter(id, user) {
-    if (user && id !== filter) sfx.play('click');
     filter = id;
     if (opts.setPref) opts.setPref('filter', id);
     applyFilter();
@@ -293,18 +312,18 @@ export function createPlay(app, opts) {
   function setGhost(onOff, user) {
     ghostOn = onOff;
     ghostBtn.classList.toggle('on', ghostOn);
-    if (user) { sfx.play('click'); if (opts.setPref) opts.setPref('ghost', ghostOn); }
+    if (user && opts.setPref) opts.setPref('ghost', ghostOn);
     dirty = true; kick();
   }
   on(ghostBtn, 'click', () => setGhost(!ghostOn, true));
-  on(previewBtn, 'click', () => { sfx.play('click'); showPreview(); });
+  on(previewBtn, 'click', () => showPreview());
+  on(hintBtn, 'click', () => showHint());
   on(helpBtn, 'click', () => {
-    sfx.play('click');
     if (!opts.onHelp) return;
     const resume = pauseClock();
     Promise.resolve(opts.onHelp()).catch(() => {}).finally(resume);
   });
-  on(fitBtn, 'click', () => { sfx.play('click'); animateView(1, Aw / 2, Ah / 2); });
+  on(fitBtn, 'click', () => animateView(1, Aw / 2, Ah / 2));
 
   function trayIndexAt(x) {
     const visible = state.tray.filter((i) => !trayItems.get(i).classList.contains('hide'));
@@ -348,6 +367,7 @@ export function createPlay(app, opts) {
     const c = counts();
     if (filter !== 'alle' && c[filter] === 0 && c.alle > 0) setFilter(filter === 'rand' ? 'innen' : 'rand', false);
     hideCoach();
+    if (hint && hint.i === i) clearHint();
     startDrag(i, e.pointerId, p, true);
     sfx.play('tap');
   }
@@ -480,6 +500,7 @@ export function createPlay(app, opts) {
       const el = trayItems.get(members[0]);
       if (el) { el.classList.add('sp-pop'); if (el.classList.contains('hide')) { filter = 'alle'; applyFilter(); } }
       sfx.play('whoosh');
+      streak = 0;
       state.moves++;
       dirty = true; kick(); saveSoon();
       return;
@@ -513,9 +534,13 @@ export function createPlay(app, opts) {
       if (Math.abs(q.x - x) > 0.01 || Math.abs(q.y - y) > 0.01) tweens.set(k, { fx: x, fy: y, t0: now, dur: 150 });
     }
     let placed = false, joined = false;
+    const doneBefore = L.placedCount(state) - events.filter((ev) => ev.type === 'board').reduce((n, ev) => n + ev.pieces.length, 0);
+    let lastPlaced = -1;
     for (const ev of events) {
       if (ev.type === 'board') {
         placed = true;
+        lastPlaced = ev.pieces[ev.pieces.length - 1];
+        if (hint && ev.pieces.includes(hint.i)) clearHint();
         for (const k of ev.pieces) settling.set(k, now + 150);
         flashes.push({ pieces: ev.pieces, t0: now + 150 });
         burst(ev.pieces, now + 150);
@@ -528,6 +553,10 @@ export function createPlay(app, opts) {
     applyFilter();
     if (placed) setTimeout(() => sfx.play('place'), 120);
     else if (joined) setTimeout(() => sfx.play('click'), 120);
+    if (placed) {
+      streak++;
+      celebrateProgress(doneBefore, L.placedCount(state), lastPlaced);
+    } else if (!joined && !silent) streak = 0;
     updateHud();
     dirty = true; kick(); saveSoon();
     if (L.isComplete(state) && !winning) win();
@@ -548,6 +577,8 @@ export function createPlay(app, opts) {
   // ---------- Gewonnen ----------
   async function win() {
     winning = true;
+    clearHint();
+    hintBtn.disabled = true;
     accumulate();
     state.done = true;
     running = false;
@@ -585,18 +616,128 @@ export function createPlay(app, opts) {
     requestAnimationFrame(() => ov.classList.add('show'));
   }
 
+  // Erstes Puzzle: Ring um das vorderste Teil, sein Platz leuchtet auf dem Brett, kurzer Satz dazu.
   function showCoach() {
     const first = trayEl.querySelector('.pz-ti:not(.hide)');
     if (!first) return;
+    const i = Number(first.dataset.i);
     const sr = stage.getBoundingClientRect(), r = first.getBoundingClientRect();
     coachEl = h('div.pz-coach', { style: { left: (r.left - sr.left) + 'px', top: (r.top - sr.top) + 'px', width: r.width + 'px', height: r.height + 'px' } },
-      h('div.pz-coach-ring'), h('div.pz-coach-text', null, 'Teil nach oben aufs Brett ziehen'));
+      h('div.pz-coach-ring'), h('div.pz-coach-text', null, tr('Zieh mich an den leuchtenden Platz', 'Drag me to the glowing spot')));
     stage.append(coachEl);
+    hint = { i, t0: performance.now(), until: Infinity, coach: true };
+    kick();
     const off = () => hideCoach();
     trayEl.addEventListener('scroll', off, { once: true });
   }
   function hideCoach() {
     if (coachEl) { coachEl.remove(); coachEl = null; }
+    if (hint && hint.coach) clearHint();
+  }
+
+  function clearHint() {
+    clearTimeout(hintTimer);
+    if (hint) {
+      const el = trayItems.get(hint.i);
+      if (el) el.classList.remove('pz-hinted');
+      hint = null;
+      kick();
+    }
+  }
+
+  /** Tipp (gratis): ein Teil, das gut passt, leuchtet in der Leiste und sein Platz auf dem Brett. */
+  function showHint() {
+    if (!state || !geo || state.done || winning) return;
+    hideCoach();
+    clearHint();
+    const placedAt = (k) => state.pieces[k].s === L.PLACED;
+    const score = (i) => {
+      const c = i % geo.cols, r = Math.floor(i / geo.cols);
+      let n = 0;
+      if (c > 0 && placedAt(i - 1)) n++;
+      if (c < geo.cols - 1 && placedAt(i + 1)) n++;
+      if (r > 0 && placedAt(i - geo.cols)) n++;
+      if (r < geo.rows - 1 && placedAt(i + geo.cols)) n++;
+      const corner = (c === 0 || c === geo.cols - 1) && (r === 0 || r === geo.rows - 1);
+      return n * 4 + (edgeSet.has(i) ? 2 : 0) + (corner ? 1 : 0);
+    };
+    const best = (list) => list.reduce((b, i) => (b < 0 || score(i) > score(b) ? i : b), -1);
+    const visible = state.tray.filter((i) => !trayItems.get(i).classList.contains('hide'));
+    let i = best(visible.length ? visible : state.tray);
+    let fromTray = i >= 0;
+    if (!fromTray) i = best(state.order);
+    if (i < 0) return;
+    if (z > 1.02) animateView(1, Aw / 2, Ah / 2);
+    if (fromTray) {
+      const el = trayItems.get(i);
+      if (el.classList.contains('hide')) setFilter('alle', false);
+      el.classList.add('pz-hinted');
+      el.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+    }
+    sfx.play('sparkle');
+    hint = { i, t0: performance.now(), until: performance.now() + 3200, fromTray };
+    hintTimer = setTimeout(clearHint, 3200);
+    kick();
+  }
+
+  function drawHint(c, now) {
+    if (!hint) return;
+    const t = (now - hint.t0) / 1000;
+    const fade = Math.min(1, t / 0.25) * Math.min(1, (hint.until - now) / 400);
+    if (fade <= 0) return;
+    const pulse = 0.5 + 0.5 * Math.sin(t * Math.PI * 2 / 1.2);
+    const path = piecePath2D(geo, hint.i);
+    const glow = (x, y) => {
+      c.save();
+      c.translate(x, y);
+      c.fillStyle = `rgba(255, 214, 102, ${(0.16 + 0.24 * pulse) * fade})`;
+      c.fill(path);
+      c.lineJoin = 'round';
+      c.lineWidth = Math.max(3 / S, 0.035 * geo.m);
+      c.strokeStyle = `rgba(226, 150, 30, ${(0.55 + 0.45 * pulse) * fade})`;
+      c.stroke(path);
+      c.restore();
+    };
+    const [ox, oy] = cellOrigin(geo, hint.i);
+    glow(ox, oy);
+    const q = state.pieces[hint.i];
+    if (q.s === L.TABLE && !q.r && !(drag && drag.members.has(hint.i))) glow(q.x - geo.pw / 2, q.y - geo.ph / 2);
+  }
+
+  // ---------- Lob & Meilensteine ----------
+  function popText(text, x, y, cls = '') {
+    const el = h('div.pz-pop' + cls, { style: { left: x + 'px', top: y + 'px' } }, text);
+    fx.append(el);
+    setTimeout(() => el.remove(), 1500);
+  }
+  function banner(text, sub) {
+    const el = h('div.pz-banner', null, h('b', null, text), sub ? h('small', null, sub) : null);
+    fx.append(el);
+    setTimeout(() => el.remove(), 2300);
+  }
+  function celebrateProgress(before, after, k) {
+    const n = geo.count;
+    // Rahmen fertig (ab 24 Teilen): alle Randteile liegen
+    if (n >= 24) {
+      const edges = [...edgeSet];
+      const edgeDone = edges.every((e) => state.pieces[e].s === L.PLACED);
+      if (edgeDone && after < n) {
+        const was = edges.filter((e) => state.pieces[e].s === L.PLACED).length - (after - before);
+        if (was < edges.length) {
+          banner(tr('Rahmen fertig!', 'Frame complete!'), tr('Jetzt die Mitte füllen', 'Now fill in the middle'));
+          flashes.push({ pieces: edges, t0: performance.now() + 200, soft: true });
+          setTimeout(() => sfx.play('sparkle'), 260);
+          return;
+        }
+      }
+      if (before < n / 2 && after >= n / 2 && after < n) { banner(tr('Halbzeit!', 'Halfway there!')); return; }
+      if (n - after === 3 && before < after) { banner(tr('Fast geschafft!', 'Almost done!'), tr('Noch 3 Teile', '3 pieces to go')); return; }
+    }
+    const word = after < n ? praiseFor(streak) : null;
+    if (word && k >= 0) {
+      const [x, y] = L.targetOf(geo, k);
+      popText(word, tx + x * S, ty + y * S - geo.ph * S * 0.2);
+    }
   }
 
   // ---------- Zeit, Anzeige, Speichern ----------
@@ -684,6 +825,7 @@ export function createPlay(app, opts) {
     for (let n = flashes.length - 1; n >= 0; n--) if (now - flashes[n].t0 > 520) flashes.splice(n, 1); else busy = true;
     for (let n = sparks.length - 1; n >= 0; n--) if (now - sparks[n].t0 > sparks[n].life) sparks.splice(n, 1); else busy = true;
     if (finish && now - finish.t0 < 2600) busy = true;
+    if (hint) busy = true;
     if (busy) boardDirty = true;
     const lifting = drag && now - drag.t0 < 160;
     if (boardDirty) drawBoard(now);
@@ -765,6 +907,7 @@ export function createPlay(app, opts) {
     }
     c.drawImage(layer, 0, 0, W, H);
     if (finish) drawFinish(c, now);
+    drawHint(c, now);
     // einrastende Teile
     for (const k of settling.keys()) { const [x, y] = posOf(k, now); drawSprite(c, k, x, y, 0); }
     // lose Teile
@@ -868,6 +1011,7 @@ export function createPlay(app, opts) {
     destroyed = true;
     if (raf) cancelAnimationFrame(raf);
     clearTimeout(saveTimer);
+    clearTimeout(hintTimer);
     for (const f of cleanups) f();
     // Leinwand-Speicher sofort freigeben (iOS hält ihn sonst lange fest)
     setTimeout(() => {
@@ -902,6 +1046,7 @@ export function createPlay(app, opts) {
     },
     lift: () => Math.min(70, geo.ph * S * 0.5 + 16),
     zoom(nz) { zoomAt(Aw / 2, Ah / 2, nz); },
+    hint: () => hint && { i: hint.i, coach: !!hint.coach },
     /** Nur für Ansichts-Tests: Teile direkt legen bzw. lose verteilen. */
     debugPlace(placeIds, looseIds = []) {
       for (const i of placeIds) {

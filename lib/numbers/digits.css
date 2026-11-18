@@ -1,0 +1,210 @@
+/* Zahlen-Familie – Ziffern-Rätsel (Kakuro, Rechenquadrate, Killer-Sudoku, Mini-Sudoku).
+   Laden nach ../shared/style.css und ../lib/numbers/numbers.css. */
+
+:root {
+  --db-cell: #fff;
+  --db-peer: color-mix(in srgb, var(--accent) 7%, #fffdf9);
+  --db-same: color-mix(in srgb, var(--accent) 17%, #fff);
+  --db-sel: color-mix(in srgb, var(--accent) 30%, #fff);
+  --db-thin: #e6ddd1;
+  --db-thick: #4b3b31;
+  --db-cage: color-mix(in srgb, var(--accent) 55%, #6b5a4e);
+  --db-ink: var(--nx-ink);
+  --db-user: color-mix(in srgb, var(--accent) 82%, #1d1208);
+  --db-bad: #d23c4b;
+  --db-bad-bg: #fde4e6;
+}
+
+/* ---------- Spielansicht ---------- */
+
+.dp-main { gap: 8px; }
+.dp-area { padding: 2px 0; }
+.dp-stack { position: relative; display: flex; align-items: center; justify-content: center; }
+.dp-stack .nx-coach { bottom: auto; top: calc(100% - 4px); }
+.dp-card { padding: 8px; border-radius: 22px; transition: box-shadow .4s; }
+.dp-gold .dp-card { box-shadow: 0 0 0 3px #f2c14e, 0 10px 30px rgba(200, 140, 20, .22); }
+.dp-timer { border: 0; cursor: pointer; min-height: 44px; }
+.dp-timer:active { transform: scale(.96); }
+
+/* Pause */
+.dp-pause {
+  position: absolute; inset: 0; display: grid; place-items: center; border-radius: 22px; z-index: 5;
+  background: color-mix(in srgb, var(--bg) 70%, transparent); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  opacity: 0; pointer-events: none; transition: opacity .25s;
+}
+.dp-play.paused .dp-pause { opacity: 1; pointer-events: auto; }
+.dp-pause-in { display: flex; flex-direction: column; align-items: center; gap: 14px; }
+.dp-pause-in b { font-size: 24px; font-weight: 900; }
+.dp-pause-in .btn { min-width: 150px; }
+
+/* Laden */
+.dp-loading { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; color: var(--text-2); font-weight: 750; }
+.dp-spinner { width: 42px; height: 42px; border-radius: 50%; border: 4px solid var(--nx-soft-2); border-top-color: var(--accent); animation: dp-spin .8s linear infinite; }
+@keyframes dp-spin { to { transform: rotate(360deg); } }
+
+/* Helfer-Zeile (Kombinationen, Käfig) */
+.dp-helper {
+  flex: 0 0 auto; height: 44px; border: 0; border-radius: 14px; padding: 0 12px; background: var(--surface);
+  box-shadow: 0 1px 3px rgba(70, 45, 20, .08); display: flex; align-items: center; gap: 8px; overflow: hidden;
+  color: var(--text-2); font-weight: 750; font-size: 14px; text-align: left; transition: opacity .2s;
+}
+.dp-helper.none { display: none; }
+.dp-helper.empty { opacity: 0; pointer-events: none; }
+.dp-helper:active { transform: scale(.99); }
+.dp-hl { display: flex; align-items: center; gap: 6px; min-width: 0; flex: 1 1 0; white-space: nowrap; overflow: hidden; }
+.dp-hl + .dp-hl { border-left: 1.5px solid var(--line); padding-left: 8px; }
+.dp-hl-k {
+  flex: 0 0 auto; display: inline-flex; align-items: center; gap: 2px; padding: 3px 7px; border-radius: 9px;
+  background: var(--nx-soft); color: var(--nx-deep); font-weight: 900; font-variant-numeric: tabular-nums;
+}
+.dp-hl-k svg { width: 13px; height: 13px; }
+.dp-hl-c { font-variant-numeric: tabular-nums; letter-spacing: .02em; color: var(--nx-ink); font-weight: 800; overflow: hidden; text-overflow: ellipsis; }
+.dp-hl-c i { font-style: normal; color: var(--text-3); text-decoration: line-through; font-weight: 700; }
+.dp-hl-c u { text-decoration: none; color: var(--text-3); font-weight: 700; }
+.dp-hl-more { flex: 0 0 auto; color: var(--text-3); font-size: 13px; }
+.dp-hl-chev { flex: 0 0 auto; color: var(--text-3); transform: rotate(180deg); }
+.dp-hl-chev svg { width: 16px; height: 16px; }
+
+/* Werkzeuge */
+.dp-tools { gap: 0; justify-content: space-between; padding: 0; }
+.dp-tools .nx-tool { min-width: 0; flex: 1 1 0; min-height: 58px; padding: 0 2px; gap: 3px; }
+.dp-tools .nx-tool-ic { width: 44px; height: 44px; }
+.dp-tools .nx-tool-ic svg { width: 22px; height: 22px; }
+.dp-tools .nx-tool-lbl { font-size: 12px; }
+.dp-tools .nx-badge { font-size: 10px; min-width: 24px; height: 18px; top: -4px; right: -10px; }
+
+/* Zifferntasten */
+.dp-pad { flex: 0 0 auto; display: grid; grid-template-columns: repeat(var(--n), minmax(0, 1fr)); gap: 5px; }
+.dp-key {
+  position: relative; height: 56px; min-width: 0; border: 0; border-radius: 14px; background: var(--surface);
+  box-shadow: 0 2px 0 rgba(70, 45, 20, .1), 0 1px 4px rgba(70, 45, 20, .08); color: var(--nx-deep);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0;
+  transition: transform .12s var(--ease-out), background .2s, opacity .2s;
+}
+.dp-key b { font-size: 26px; font-weight: 850; line-height: 1.05; font-variant-numeric: tabular-nums; }
+.dp-key small { font-size: 11px; font-weight: 800; color: var(--text-3); height: 13px; line-height: 13px; }
+.dp-key:active { transform: scale(.92); background: var(--nx-soft); }
+.dp-key.done { opacity: .35; }
+.dp-pad.notes .dp-key { background: var(--surface-2); color: var(--text-2); }
+.dp-pad.notes .dp-key b { font-size: 19px; font-weight: 750; }
+.dp-pad.notes .dp-key.marked { background: var(--accent); color: #fff; }
+.dp-pad.notes .dp-key.marked small { color: rgba(255, 255, 255, .8); }
+.dp-pad[style*="--n: 4"] .dp-key, .dp-pad[style*="--n: 5"] .dp-key, .dp-pad[style*="--n: 6"] .dp-key { height: 58px; }
+
+/* ---------- Brett ---------- */
+
+.db { position: relative; --cs: 40px; touch-action: none; -webkit-user-select: none; user-select: none; }
+.db-grid {
+  display: grid; grid-template-columns: repeat(var(--cols), var(--cs)); grid-auto-rows: var(--cs); gap: var(--gap);
+}
+.db-svg { position: absolute; left: 0; top: 0; pointer-events: none; z-index: 2; overflow: visible; }
+.db-thin { stroke: var(--db-thin); stroke-width: 1; fill: none; }
+.db-thick { stroke: var(--db-thick); stroke-width: 2.4; stroke-linecap: square; fill: none; }
+.db-frame { stroke: var(--db-thick); stroke-width: 2.4; fill: none; }
+.db-cage { stroke: var(--db-cage); stroke-width: 1.3; stroke-dasharray: 3.2 2.6; fill: none; }
+
+.db-cell {
+  position: relative; display: grid; place-items: center; background: var(--db-cell); cursor: pointer;
+  transition: background-color .18s;
+}
+.db-v {
+  font-size: calc(var(--cs) * .56); font-weight: 750; line-height: 1; color: var(--db-user);
+  font-variant-numeric: tabular-nums; position: relative; z-index: 1;
+}
+.db-cell.given .db-v { color: var(--db-ink); font-weight: 850; }
+.db-cell.peer { background: var(--db-peer); }
+.db-cell.same { background: var(--db-same); }
+.db-cell.sel { background: var(--db-sel); }
+.db-cell.wrong .db-v { color: var(--db-bad); }
+.db-cell.wrong { background: var(--db-bad-bg); }
+.db-cell.wrong.sel { background: color-mix(in srgb, var(--db-bad) 26%, #fff); }
+
+/* Notizen: feste Plätze (1 oben links … 9 unten rechts) */
+.db-notes {
+  position: absolute; inset: 2px; display: grid; grid-template-columns: repeat(var(--note-cols), 1fr);
+  grid-auto-rows: 1fr; pointer-events: none; z-index: 1;
+}
+.db-notes span {
+  display: grid; place-items: center; font-size: max(8.5px, calc(var(--cs) * .23)); font-weight: 750; line-height: 1;
+  color: var(--text-2); visibility: hidden; font-variant-numeric: tabular-nums;
+}
+.db-notes span.on { visibility: visible; }
+.db-notes span.hit { color: #fff; position: relative; }
+.db-notes span.hit::before {
+  content: ''; position: absolute; inset: 8%; border-radius: 50%; background: var(--accent); z-index: -1;
+}
+.db-cell.has-lab .db-notes { top: calc(var(--cs) * .27); }
+.db-cell.has-lab .db-v { translate: 0 6%; }
+.db-notes-in .db-notes { animation: db-notes-in .4s var(--ease-out); }
+@keyframes db-notes-in { from { opacity: 0; transform: scale(.7); } }
+
+/* Käfig-/Ziel-Beschriftung */
+.db-lab {
+  position: absolute; left: 2px; top: 1px; z-index: 3; padding: 0 2px 1px 1px; border-radius: 4px;
+  font-size: max(9.5px, calc(var(--cs) * .25)); font-weight: 850; line-height: 1.05; color: var(--db-lab, var(--nx-deep));
+  background: inherit; font-variant-numeric: tabular-nums; letter-spacing: -.02em; white-space: nowrap; pointer-events: none;
+}
+
+/* Animationen */
+.db-pop .db-v { animation: db-pop .42s var(--ease-spring); }
+@keyframes db-pop { 0% { transform: scale(.4); opacity: .3; } 60% { transform: scale(1.18); } 100% { transform: scale(1); } }
+.db-wave { animation: db-wave .7s var(--ease-out); }
+@keyframes db-wave { 0% { background-color: var(--db-cell); } 30% { background-color: color-mix(in srgb, var(--accent) 38%, #fff); } 100% { } }
+.db-wave .db-v { animation: db-wave-v .7s var(--ease-out); }
+@keyframes db-wave-v { 30% { transform: scale(1.2); } }
+.db-clash { animation: db-clash .9s ease-out; }
+@keyframes db-clash { 0%, 60% { background-color: color-mix(in srgb, var(--db-bad) 30%, #fff); } }
+.db-undo .db-v, .db-undo .db-notes { animation: db-undo .38s var(--ease-out); }
+@keyframes db-undo { from { opacity: .2; transform: scale(.8); } }
+.db-hinted { animation: db-hinted 1.3s ease-out; }
+@keyframes db-hinted { 0% { box-shadow: inset 0 0 0 0 #ffd36b; } 25% { box-shadow: inset 0 0 0 4px #ffd36b; } 100% { box-shadow: inset 0 0 0 0 transparent; } }
+.db-coach::after {
+  content: ''; position: absolute; inset: 2px; border-radius: 30%; border: 3px solid var(--accent); z-index: 4;
+  animation: ng-coach 1.4s ease-out infinite; pointer-events: none;
+}
+
+/* ---------- Kachel-Stil (Kakuro) ---------- */
+
+.db-tiles .db-cell { border-radius: calc(var(--cs) * .2); box-shadow: inset 0 0 0 1.5px #eadfd2; }
+.db-tiles .db-cell.blk { cursor: default; box-shadow: none; }
+.db-tiles .db-cell.peer { box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--accent) 22%, #eadfd2); }
+.db-tiles .db-cell.sel { box-shadow: inset 0 0 0 2.5px var(--accent); }
+
+/* ---------- Statistik ---------- */
+.dp-stats .nx-win-tiles small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* ---------- Helfer-Blatt (Kombinationen) ---------- */
+.dp-sheet { display: flex; flex-direction: column; gap: 14px; text-align: left; }
+.dp-sheet h3 { margin: 0 0 6px; font-size: 15px; font-weight: 850; display: flex; align-items: center; gap: 8px; }
+.dp-sheet h3 .dp-hl-k { font-size: 14px; }
+.dp-combos { display: flex; flex-wrap: wrap; gap: 6px; }
+.dp-combo {
+  padding: 6px 10px; border-radius: 11px; background: var(--nx-soft); color: var(--nx-deep); font-weight: 850;
+  font-size: 16px; letter-spacing: .06em; font-variant-numeric: tabular-nums;
+}
+.dp-combo.off { background: var(--surface-2); color: var(--text-3); text-decoration: line-through; font-weight: 700; }
+.dp-sheet p { margin: 0; color: var(--text-2); font-size: 14px; font-weight: 650; }
+
+/* ---------- Tutorial-Bühne ---------- */
+.dp-demo { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; }
+.dp-demo .db { background: #fff; padding: 6px; border-radius: 16px; box-shadow: var(--shadow); box-sizing: content-box; }
+.dp-demo .db-svg { left: 6px; top: 6px; }
+.dp-demo-pad { display: flex; gap: 5px; }
+.dp-demo-pad span {
+  width: 34px; height: 38px; border-radius: 10px; background: #fff; display: grid; place-items: center;
+  font-weight: 850; font-size: 19px; color: var(--nx-deep); box-shadow: 0 2px 0 rgba(70, 45, 20, .1);
+  transition: transform .15s, background .2s;
+}
+.dp-demo-pad span.on { background: var(--accent); color: #fff; transform: scale(1.08); }
+.dp-demo-note {
+  min-height: 30px; padding: 5px 12px; border-radius: 12px; background: rgba(255, 255, 255, .85);
+  font-weight: 800; font-size: 14px; color: var(--nx-deep); display: flex; align-items: center; gap: 6px;
+}
+
+@media (max-height: 620px) {
+  .dp-key { height: 48px; }
+  .dp-key b { font-size: 22px; }
+  .dp-tools .nx-tool { min-height: 52px; }
+  .dp-tools .nx-tool-ic { width: 40px; height: 40px; }
+  .dp-helper { height: 40px; }
+}

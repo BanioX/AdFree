@@ -17,7 +17,7 @@ const errors = [];
 const log = (...a) => console.log('·', ...a);
 
 async function newPage(browser, viewport) {
-  const ctx = await browser.newContext({ ...devices['iPhone 13'], deviceScaleFactor: 1, ...(viewport ? { viewport } : {}) });
+  const ctx = await browser.newContext({ ...devices['iPhone 13'], locale: 'de-CH', deviceScaleFactor: 1, ...(viewport ? { viewport } : {}) });
   const page = await ctx.newPage();
   page.on('pageerror', (e) => errors.push('pageerror: ' + e.message));
   // 404-Meldungen werden separat mit URL erfasst (unten), damit klar ist, woher sie kommen.

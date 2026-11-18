@@ -100,6 +100,10 @@ Konstante `VERSION` um 1 – sonst verwenden Geräte die zwischengespeicherten a
 In `data/worlds.js` einen Eintrag anhängen. Je 15 Level bilden eine Welt; nach der letzten Welt
 beginnt die Liste von vorne (mit «II», «III» … im Namen).
 
+Das letzte Level jeder Welt (15, 30, 45 …) ist das **Finale**: Krone auf der Karte, das Brett startet
+mit drei Sonderjuwelen, und nach dem Sieg zeigt das Gewinn-Blatt «Welt geschafft!» mit der nächsten Welt.
+Die Farben der aktuellen Welt färben auch das Titelbild und die Welt-Karte im Startbildschirm.
+
 ```js
 { name: 'Wolkenschloss', emoji: '☁️', deco: ['☁️', '🏰', '🎈', '🌈'],
   sky: ['#eef3ff', '#d8e4ff'],      // Hintergrund-Verlauf im Spiel und auf der Karte
@@ -118,6 +122,14 @@ Emoji wählen (blasse wie 🐚 oder ❄️ sind auf dem Brett kaum zu sehen).
 Kettenreaktionen, Hinweise beim ersten Auftauchen von Eis/Steinen/Eicheln, Titel für Sieg und
 Niederlage, Punkte-Meilensteine im Entspannt-Modus). Schweizer Rechtschreibung: «ss» statt «ß»,
 Anführungszeichen «so».
+
+## Anleitung («So geht's»)
+
+`howto.js` enthält die vier Schritte der Anleitung. Jeder Schritt hat einen Titel (2–4 Wörter), einen
+kurzen Satz (Deutsch und Englisch über `L(de, en)`) und eine kleine Spielszene: `MiniBoard` baut ein
+Mini-Brett aus denselben Juwelen-Bildern und Feldfarben wie das Spiel (`swap`, `pop`, `fall`, `morph`,
+`beam`), der Finger kommt aus `api.finger`. Wer Startbretter ändert, achtet darauf, dass vor dem Wischen
+keine Dreierreihe liegt und nach dem Nachfüllen keine ungewollte entsteht.
 
 ## Prüfen
 

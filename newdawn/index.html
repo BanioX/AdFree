@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="de-CH">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <title>New Dawn – Spielpause</title>
+  <meta name="theme-color" content="#05081a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Spielpause">
+  <link rel="manifest" href="../manifest.webmanifest">
+  <link rel="apple-touch-icon" href="../icons/apple-touch-icon.png">
+  <style>
+    /* Schlanke Leiste mit «Zurück» über dem Originalspiel (game.html bleibt unverändert). */
+    html, body { margin: 0; height: 100%; background: #05081a; overflow: hidden; overscroll-behavior: none; }
+    body { display: flex; flex-direction: column; font-family: ui-rounded, "SF Pro Rounded", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    .bar {
+      flex: 0 0 auto; display: flex; align-items: center; gap: 6px;
+      padding: env(safe-area-inset-top, 0px) 10px 0 calc(6px + env(safe-area-inset-left, 0px));
+      height: calc(40px + env(safe-area-inset-top, 0px)); box-sizing: border-box;
+      background: #05081a; color: #e8e6ff;
+    }
+    .back {
+      display: inline-flex; align-items: center; gap: 4px; min-height: 40px; padding: 0 10px 0 4px;
+      color: #e8e6ff; text-decoration: none; font-weight: 750; font-size: 15px; border-radius: 999px;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .back:active { background: rgba(255, 255, 255, .08); }
+    .back svg { width: 22px; height: 22px; }
+    iframe { flex: 1 1 auto; width: 100%; border: 0; display: block; background: #05081a; }
+  </style>
+</head>
+<body>
+  <div class="bar">
+    <a class="back" href="../" id="back">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>
+      <span id="back-label">Spielpause</span>
+    </a>
+  </div>
+  <iframe src="game.html" title="New Dawn" allow="autoplay; fullscreen"></iframe>
+  <script type="module">
+    import { setupPage } from '../shared/ui.js';
+    import { L } from '../shared/i18n.js';
+    import { reportSummary } from '../shared/storage.js';
+    setupPage();
+    document.getElementById('back').setAttribute('aria-label', L('Zurück zu Spielpause', 'Back to Spielpause'));
+    reportSummary('newdawn', L('Ein Lichträtsel', 'A puzzle of light'));
+  </script>
+</body>
+</html>

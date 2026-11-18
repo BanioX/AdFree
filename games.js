@@ -46,6 +46,9 @@ export const games = [
   { id: 'match3', title: 'Juwelen', subtitle: 'Drei in einer Reihe', title_en: 'Jewels', subtitle_en: 'Three in a row', category: 'action', color: '#d0447c', added: '2026-11-17' },
   { id: 'bubbles', title: 'Blasenzauber', tile: 'Blasen\u00ADzauber', subtitle: 'Seifenblasen abschiessen', title_en: 'Bubble Magic', subtitle_en: 'Aim and pop the bubbles', category: 'action', color: '#4fa3e3', added: '2026-11-17' },
   { id: 'jigsaw', title: 'Puzzle', subtitle: 'Bilder Teil für Teil', title_en: 'Jigsaw', subtitle_en: 'Pictures piece by piece', category: 'kreativ', color: '#9a6b4f', added: '2026-11-17' },
+  { id: 'tripeaks', title: 'Gipfel', subtitle: 'Karten eins höher oder tiefer', title_en: 'Three Peaks', subtitle_en: 'Play cards one higher or lower', category: 'karten', color: '#2e8bc9', daily: true, added: '2026-11-18' },
+  { id: 'numbermatch', title: 'Zahlenpaare', tile: 'Zahlen\u00ADpaare', subtitle: 'Gleiche oder Summe 10 streichen', title_en: 'Number Match', subtitle_en: 'Cross out equal pairs or pairs that make 10', category: 'zahlen', color: '#3c8dbc', daily: true, added: '2026-11-18' },
+  { id: 'newdawn', title: 'New Dawn', subtitle: 'Lichtstrahlen mit Spiegeln lenken', title_en: 'New Dawn', subtitle_en: 'Guide light beams with mirrors', category: 'logik', color: '#4b4fa8', added: '2026-11-18' },
 ];
 
 /** Titel/Untertitel/Kachelname in der aktuellen Sprache */

@@ -1,0 +1,2 @@
+.pz button.lit { background: #f0c14a; }
+.pz button.lit::after { content: ''; width: 38%; height: 38%; border-radius: 50%; background: #fff8e0; display: block; margin: 0 auto; }

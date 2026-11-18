@@ -22,7 +22,10 @@ const page = await browser.newPage({
   hasTouch: true,
   userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1',
 });
-await page.addInitScript(() => localStorage.setItem('spielpause.tutorial.vierer', 'true'));
+await page.addInitScript(() => {
+  localStorage.setItem('spielpause.tutorial.vierer', 'true');
+  localStorage.setItem('spielpause.lang', '"de"');
+});
 page.on('console', (m) => {
   if (m.type() !== 'error') return;
   if (/Failed to load resource/.test(m.text())) return;
@@ -79,6 +82,7 @@ await page.screenshot({ path: OUT + '04-hint.png' });
 const ios = await browser.newPage({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
 await ios.addInitScript(() => {
   localStorage.setItem('spielpause.tutorial.vierer', 'true');
+  localStorage.setItem('spielpause.lang', '"de"');
   localStorage.removeItem('spielpause.vierer.match');
 });
 ios.on('pageerror', (e) => errors.push('pageerror: ' + e.message));
@@ -95,7 +99,10 @@ assert.ok(placed >= 1, 'Klick ohne pointerup legt einen Stein');
 await ios.close();
 
 const narrow = await browser.newPage({ viewport: { width: 375, height: 700 }, deviceScaleFactor: 1, isMobile: true, hasTouch: true });
-await narrow.addInitScript(() => localStorage.setItem('spielpause.tutorial.vierer', 'true'));
+await narrow.addInitScript(() => {
+  localStorage.setItem('spielpause.tutorial.vierer', 'true');
+  localStorage.setItem('spielpause.lang', '"de"');
+});
 await narrow.goto(BASE + '#play');
 await narrow.waitForSelector('.c4');
 const fit = await narrow.evaluate(() => {

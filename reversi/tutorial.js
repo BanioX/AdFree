@@ -1,4 +1,5 @@
 import { h } from '../shared/ui.js';
+import { tr } from './strings.js';
 
 function grid(spec) {
   const board = h('div.rv-demo');
@@ -10,8 +11,8 @@ function grid(spec) {
 export function tutorialSteps() {
   return [
     {
-      title: 'Stein setzen',
-      text: 'Setze so, dass du gegnerische Steine einschliesst. Sie drehen sich um.',
+      title: tr('tut1'),
+      text: tr('tut1t'),
       demo(stage, api) {
         const { board, cells } = grid(['', 'dot', '', '', 'ai', 'me', '', '', 'me', 'ai', '', '', '', '', '']);
         stage.append(board);
@@ -26,8 +27,8 @@ export function tutorialSteps() {
       },
     },
     {
-      title: 'Mehr Steine',
-      text: 'Am Ende gewinnt, wer mehr Steine der eigenen Farbe hat.',
+      title: tr('tut2'),
+      text: tr('tut2t'),
       demo(stage, api) {
         const { board } = grid(['me', 'me', 'me', 'ai', 'me', 'me', 'ai', 'ai', 'me', 'ai', 'ai', 'ai', '', '', '', '']);
         stage.append(board);
@@ -35,8 +36,8 @@ export function tutorialSteps() {
       },
     },
     {
-      title: 'Ecken sind stark',
-      text: 'Ecken kann man nicht mehr drehen. Der Tipp zeigt einen guten Zug.',
+      title: tr('tut3'),
+      text: tr('tut3t'),
       demo(stage, api) {
         const { board, cells } = grid(['dot', '', '', '', '', 'me', 'ai', '', '', 'ai', 'me', '', '', '', '', '']);
         stage.append(board);

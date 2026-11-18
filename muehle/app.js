@@ -1,12 +1,13 @@
 // Mühle gegen den Computer.
 
-import { boot, stage, fillTools, onPress } from '../lib/board/kit.js';
+import { boot, stage, fillTools, onPress, bt } from '../lib/board/kit.js';
 import { store } from '../shared/storage.js';
 import { sfx } from '../shared/sfx.js';
 import { h, toast, confirmDialog, sleep } from '../shared/ui.js';
 import { pickMove } from '../lib/board/ai.js';
 import { PTS, MILLS, newGame, moves, apply, count, aiOptions } from './logic.js';
 import { tutorialSteps } from './tutorial.js';
+import { tr } from './strings.js';
 
 const ID = 'muehle';
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -42,8 +43,8 @@ function art() {
 
 boot({
   id: ID,
-  title: 'Mühle',
-  tagline: 'Drei in einer Linie, Stein weg',
+  title: () => tr('title'),
+  tagline: () => tr('tagline'),
   accent: '#8b5a2b',
   confetti: ['#f0c27a', '#8b5a2b', '#fff', '#e7c27a', '#5c3a1e'],
   steps: tutorialSteps,
@@ -59,8 +60,8 @@ boot({
     if (!state.hist) state.hist = [];
 
     const ui = stage({
-      title: 'Mühle',
-      sub: 'Du hell',
+      title: tr('title'),
+      sub: tr('sub'),
       onBack: () => ctx.exit(),
       onHelp: () => ctx.help(),
     });
@@ -138,18 +139,18 @@ boot({
     }
     function status() {
       if (state.over) {
-        ui.setStatus(state.winner === 1 ? 'Du gewinnst!' : state.winner === 2 ? 'Computer gewinnt' : 'Unentschieden', state.winner === 1 ? 'win' : '');
-      } else if (pending) ui.setStatus('Nimm einen Stein weg', 'you');
-      else if (busy && state.turn === 2) ui.setStatus('Computer überlegt …', '');
-      else if (state.left[1] > 0) ui.setStatus('Setze einen Stein', 'you');
-      else if (state.left[1] === 0 && state.left[2] === 0 && count(state, 1) <= 3) ui.setStatus('Du darfst fliegen', 'you');
-      else ui.setStatus('Zieh einen Stein', 'you');
+        ui.setStatus(state.winner === 1 ? bt('youWinShort') : state.winner === 2 ? bt('cpuWin') : bt('draw'), state.winner === 1 ? 'win' : '');
+      } else if (pending) ui.setStatus(tr('take'), 'you');
+      else if (busy && state.turn === 2) ui.setStatus(bt('cpuThink'), '');
+      else if (state.left[1] > 0) ui.setStatus(tr('place'), 'you');
+      else if (state.left[1] === 0 && state.left[2] === 0 && count(state, 1) <= 3) ui.setStatus(tr('fly'), 'you');
+      else ui.setStatus(tr('slide'), 'you');
     }
     function tools() {
       fillTools(ui.tools, [
-        { icon: 'undo', label: 'Zurück', disabled: busy || !state.hist.length, onClick: onUndo },
-        { icon: 'hint', label: 'Tipp', disabled: busy || state.over || state.turn !== 1 || pending, onClick: onHint },
-        { icon: 'refresh', label: 'Neu', disabled: busy, onClick: onNew },
+        { icon: 'undo', label: bt('undo'), disabled: busy || !state.hist.length, onClick: onUndo },
+        { icon: 'hint', label: bt('hint'), disabled: busy || state.over || state.turn !== 1 || pending, onClick: onHint },
+        { icon: 'refresh', label: bt('neu'), disabled: busy, onClick: onNew },
       ]);
     }
     let finishing = false;
@@ -163,8 +164,8 @@ boot({
       paint();
       const kind = state.winner === 1 ? 'win' : state.winner === 2 ? 'lose' : 'draw';
       const choice = await ctx.finish(kind, {
-        title: kind === 'win' ? 'Gewonnen!' : kind === 'lose' ? 'Knapp!' : 'Unentschieden',
-        text: `Du ${count(state, 1)} · Computer ${count(state, 2)}`,
+        title: kind === 'win' ? bt('youWin') : kind === 'lose' ? bt('close') : bt('draw'),
+        text: tr('score', { a: count(state, 1), b: count(state, 2) }),
       });
       if (dead) return;
       if (choice === 'menu') ctx.exit();
@@ -183,7 +184,7 @@ boot({
     }
     async function onNew() {
       if (state.hist.length && !state.over) {
-        if (!(await confirmDialog('Neue Partie?', 'Die laufende Partie wird beendet.', 'Neu starten'))) return;
+        if (!(await confirmDialog(bt('newMatch'), bt('endMatch'), bt('restart')))) return;
       }
       if (!dead) restart();
     }
@@ -219,7 +220,7 @@ boot({
       if (m.place != null) points[m.place].classList.add('hint');
       else if (m.to != null) points[m.to].classList.add('hint');
       sfx.play('sparkle');
-      toast('Dieser Punkt sieht gut aus.');
+      toast(tr('hint'));
       status();
       tools();
     }
@@ -273,7 +274,7 @@ boot({
           pending = { place: i };
           paint();
           status();
-          toast('Nimm einen Stein weg.');
+          toast(tr('takeToast'));
           return;
         }
         play(opts[0]);
@@ -286,7 +287,7 @@ boot({
             pending = { from: sel, to: i };
             paint();
             status();
-            toast('Nimm einen Stein weg.');
+            toast(tr('takeToast'));
             return;
           }
           play(opts[0]);

@@ -1,0 +1,41 @@
+import { dict } from '../shared/i18n.js';
+
+export const tr = dict({
+  de: {
+    title: 'Mühle',
+    tagline: 'Drei in einer Linie, Stein weg',
+    sub: 'Du hell',
+    take: 'Nimm einen Stein weg',
+    place: 'Setze einen Stein',
+    fly: 'Du darfst fliegen',
+    slide: 'Zieh einen Stein',
+    score: 'Du {a} · Computer {b}',
+    hint: 'Dieser Punkt sieht gut aus.',
+    takeToast: 'Nimm einen Stein weg.',
+    tut1: 'Neun Steine setzen',
+    tut1t: 'Abwechselnd auf freie Punkte. Danach wird nur noch gezogen.',
+    tut2: 'Mühle schliesst',
+    tut2t: 'Drei eigene Steine in einer Linie: du nimmst einen gegnerischen Stein weg.',
+    tut3: 'Ziehen und fliegen',
+    tut3t: 'Entlang der Linien auf ein freies Feld. Mit drei Steinen darfst du überallhin.',
+  },
+  en: {
+    title: 'Nine Men’s Morris',
+    tagline: 'Three in a row, take a stone',
+    sub: 'You play light',
+    take: 'Take a stone',
+    place: 'Place a stone',
+    fly: 'You may fly',
+    slide: 'Slide a stone',
+    score: 'You {a} · Computer {b}',
+    hint: 'This point looks good.',
+    takeToast: 'Take a stone.',
+    tut1: 'Place nine stones',
+    tut1t: 'Take turns on empty points. After that, stones only slide.',
+    tut2: 'Close a mill',
+    tut2t: 'Three of your stones in a line: you remove an opponent’s stone.',
+    tut3: 'Slide and fly',
+    tut3t: 'Move along the lines to an empty point. With three stones you may fly anywhere.',
+  },
+});
+

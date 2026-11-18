@@ -1,6 +1,7 @@
 // Animierte Anleitung für Mühle.
 
 import { h } from '../shared/ui.js';
+import { tr } from './strings.js';
 
 function row() {
   const board = h('div.mu-demo');
@@ -12,8 +13,8 @@ function row() {
 export function tutorialSteps() {
   return [
     {
-      title: 'Neun Steine setzen',
-      text: 'Abwechselnd auf freie Punkte. Danach wird nur noch gezogen.',
+      title: tr('tut1'),
+      text: tr('tut1t'),
       demo(stage, api) {
         const { board, cells } = row();
         stage.append(board);
@@ -28,8 +29,8 @@ export function tutorialSteps() {
       },
     },
     {
-      title: 'Mühle schliesst',
-      text: 'Drei eigene Steine in einer Linie: du nimmst einen gegnerischen Stein weg.',
+      title: tr('tut2'),
+      text: tr('tut2t'),
       demo(stage, api) {
         const { board, cells } = row();
         stage.append(board);
@@ -44,8 +45,8 @@ export function tutorialSteps() {
       },
     },
     {
-      title: 'Ziehen und fliegen',
-      text: 'Entlang der Linien auf ein freies Feld. Mit drei Steinen darfst du überallhin.',
+      title: tr('tut3'),
+      text: tr('tut3t'),
       demo(stage, api) {
         const { board, cells } = row();
         stage.append(board);

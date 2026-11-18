@@ -1,0 +1,36 @@
+import { dict } from '../shared/i18n.js';
+
+export const tr = dict({
+  de: {
+    title: 'Farbkugeln',
+    tagline: 'Fünf in einer Reihe räumen',
+    level: 'Stufe',
+    go: 'Tippe eine Kugel, dann ein freies Feld',
+    need: 'Noch {n} Reihen',
+    win: 'Die Reihe ist voll',
+    full: 'Kein Platz mehr',
+    blocked: 'Der Weg ist zu',
+    tut1: 'Kugel tippen',
+    tut1t: 'Tippe eine Kugel und dann ein freies Feld. Sie rollt um die anderen herum.',
+    tut2: 'Fünf',
+    tut2t: 'Fünf gleiche in einer Linie verschwinden, auch schräg.',
+    tut3: 'Nachschub',
+    tut3t: 'Drei neue Kugeln kommen, wenn du nichts geräumt hast.',
+  },
+  en: {
+    title: 'Color Lines',
+    tagline: 'Clear five in a row',
+    level: 'Level',
+    go: 'Tap a ball, then an empty square',
+    need: '{n} lines to go',
+    win: 'The line is full',
+    full: 'No room left',
+    blocked: 'The path is blocked',
+    tut1: 'Tap a ball',
+    tut1t: 'Tap a ball, then an empty square. It rolls around the others.',
+    tut2: 'Five',
+    tut2t: 'Five of a kind in a line disappear, diagonals too.',
+    tut3: 'More arrive',
+    tut3t: 'Three new balls arrive when you cleared nothing.',
+  },
+});

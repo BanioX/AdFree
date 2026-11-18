@@ -84,3 +84,17 @@ export function setLang(l) {
 export function num(n) {
   try { return new Intl.NumberFormat(lang === 'en' ? 'en-GB' : 'de-CH').format(n); } catch { return String(n); }
 }
+
+/** Schalter DE/EN für Spielmenüs. Speichert die Wahl und lädt neu. */
+export function languageButton() {
+  const b = document.createElement('button');
+  b.type = 'button';
+  b.className = 'icon-btn lang-btn';
+  b.textContent = lang === 'en' ? 'EN' : 'DE';
+  b.setAttribute('aria-label', L(
+    'Sprache: Deutsch – tippen für Englisch',
+    'Language: English – tap for German',
+  ));
+  b.addEventListener('click', () => setLang(lang === 'en' ? 'de' : 'en'));
+  return b;
+}

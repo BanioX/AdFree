@@ -1,6 +1,6 @@
 # Spielpause
 
-**23 entspannte Spiele in einer App – ganz ohne Werbung, ohne Käufe, ohne Konto.**
+**56 entspannte Spiele in einer App – ganz ohne Werbung, ohne Käufe, ohne Konto.**
 
 Spielpause ist eine Web-App (PWA) für das iPhone: im Safari öffnen, auf den Home-Bildschirm legen,
 und sie startet wie eine normale App – im Vollbild und auch offline. Alle Spielstände bleiben auf dem Gerät.
@@ -12,10 +12,12 @@ und sie startet wie eine normale App – im Vollbild und auch offline. Alle Spie
 
 ## Die Spiele
 
-Die Startseite ist ein **Spielkatalog** mit 4 Kacheln pro Reihe: Suche, Favoriten (langes Drücken auf
-eine Kachel), «Zuletzt gespielt», Abschnitte pro Kategorie und eine Leiste mit den **Tagesrätseln**
-(jeden Tag neu, mit Serien-Zähler). Der **Ton** ist leise und sanft, hält sich an den Stumm-Schalter des
-iPhones und lässt sich mit dem Lautsprecher-Knopf auf leise / normal / aus stellen.
+Die Startseite ist ein **Spielkatalog** mit 4 Kacheln pro Reihe. Die Spiele sind nach **Erbauer**
+gruppiert («Gebaut mit Claude», «Gebaut mit Grok»), jede Kachel mit einem kleinen Zeichen. Suche,
+Favoriten (langes Drücken auf eine Kachel), «Zuletzt gespielt» und die Kategorien bleiben – als Filter
+und als Untergruppen. Dazu eine Leiste mit den **Tagesrätseln** (jeden Tag neu, mit Serien-Zähler).
+Der **Ton** ist leise und sanft, hält sich an den Stumm-Schalter des iPhones und lässt sich mit dem
+Lautsprecher-Knopf auf leise / normal / aus stellen.
 
 | Spiel | Kategorie | Worum es geht | Inhalt | Tagesrätsel |
 |---|---|---|---|:-:|
@@ -42,6 +44,39 @@ iPhones und lässt sich mit dem Lautsprecher-Knopf auf leise / normal / aus stel
 | 🟠 **Dame** | Brettspiele | Steine schlagen, auf der letzten Reihe wird die Dame | gegen den Computer, drei Stärken | |
 | 🟤 **Mühle** | Brettspiele | Drei Steine in einer Linie, einen gegnerischen Stein nehmen | gegen den Computer, drei Stärken | |
 | 🔴 **Eile mit Weile** | Brettspiele | Vier Farben, eine 6 holt dich raus | gegen den Computer, drei Stärken | |
+| 🚢 **Schiffe versenken** | Brettspiele | Flotte setzen und die gegnerischen Schiffe finden | gegen den Computer, drei Stärken | |
+| ♟️ **Schach** | Brettspiele | Weiss gegen den Computer, mit Rochade und Umwandlung | gegen den Computer, drei Stärken | |
+| 🎲 **Backgammon** | Brettspiele | Würfeln, ziehen, schlagen und abtragen | gegen den Computer, drei Stärken | |
+| 🟣 **Wortkreis** | Wörter | Wörter aus einem Buchstabenrad legen | drei Stufen, deutsch und englisch | |
+| 🟡 **Wabenwort** | Wörter | Sieben Buchstaben, die Mitte muss ins Wort | drei Stufen, deutsch und englisch | |
+| 🌸 **Buchstabenjagd** | Wörter | Das Wort Buchstabe für Buchstabe finden | sieben Fehlversuche, deutsch und englisch | |
+| 🔴 **Anagramm** | Wörter | Buchstaben in die richtige Reihenfolge legen | drei Stufen, deutsch und englisch | |
+| 🟢 **Wortleiter** | Wörter | Ein Buchstabe pro Stufe bis zum Zielwort | drei Stufen, deutsch und englisch | |
+| 🔵 **Geheimschrift** | Wörter | Einen kurzen Satz entschlüsseln | drei Stufen, deutsch und englisch | |
+| 🟢 **Wortwirbel** | Wörter | Wörter im Buchstabenfeld finden, auch schräg | ohne Uhr, Zeit freiwillig, deutsch und englisch | |
+| 🔵 **Kreuzworträtsel** | Wörter | Ein kleines Gitter mit eigenen Hinweisen | 7×7, deutsch und englisch | |
+| 🟡 **Emoji-Rätsel** | Wörter | Ein Bild mit Buchstaben aus dem Korb erraten | eigene Listen, deutsch und englisch | |
+| 🟢 **Minensucher** | Logikrätsel | Zahlen lesen und die Minen meiden | Fahne, ohne Uhr, deutsch und englisch | |
+| 🔵 **Brücken** | Logikrätsel | Inseln verbinden, ohne dass sich Brücken kreuzen | Zahl auf der Insel, deutsch und englisch | |
+| 🔵 **Binärrätsel** | Logikrätsel | Gleich viele Nullen und Einsen, ohne drei gleiche | 6×6 und 8×8, deutsch und englisch | |
+| 🟡 **Lichter aus** | Logikrätsel | Ein Tipp schaltet das Licht und die Nachbarn | ohne Uhr, deutsch und englisch | |
+| 🟣 **Grösser-Kleiner** | Logikrätsel | Zahlenquadrat, das Zeichen zeigt zur kleineren Zahl | 4×4 und 5×5, deutsch und englisch | |
+| 🔴 **Früchte-Fusion** | Kombinieren | Früchte fallen lassen, gleiche verschmelzen | ohne Uhr, deutsch und englisch | |
+| 🔵 **Kugelkette** | Kombinieren | Drei gleiche Kugeln weg tippen | die Lücke schliesst sich, deutsch und englisch | |
+| 🔴 **Farbklicker** | Kombinieren | Die Ecke frisst die getippte Farbe | ohne Zuglimit, deutsch und englisch | |
+| 🟣 **Farbkugeln** | Kombinieren | Kugeln schieben, fünf in einer Reihe räumen | auch schräg, deutsch und englisch | |
+| 🟢 **Schlängel** | Kombinieren | Richtung tippen und Futter sammeln | ohne harten Absturz, deutsch und englisch | |
+| 🟠 **Mauerbrecher** | Kombinieren | Schläger ziehen und Steine treffen | der Ball kommt zurück, deutsch und englisch | |
+| 🟤 **Turmbau** | Kombinieren | Blöcke fallen lassen und stapeln | genauer Treffer behält die Breite, deutsch und englisch | |
+| 🔵 **Fallende Blöcke** | Kombinieren | Blöcke schieben, drehen und Reihen leeren | langsamer Fall, deutsch und englisch | |
+| 🔵 **Sternenhimmel** | Logikrätsel | Ein Stern pro Zeile, Spalte und Gebiet | ohne Berührung, deutsch und englisch | |
+| 🟢 **Zelte & Bäume** | Logikrätsel | Neben jedem Baum steht ein Zelt | Zahlen am Rand, deutsch und englisch | |
+| 🔵 **Hochhäuser** | Logikrätsel | Wie viele Häuser sieht man von aussen? | 4×4 und 5×5, deutsch und englisch | |
+| 🟢 **Inseln** | Logikrätsel | Die Zahl ist eine Insel dieser Grösse | Wasser verbunden, deutsch und englisch | |
+| 🟣 **Rundweg** | Logikrätsel | Eine Schlaufe, die Zahlen zählen die Kanten | 5×5 und 6×6, deutsch und englisch | |
+| 💗 **Riesenjagd** | Retro-Ecke | Kleines Schiff gegen riesige Mechs | vier Bosse, drei Tempi, deutsch und englisch | |
+| 🩵 **Ausweichen** | Retro-Ecke | Strahlen und Kanonen überstehen | drei Riesen, der Balken wird müde, deutsch und englisch | |
+| 💚 **Sternkater** | Retro-Ecke | Held und Katze gegen riesige Bosse | seitlich, springen und schiessen, deutsch und englisch | |
 
 Jedes Spiel bekommt einen einheitlichen **Startbildschirm** (ein Knopf zum Weiterspielen, Tagesrätsel,
 Modus, Statistik) und eine **kurze, animierte Anleitung** («So geht's»), die beim ersten Start
@@ -96,11 +131,12 @@ unter <https://baniox.github.io/AdFree/>.
 ## Erweitern
 
 Die App ist darauf ausgelegt, stetig zu wachsen. Mehrere KI-Agenten bauen parallel daran
-(Claude: bestehende Spiele + Welle 1, Grok: Welle 2, Gemini: Welle 3) – die gemeinsamen Regeln
-stehen in [`AGENTS.md`](AGENTS.md), Probleme in fremden Spielen in [`HINWEISE.md`](HINWEISE.md).
+(Claude: bestehende Spiele + Welle 1, Grok: Welle 2, Welle 3 und die Retro-Bosse). Die Startseite
+gruppiert danach. Die gemeinsamen Regeln stehen in [`AGENTS.md`](AGENTS.md), Probleme in fremden
+Spielen in [`HINWEISE.md`](HINWEISE.md).
 
 - **Neues Spiel:** Ordner `/<id>/` anlegen, Kachel-Icon `/icons/games/<id>.svg` zeichnen, Eintrag in
-  [`games.js`](games.js) ergänzen – die Startseite zeigt es automatisch (14 Tage mit «Neu»-Abzeichen).
+  [`games.js`](games.js) ergänzen (inkl. `builder`) – die Startseite zeigt es automatisch (14 Tage mit «Neu»-Abzeichen).
   Startbildschirm und Anleitung kommen aus den gemeinsamen Bausteinen. Details und Regeln: [`DEV.md`](DEV.md).
 - **Neuer Inhalt für ein bestehendes Spiel** (Bilder, Level, Wortlisten, Themen, Layouts): liegt als
   einfache Datendatei im Ordner `/<spiel>/data/`. Jedes Spiel erklärt in seiner `CONTENT.md`, wie man
@@ -113,7 +149,7 @@ stehen in [`AGENTS.md`](AGENTS.md), Probleme in fremden Spielen in [`HINWEISE.md
 
 ```
 index.html            Startseite (Spielkatalog)
-games.js              Verzeichnis aller Spiele (Titel, Kategorie, Farbe, Tagesrätsel)
+games.js              Verzeichnis aller Spiele (Titel, Kategorie, Erbauer, Farbe, Tagesrätsel)
 shared/               gemeinsame Bausteine: Styles, Speicher, Sounds, Dialoge,
                       Startbildschirm (gamemenu.js), Tutorial (tutorial.js)
 <spiel>/              ein Ordner pro Spiel (index.html, app.js, data/, tests/, CONTENT.md)

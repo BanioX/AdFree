@@ -8,7 +8,10 @@ mkdirSync(OUT, { recursive: true });
 const errors = [];
 const browser = await chromium.launch({ executablePath: '/usr/bin/google-chrome', args: ['--no-sandbox', '--disable-dev-shm-usage'] });
 const page = await browser.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1, isMobile: true, hasTouch: true });
-await page.addInitScript(() => localStorage.setItem('spielpause.tutorial.reversi', 'true'));
+await page.addInitScript(() => {
+  localStorage.setItem('spielpause.tutorial.reversi', 'true');
+  localStorage.setItem('spielpause.lang', '"de"');
+});
 page.on('pageerror', (e) => errors.push(e.message));
 page.on('console', (m) => { if (m.type() === 'error' && !/Failed to load resource/.test(m.text())) errors.push(m.text()); });
 await page.goto(BASE);

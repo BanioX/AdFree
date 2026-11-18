@@ -1,0 +1,6 @@
+.pz { gap: 0; width: min(100%, 340px); }
+.pz button { border-radius: 0; background: transparent; box-shadow: none; }
+.pz button.dot { background: radial-gradient(circle, #4a3568 22%, transparent 24%); }
+.pz button.clue { color: #4a3568; font-size: clamp(11px, 3vw, 16px); }
+.pz button.edge.h.on { background: linear-gradient(#7b5ea7, #7b5ea7) center / 100% 30% no-repeat; }
+.pz button.edge.v.on { background: linear-gradient(#7b5ea7, #7b5ea7) center / 30% 100% no-repeat; }

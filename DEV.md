@@ -276,7 +276,7 @@ Vollständig in `/cube/` (Level werden prozedural erzeugt), siehe Auftrag.
 ## Neues Spiel hinzufügen – Checkliste
 
 1. `games.js`: Eintrag mit `id`, `title` (+ optional `tile` mit weichen Trennstellen), `subtitle`,
-   `category`, `color`, `daily`, `added` (heutiges Datum → «Neu»-Abzeichen).
+   `category`, **`builder`** (id aus `builders`), `color`, `daily`, `added` (heutiges Datum → «Neu»-Abzeichen).
 2. Ordner `/<id>/` mit `index.html` (Seitengerüst oben), `app.js`, `style.css`, Inhalten in `data/`.
 3. Startbildschirm mit `gameMenu`, Anleitung mit `showTutorial` (3–4 Schritte, animiert).
 4. Kachel-Icon `/icons/games/<id>.svg`.

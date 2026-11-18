@@ -10,3 +10,4 @@ Schach und die übrigen Spiele gegen den Computer.
 | `board.css` | Kopfzeile, Status, Werkzeugleiste. Im Spiel nach `shared/style.css` laden |
 
 Jedes Spiel bringt eigene Regeln, eigenes Brett und eigene Grafik mit. Farben über `--accent`.
+Texte laufen über `shared/i18n.js` (`bt` aus `kit.js` für die gemeinsame Hülle, `dict` in `strings.js` pro Spiel).

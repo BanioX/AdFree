@@ -1,10 +1,11 @@
 // Eile mit Weile – kurze Runde gegen drei Farben.
 
-import { boot, stage, fillTools, onPress } from '../lib/board/kit.js';
+import { boot, stage, fillTools, onPress, bt } from '../lib/board/kit.js';
 import { sfx } from '../shared/sfx.js';
 import { h, toast, confirmDialog, sleep } from '../shared/ui.js';
-import { newGame, roll, move, legal, aiPick, clone, NAMES, PIECES } from './logic.js';
+import { newGame, roll, move, legal, aiPick, clone, PIECES } from './logic.js';
 import { tutorialSteps } from './tutorial.js';
+import { tr } from './strings.js';
 
 const ID = 'eile';
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -68,8 +69,8 @@ function art() {
 
 boot({
   id: ID,
-  title: 'Eile mit Weile',
-  tagline: 'Kurze Runde, zwei Figuren',
+  title: () => tr('title'),
+  tagline: () => tr('tagline'),
   accent: '#e23d4a',
   confetti: ['#e23d4a', '#2f7de1', '#e6b325', '#2f9e6e', '#fff'],
   steps: tutorialSteps,
@@ -83,8 +84,8 @@ boot({
     if (!state.hist) state.hist = [];
 
     const ui = stage({
-      title: 'Eile mit Weile',
-      sub: 'Du rot',
+      title: tr('title'),
+      sub: tr('sub'),
       onBack: () => ctx.exit(),
       onHelp: () => ctx.help(),
     });
@@ -101,7 +102,7 @@ boot({
       }
     }
     const pieces = h('div.ey-pieces');
-    const die = h('button.ey-die', { type: 'button', 'aria-label': 'Würfeln' });
+    const die = h('button.ey-die', { type: 'button' });
     board.append(pieces, die);
     ui.board.append(board);
     ctx.app.replaceChildren(ui.root);
@@ -117,9 +118,10 @@ boot({
     function paintDie() {
       const n = state.face || 0;
       die.className = 'ey-die' + (state.turn === 0 && state.phase === 'roll' && !busy && !state.over ? ' ready' : '');
+      die.setAttribute('aria-label', tr('roll'));
       die.replaceChildren();
       if (!n) {
-        die.append(h('b', null, 'Würfle'));
+        die.append(h('b', null, tr('roll')));
         return;
       }
       const face = h('span.ey-face');
@@ -142,7 +144,7 @@ boot({
             'data-pl': String(pl),
             'data-i': String(i),
             style: `left:${pos.left}%;top:${pos.top}%`,
-            'aria-label': NAMES[pl],
+            'aria-label': tr(['you', 'blue', 'yellow', 'green'][pl]),
           });
           if (pl === 0 && opts.includes(i)) btn.classList.add('on');
           if (state.last && state.last.player === pl && state.last.piece === i) btn.classList.add('last');
@@ -151,19 +153,22 @@ boot({
       }
       paintDie();
       const home = [0, 1, 2, 3].map((pl) => state.p[pl].filter((s) => s >= 40).length);
-      ui.setSub(`Du ${home[0]} · Blau ${home[1]} · Gelb ${home[2]} · Grün ${home[3]}`);
+      ui.setSub(tr('homes', {
+        you: tr('you'), blue: tr('blue'), yellow: tr('yellow'), green: tr('green'),
+        a: home[0], b: home[1], c: home[2], d: home[3],
+      }));
     }
     function status() {
-      if (state.over) ui.setStatus(state.winner === 0 ? 'Du gewinnst!' : NAMES[state.winner] + ' gewinnt', state.winner === 0 ? 'win' : '');
-      else if (state.turn !== 0) ui.setStatus(NAMES[state.turn] + ' ist dran', '');
-      else if (state.phase === 'roll') ui.setStatus(state.sixes ? 'Noch einmal würfeln' : 'Würfle', 'you');
-      else ui.setStatus('Tippe eine Figur', 'you');
+      if (state.over) ui.setStatus(state.winner === 0 ? bt('youWinShort') : tr(['you', 'blue', 'yellow', 'green'][state.winner]) + ' ' + tr('wins'), state.winner === 0 ? 'win' : '');
+      else if (state.turn !== 0) ui.setStatus(tr(['you', 'blue', 'yellow', 'green'][state.turn]) + ' ' + tr('turn'), '');
+      else if (state.phase === 'roll') ui.setStatus(state.sixes ? tr('rollAgain') : tr('roll'), 'you');
+      else ui.setStatus(tr('tap'), 'you');
     }
     function tools() {
       fillTools(ui.tools, [
-        { icon: 'undo', label: 'Zurück', disabled: busy || !state.hist.length, onClick: onUndo },
-        { icon: 'hint', label: 'Tipp', disabled: busy || state.over || state.turn !== 0 || state.phase !== 'move', onClick: onHint },
-        { icon: 'refresh', label: 'Neu', disabled: busy, onClick: onNew },
+        { icon: 'undo', label: bt('undo'), disabled: busy || !state.hist.length, onClick: onUndo },
+        { icon: 'hint', label: bt('hint'), disabled: busy || state.over || state.turn !== 0 || state.phase !== 'move', onClick: onHint },
+        { icon: 'refresh', label: bt('neu'), disabled: busy, onClick: onNew },
       ]);
     }
     let finishing = false;
@@ -174,8 +179,8 @@ boot({
       tools();
       const kind = state.winner === 0 ? 'win' : 'lose';
       const choice = await ctx.finish(kind, {
-        title: kind === 'win' ? 'Alle im Haus!' : 'Knapp!',
-        text: kind === 'win' ? 'Beide Figuren sind im Haus.' : NAMES[state.winner] + ' war zuerst fertig.',
+        title: kind === 'win' ? tr('allHome') : bt('close'),
+        text: kind === 'win' ? tr('both') : tr('first', { name: tr(['you', 'blue', 'yellow', 'green'][state.winner]) }),
       });
       if (dead) return;
       if (choice === 'menu') ctx.exit();
@@ -192,7 +197,7 @@ boot({
     }
     async function onNew() {
       if (state.hist.length && !state.over) {
-        if (!(await confirmDialog('Neue Runde?', 'Die laufende Runde wird beendet.', 'Neu starten'))) return;
+        if (!(await confirmDialog(tr('newRound'), tr('endRound'), bt('restart')))) return;
       }
       if (!dead) restart();
     }
@@ -221,7 +226,7 @@ boot({
       const btn = pieces.querySelector(`[data-pl="0"][data-i="${piece}"]`);
       if (btn) btn.classList.add('hint');
       sfx.play('sparkle');
-      toast('Diese Figur sieht gut aus.');
+      toast(tr('hint'));
     }
     async function opponents() {
       while (!dead && !state.over && state.turn !== 0) {
@@ -270,7 +275,7 @@ boot({
       paint();
       sfx.play('tap');
       if (result === 'pass') {
-        toast('Kein Zug mit dieser Zahl.');
+        toast(tr('noMove'));
         await afterHuman();
         return;
       }
@@ -298,7 +303,7 @@ boot({
         busy = false;
         status();
         tools();
-        toast('Noch einmal!');
+        toast(tr('again'));
         return;
       }
       afterHuman();

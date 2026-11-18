@@ -247,7 +247,7 @@ function registerServiceWorker() {
 /** Ton-Knopf (icon-btn): schaltet leise → normal → aus (für alle Spiele gemeinsam). */
 export function soundButton() {
   const b = h('button.icon-btn', { type: 'button' });
-  const LABEL = { leise: L('Ton: leise', 'Sound: soft'), normal: L('Ton: normal', 'Sound: normal'), aus: L('Ton aus', 'Sound off') };
+  const LABEL = { leise: L('Ton: leise', 'Sound: soft'), normal: L('Ton: normal', 'Sound: on'), aus: L('Ton aus', 'Sound off') };
   const ICON = { leise: 'soundLow', normal: 'soundOn', aus: 'soundOff' };
   const render = () => {
     b.innerHTML = icon(ICON[sfx.level] || 'soundOn');

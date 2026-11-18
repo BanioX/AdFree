@@ -1,12 +1,13 @@
 // Reversi gegen den Computer.
 
-import { boot, stage, fillTools, onPress } from '../lib/board/kit.js';
+import { boot, stage, fillTools, onPress, bt } from '../lib/board/kit.js';
 import { store } from '../shared/storage.js';
 import { sfx } from '../shared/sfx.js';
 import { h, toast, confirmDialog, sleep } from '../shared/ui.js';
 import { pickMove } from '../lib/board/ai.js';
 import { newGame, apply, flipsFor, counts, aiOptions } from './logic.js';
 import { tutorialSteps } from './tutorial.js';
+import { tr } from './strings.js';
 
 const ID = 'reversi';
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -32,8 +33,8 @@ function art() {
 
 boot({
   id: ID,
-  title: 'Reversi',
-  tagline: 'Steine einschliessen und umdrehen',
+  title: () => tr('title'),
+  tagline: () => tr('tagline'),
   accent: '#1f8a4c',
   confetti: ['#1c8f58', '#f4f0e8', '#241c18', '#ffe27a', '#7dffc3'],
   steps: tutorialSteps,
@@ -48,8 +49,8 @@ boot({
     if (!state.hist) state.hist = [];
 
     const ui = stage({
-      title: 'Reversi',
-      sub: 'Du schwarz',
+      title: tr('title'),
+      sub: tr('sub'),
       onBack: () => ctx.exit(),
       onHelp: () => ctx.help(),
     });
@@ -99,15 +100,15 @@ boot({
     }
     function status() {
       if (state.over) {
-        ui.setStatus(state.winner === 1 ? 'Du gewinnst!' : state.winner === 2 ? 'Computer gewinnt' : 'Unentschieden', state.winner === 1 ? 'win' : '');
-      } else if (busy && state.turn === 2) ui.setStatus('Computer überlegt …', '');
-      else ui.setStatus('Du bist am Zug', 'you');
+        ui.setStatus(state.winner === 1 ? bt('youWinShort') : state.winner === 2 ? bt('cpuWin') : bt('draw'), state.winner === 1 ? 'win' : '');
+      } else if (busy && state.turn === 2) ui.setStatus(bt('cpuThink'), '');
+      else ui.setStatus(bt('youMove'), 'you');
     }
     function tools() {
       fillTools(ui.tools, [
-        { icon: 'undo', label: 'Zurück', disabled: busy || !state.hist.length, onClick: onUndo },
-        { icon: 'hint', label: 'Tipp', disabled: busy || state.over || state.turn !== 1, onClick: onHint },
-        { icon: 'refresh', label: 'Neu', disabled: busy, onClick: onNew },
+        { icon: 'undo', label: bt('undo'), disabled: busy || !state.hist.length, onClick: onUndo },
+        { icon: 'hint', label: bt('hint'), disabled: busy || state.over || state.turn !== 1, onClick: onHint },
+        { icon: 'refresh', label: bt('neu'), disabled: busy, onClick: onNew },
       ]);
     }
     let finishing = false;
@@ -119,8 +120,8 @@ boot({
       const kind = state.winner === 1 ? 'win' : state.winner === 2 ? 'lose' : 'draw';
       const [a, b] = counts(state);
       const choice = await ctx.finish(kind, {
-        title: kind === 'win' ? 'Mehr Steine!' : kind === 'lose' ? 'Knapp!' : 'Unentschieden',
-        text: `Du ${a} · Computer ${b}`,
+        title: kind === 'win' ? tr('more') : kind === 'lose' ? bt('close') : bt('draw'),
+        text: tr('score', { a, b }),
       });
       if (dead) return;
       if (choice === 'menu') ctx.exit();
@@ -138,7 +139,7 @@ boot({
     }
     async function onNew() {
       if (state.hist.length && !state.over) {
-        if (!(await confirmDialog('Neue Partie?', 'Die laufende Partie wird beendet.', 'Neu starten'))) return;
+        if (!(await confirmDialog(bt('newMatch'), bt('endMatch'), bt('restart')))) return;
       }
       if (!dead) restart();
     }
@@ -168,7 +169,7 @@ boot({
       if (dead) return;
       paint();
       sfx.play('sparkle');
-      toast('Dieses Feld sieht gut aus.');
+      toast(tr('hint'));
       status();
       tools();
     }
@@ -184,7 +185,7 @@ boot({
         for (let i = 0; i < 64; i++) if (state.cells[i] !== before[i]) changed.add(i);
         paint(changed);
         sfx.play('pop');
-        if (state.passed && !state.over) toast('Du musst passen.');
+        if (state.passed && !state.over) toast(tr('youPass'));
         changed.clear();
       }
     }
@@ -208,7 +209,7 @@ boot({
       tools();
       if (state.over) { busy = false; return finish(); }
       if (state.turn === 1) {
-        toast('Computer muss passen.');
+        toast(tr('cpuPass'));
         busy = false;
         status();
         tools();

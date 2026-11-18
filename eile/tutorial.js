@@ -1,10 +1,11 @@
 import { h } from '../shared/ui.js';
+import { tr } from './strings.js';
 
 export function tutorialSteps() {
   return [
     {
-      title: 'Eine 6 holt dich raus',
-      text: 'Tippe den Würfel. Nur eine 6 setzt eine Figur aufs Startfeld.',
+      title: tr('tut1'),
+      text: tr('tut1t'),
       demo(stage, api) {
         const die = h('div.ey-demo', null, h('b', null, '6'), h('i'), h('i.me'));
         stage.append(die);
@@ -17,8 +18,8 @@ export function tutorialSteps() {
       },
     },
     {
-      title: 'Schlagen und sicher',
-      text: 'Landest du auf einer fremden Figur, geht sie nach Hause. Startfelder sind sicher.',
+      title: tr('tut2'),
+      text: tr('tut2t'),
       demo(stage, api) {
         const row = h('div.ey-demo', null, h('i.me'), h('i'), h('i.ai'));
         stage.append(row);
@@ -33,8 +34,8 @@ export function tutorialSteps() {
       },
     },
     {
-      title: 'Genau ins Haus',
-      text: 'Nach der Runde brauchst du die genaue Zahl. Beide Figuren im Haus gewinnen.',
+      title: tr('tut3'),
+      text: tr('tut3t'),
       demo(stage, api) {
         const row = h('div.ey-demo', null, h('i.me'), h('i'), h('i'));
         stage.append(row);

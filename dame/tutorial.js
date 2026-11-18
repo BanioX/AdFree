@@ -1,6 +1,7 @@
 // Animierte Anleitung für Dame.
 
 import { h } from '../shared/ui.js';
+import { tr } from './strings.js';
 
 function mini() {
   const board = h('div.dm-demo');
@@ -21,8 +22,8 @@ function put(cell, kind) {
 export function tutorialSteps() {
   return [
     {
-      title: 'Diagonal vorwärts',
-      text: 'Deine hellen Steine ziehen ein Feld diagonal nach vorne.',
+      title: tr('tut1'),
+      text: tr('tut1t'),
       demo(stage, api) {
         const { board, cells } = mini();
         stage.append(board);
@@ -37,8 +38,8 @@ export function tutorialSteps() {
       },
     },
     {
-      title: 'Schlagen ist Pflicht',
-      text: 'Über einen gegnerischen Stein springen, auch rückwärts. Die längste Kette gilt.',
+      title: tr('tut2'),
+      text: tr('tut2t'),
       demo(stage, api) {
         const { board, cells } = mini();
         stage.append(board);
@@ -55,8 +56,8 @@ export function tutorialSteps() {
       },
     },
     {
-      title: 'Die Dame fliegt',
-      text: 'Auf der letzten Reihe wird der Stein zur Dame und darf beliebig weit ziehen.',
+      title: tr('tut3'),
+      text: tr('tut3t'),
       demo(stage, api) {
         const { board, cells } = mini();
         stage.append(board);

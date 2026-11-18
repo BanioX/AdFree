@@ -1,0 +1,36 @@
+import { createRequire } from 'node:module';
+import assert from 'node:assert/strict';
+const { chromium } = createRequire('/tmp/pw/node_modules/playwright-core/index.js')('playwright-core');
+const BASE = process.env.BASE || 'http://127.0.0.1:8765/hochhaus/';
+const errors = [];
+const browser = await chromium.launch({ executablePath: '/usr/bin/google-chrome', args: ['--no-sandbox', '--disable-dev-shm-usage'] });
+const page = await browser.newPage({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+await page.addInitScript(() => {
+  localStorage.setItem('spielpause.tutorial.hochhaus', 'true');
+  if (!localStorage.getItem('spielpause.lang')) localStorage.setItem('spielpause.lang', '"de"');
+});
+page.on('pageerror', (e) => errors.push(e.message));
+page.on('console', (m) => { if (m.type() === 'error' && !/Failed to load resource/.test(m.text())) errors.push(m.text()); });
+
+await page.goto(BASE);
+await page.locator('.gm-primary').tap();
+await page.waitForSelector('.pad button');
+const houses = page.locator('.pz button.house');
+await page.locator('.pad button[data-n="2"]').tap();
+await houses.nth(0).tap();
+await page.waitForFunction(() => window.__sp.state().grid.some((row) => row.includes(2)));
+await page.waitForTimeout(650);
+await page.locator('.pad button[data-n="3"]').evaluate((el) => el.click());
+await houses.nth(1).evaluate((el) => el.click());
+await page.waitForFunction(() => window.__sp.state().grid.some((row) => row.includes(3)));
+await page.evaluate(() => localStorage.setItem('spielpause.lang', '"en"'));
+await page.goto(BASE);
+await page.evaluate(() => localStorage.removeItem('spielpause.hochhaus.match'));
+await page.reload();
+await page.locator('.gm-primary').tap();
+assert.match(await page.locator('.bd-title b').innerText(), /Skyscrapers/);
+const fit = await page.evaluate(() => document.documentElement.scrollHeight <= window.innerHeight + 1);
+assert.equal(fit, true);
+assert.deepEqual(errors, []);
+await browser.close();
+console.log('hochhaus e2e ok');

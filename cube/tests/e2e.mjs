@@ -1,6 +1,6 @@
 // End-to-End-Test für den Pfeilwürfel (Playwright, Chromium, iPhone 13).
 //   node cube/tests/e2e.mjs [ausgabeordner]
-// Startet bei Bedarf selbst einen statischen Server auf Port 8105 (und beendet ihn wieder).
+// Startet bei Bedarf selbst einen statischen Server auf Port 8303 (CUBE_PORT) (und beendet ihn wieder).
 // Screenshots landen im Ausgabeordner (Standard: cube/tests/out, git-ignoriert).
 
 import { createRequire } from 'node:module';
@@ -16,7 +16,7 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const repo = path.resolve(here, '..', '..');
 const OUT = path.resolve(process.argv[2] || path.join(here, 'out'));
 mkdirSync(OUT, { recursive: true });
-const PORT = 8105;
+const PORT = Number(process.env.CUBE_PORT) || 8303;
 const BASE = `http://127.0.0.1:${PORT}/cube/`;
 
 let server = null;

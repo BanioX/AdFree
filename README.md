@@ -1,6 +1,6 @@
 # Spielpause
 
-**16 entspannte Spiele in einer App – ganz ohne Werbung, ohne Käufe, ohne Konto.**
+**20 handverlesene Spiele in einer App – ganz ohne Werbung, ohne Käufe, ohne Konto.**
 
 Spielpause ist eine Web-App (PWA) für das iPhone: im Safari öffnen, auf den Home-Bildschirm legen,
 und sie startet wie eine normale App – im Vollbild und auch offline. Alle Spielstände bleiben auf dem Gerät.
@@ -19,28 +19,32 @@ iPhones und lässt sich mit dem Lautsprecher-Knopf auf leise / normal / aus stel
 
 | Spiel | Kategorie | Worum es geht | Inhalt | Tagesrätsel |
 |---|---|---|---|:-:|
-| 🎨 **Farbenzauber** | Kreativ | Malen nach Zahlen: Farbe wählen, nummerierte Flächen antippen | handgezeichnete Bilder, endlose Mandalas, Buntglas & Low-Poly, **eigene Fotos** als Malvorlage | |
-| 💎 **Perlenbild** | Kreativ | Glitzersteine aus dem Vorrat sortieren und ein Pixelbild legen | ~36 Motive, **eigene Fotos** | |
-| 🧩 **Puzzle** | Kreativ | Klassisches Puzzle mit 12–108 Teilen | erzeugte Gemälde, Bilder aus Farbenzauber, **eigene Fotos** | |
+| 🎨 **Farbenzauber** | Kreativ | Malen nach Zahlen | handgezeichnete Bilder, Mandalas, Buntglas, Low Poly, **eigene Fotos** | |
+| 💎 **Perlenbild** | Kreativ | Glitzersteine sortieren, Pixelbild legen | 36 Motive, **eigene Fotos** | |
+| 🧩 **Puzzle** | Kreativ | Klassisches Puzzle mit 12–108 Teilen | erzeugte Gemälde, Farbenzauber-Bilder, **eigene Fotos** | |
 | 🧊 **Pfeilwürfel** | Logik | 3D-Würfel drehen, freie Pfeile hinausgleiten lassen | unendlich viele Level | |
-| 🔢 **Sudoku** | Logik | Zahlen 1–9 logisch einsetzen, mit Notizen und erklärenden Tipps | 4 Schwierigkeitsstufen, unendlich | ✓ |
-| 🖼️ **Bilderrätsel** | Logik | Nonogramme: Zahlenhinweise lösen, farbiges Bild entdecken | über 100 Rätsel, 5×5 bis 20×20 | ✓ |
-| 🧪 **Farbfluss** | Logik | Farben in Gläser umgiessen, bis jedes Glas eine Farbe hat | unendlich viele Level in Kapiteln | ✓ |
-| 🟧 **Blockpuzzle** | Logik | Teile aufs Brett ziehen, Reihen füllen und abräumen | Endlos-Modus + Abenteuer-Level | |
-| ✨ **Verdoppeln** | Logik | Gleiche Kacheln zusammenschieben und wachsen lassen | mehrere Brettgrössen, Motiv-Sets (Früchte, Tiere …) | |
-| 🃏 **Solitär** | Karten & Steine | Klondike, Spider und FreeCell | nur lösbare Partien, Kartendesigns | ✓ |
-| 🀄 **Mahjong** | Karten & Steine | Gleiche freie Steine paarweise abräumen | über 24 Layouts als Reise, 3 Steinsets | ✓ |
-| 🍓 **Dreierlei** | Karten & Steine | Drei gleiche Steine sammeln, die Ablage nicht überfüllen | unendlich viele Level, 12+ Themen | |
-| 🔤 **Wortsuche** | Wörter | Versteckte Wörter im Buchstabengitter finden | über 80 deutsche Themen | ✓ |
-| 🟩 **Wortrate** | Wörter | Das deutsche 5-Buchstaben-Wort in sechs Versuchen | Tageswort + Endlos-Modus | ✓ |
-| 💠 **Juwelen** | Kombinieren | Drei Gleiche in einer Reihe, Spezialsteine, Ziele | über 150 Level | |
-| 🫧 **Blasenzauber** | Kombinieren | Blasen zielen und abschiessen, Gruppen platzen lassen | über 150 Level + Endlos-Modus | |
+| 🖼️ **Bilderrätsel** | Logik | Nonogramme: Hinweise lösen, Bild entdecken | 121 Rätsel + Endlos | ✓ |
+| 🌅 **New Dawn** | Logik | Lichtstrahlen mit Spiegeln zu Kristallen lenken | 30 Level, Endlos | |
+| 🔢 **Sudoku** | Zahlen | Zahlen 1–9 logisch einsetzen, erklärende Tipps | 4 Stufen, unendlich | ✓ |
+| ✨ **Verdoppeln** | Zahlen | Gleiche Kacheln verschmelzen | mehrere Bretter, Motiv-Sets | |
+| 🍒 **Zahlenpaare** | Zahlen | Gleiche oder Summe 10 streichen | Level + Endlos | ✓ |
+| 🃏 **Solitär** | Karten | Klondike, Spider und FreeCell | nur lösbare Partien, Designs | ✓ |
+| 🏔️ **Gipfel** | Karten | TriPeaks: eins höher oder tiefer | lösbare Runden, Designs | ✓ |
+| 🀄 **Mahjong** | Steine | Gleiche freie Steine paarweise abräumen | über 24 Layouts, 3 Steinsets | ✓ |
+| 🍓 **Dreierlei** | Steine | Drei Gleiche sammeln | unendlich viele Level, 12+ Themen | |
+| 🔤 **Wortsuche** | Wörter | Versteckte Wörter finden | über 80 Themen | ✓ |
+| 🟩 **Wortrate** | Wörter | Das 5-Buchstaben-Wort in sechs Versuchen | Tageswort + Endlos | ✓ |
+| 🧪 **Farbfluss** | Sortieren | Farben in Gläser umgiessen | unendlich viele Level | ✓ |
+| 🟧 **Blockpuzzle** | Kombinieren | Teile setzen, Reihen abräumen | Endlos + Abenteuer | |
+| 💠 **Juwelen** | Kombinieren | Drei in einer Reihe | über 150 Level | |
+| 🫧 **Blasenzauber** | Kombinieren | Blasen zielen und abschiessen | über 150 Level + Endlos | |
+| ✈️ **Libras 4 Ever** | Kombinieren | Quiz-Flieger mit Läufer- und Action-Modus | 2200 Fragen in 15 Paketen | |
 
 Jedes Spiel bekommt einen einheitlichen **Startbildschirm** (ein Knopf zum Weiterspielen, Tagesrätsel,
 Modus, Statistik) und eine **kurze, animierte Anleitung** («So geht's»), die beim ersten Start
 automatisch erscheint und jederzeit über **?** erreichbar ist.
 
-> **Ziel: 100 Spiele.** Welche Spiele noch kommen, steht im [Fahrplan](ROADMAP.md).
+> **20 handverlesene Spiele** – Qualität vor Menge. Stand und Pläne: [Fahrplan](ROADMAP.md).
 >
 > **Stand:** Alle 16 Spiele sind spielbar und getestet; Startbildschirm, Spass-Check und Englisch
 > werden Spiel für Spiel nachgezogen. Was neu dazukommt, steht im

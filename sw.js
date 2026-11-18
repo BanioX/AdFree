@@ -8,10 +8,7 @@ const CACHE = 'spielpause-' + VERSION;
 const PRECACHE = [
   './',
   './index.html',
-  './games.js',
   './manifest.webmanifest',
-  './shared/builders/claude.svg',
-  './shared/builders/grok.svg',
 ];
 
 self.addEventListener('install', (event) => {

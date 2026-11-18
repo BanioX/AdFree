@@ -1,4 +1,4 @@
-# Regeln für KI-Agenten (Claude, Grok, …)
+# Regeln für KI-Agenten
 
 Mehrere KI-Agenten bauen gleichzeitig an **Spielpause**. Damit sich niemand in die Quere kommt,
 gelten diese Regeln für **alle** Agenten. Inhaltliche und technische Vorgaben stehen in
@@ -9,15 +9,9 @@ Abhängigkeiten, keine Werbung).
 
 ## Wer macht was
 
-| Welle (siehe [ROADMAP.md](ROADMAP.md)) | Inhalt | Zuständig |
-|---|---|---|
-| bestehende 16 Spiele + Welle 1 | Karten, Zahlen, Sortieren | **Claude** |
-| Welle 2 | Brettspiele gegen den Computer, Wörter | **Grok** |
-| Welle 3 | Logikrätsel, Kombinieren (Arcade) | **Grok** |
-| Welle 4 | Schieben & Verbinden, Gedächtnis & Wissen, Steine & Würfel, Kreativ | offen |
-| Welle 5 | Retro-Ecke | **Grok** |
-
-Wer eine Welle übernimmt, trägt sich hier und in `ROADMAP.md` ein.
+Spielpause wird von **Claude** gebaut und gepflegt. Andere Agenten arbeiten nur nach ausdrücklichem
+Auftrag des Besitzers mit; ihre Zuständigkeit wird dann hier eingetragen. (Die Spiele von Grok wurden
+am 18.11.2026 auf Wunsch des Besitzers entfernt.)
 
 ## Eigentum: was du ändern darfst
 
@@ -29,11 +23,8 @@ Wer eine Welle übernimmt, trägt sich hier und in `ROADMAP.md` ein.
 - **Gemeinsame Dateien** nur so ändern:
   - `games.js` – eigene Einträge **anhängen** (eine Zeile pro Spiel), nie fremde Einträge ändern,
     löschen oder umsortieren. Neue Kategorien nur am Ende der Liste ergänzen.
-    **Jedes neue Spiel setzt `builder`** (z.B. `'claude'` oder `'grok'`, eine id aus `builders`).
-    Wer neu dazukommt, hängt sich in `builders` an: eigene Farbe und ein eigenes abstraktes Zeichen
-    unter `shared/builders/<id>.svg`. Keine Markenlogos (kein Claude-, Grok- oder Firmenzeichen).
   - `ROADMAP.md` – nur den Stand (📋 → 🔧 → ✅) in den **eigenen** Zeilen ändern.
-  - `CHANGELOG.md` – neuen Eintrag mit Datum **oben** einfügen, mit Kürzel, z.B. «(Grok)».
+  - `CHANGELOG.md` – neuen Eintrag mit Datum **oben** einfügen, mit Kürzel, z.B. «(Claude)».
   - `README.md` – nur die Spieltabelle um eigene Spiele ergänzen und die Spielezahl aktualisieren.
   - `shared/*`, `index.html`, `sw.js`, `tools/*`, `wrangler.jsonc` – **nur wenn unbedingt nötig**,
     dann nur **rückwärtskompatibel** (nichts entfernen oder umbenennen, was andere nutzen) und im
@@ -55,7 +46,7 @@ Wortspiele brauchen eigene englische Wortlisten, keine übersetzten deutschen.
 
 1. Vor der Arbeit: `git pull --rebase origin main`.
 2. Kleine, abgeschlossene Commits mit deutscher Nachricht und Kürzel, z.B.
-   `Grok: Vier in einer Reihe – Startbildschirm, KI in drei Stufen`.
+   `Claude: Mahjong – neue Layouts`.
 3. Vor dem Push: Tests der eigenen Spiele (`node --test <id>/tests/*.test.mjs`) und
    `node tools/build-site.mjs` müssen durchlaufen (danach `dist/` löschen).
 4. `git pull --rebase origin main`, Konflikte sorgfältig lösen (**beide Seiten behalten** bei
@@ -69,7 +60,7 @@ immer funktionieren. Unfertige Spiele erst in `games.js` eintragen, wenn sie spi
 ## Fertig heisst
 
 Ein Spiel ist fertig, wenn es: **auf Deutsch und Englisch** vollständig spielbar ist (inkl. `title_en`/`subtitle_en`
-und **`builder`** in `games.js`), eigenes Logo hat, Startbildschirm + animierte Anleitung hat, auf
+in `games.js`), eigenes Logo hat, Startbildschirm + animierte Anleitung hat, auf
 dem iPhone (375–430 px breit) ohne Scrollen spielbar ist, Spielstand speichert, keine
 Konsolenfehler wirft, Tests hat, mehrere Runden lang **Spass macht** und in `games.js`,
 `ROADMAP.md`, `CHANGELOG.md` und `README.md` eingetragen ist.

@@ -122,80 +122,6 @@
     .foot { margin: 30px 0 0; text-align: center; color: var(--text-3); font-size: 14px; font-weight: 600; }
     .foot .heart { color: #ff6f7d; }
 
-    /* Erbauer: Vergleichsleiste und Abschnitte */
-    .score {
-      display: flex; gap: 8px; margin: 12px -2px 2px; padding: 1px 2px 4px;
-      overflow-x: auto; scrollbar-width: none;
-    }
-    .score::-webkit-scrollbar { display: none; }
-    .score-btn {
-      position: relative; flex: 1 0 150px; min-width: 0;
-      display: flex; align-items: center; gap: 8px;
-      height: 54px; padding: 0 12px 0 8px; border: 0; border-radius: 18px;
-      background: var(--b-soft, var(--surface)); color: var(--b, var(--text));
-      text-align: left;
-      box-shadow: 0 1px 3px rgba(70, 45, 20, .08);
-    }
-    .score-btn::after {
-      content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
-      box-shadow: inset 0 0 0 1.5px var(--b); opacity: .32;
-    }
-    .score-btn:active { transform: scale(.98); }
-    .score-btn img {
-      width: 36px; height: 36px; flex: 0 0 auto; border-radius: 50%;
-      background: var(--b); padding: 8px; box-sizing: border-box;
-    }
-    .score-btn .nm { display: flex; flex-direction: column; min-width: 0; line-height: 1.12; }
-    .score-btn .nm b {
-      font-size: 15px; font-weight: 850; letter-spacing: -.02em;
-      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-    }
-    .score-btn .nm small { font-size: 12px; font-weight: 750; opacity: .75; }
-
-    .builder {
-      margin: 18px -4px 4px; padding: 14px 4px 2px; border-radius: 26px;
-      background: linear-gradient(180deg, var(--b-soft, transparent) 0%, rgba(251, 246, 239, 0) 156px);
-      scroll-margin-top: 10px;
-    }
-    h2.builder-head {
-      display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
-      margin: 0 2px 6px; padding: 0;
-      font-size: inherit; font-weight: inherit; letter-spacing: 0;
-      text-transform: none; color: inherit;
-    }
-    .built {
-      display: inline-flex; align-items: stretch; height: 28px;
-      border-radius: 999px; overflow: hidden;
-      background: var(--b, var(--text)); color: #fff;
-      font-size: 12.5px; font-weight: 800; letter-spacing: -.011em; line-height: 1;
-      box-shadow: inset 0 1px 0 rgba(255, 255, 255, .28), 0 4px 12px rgba(40, 30, 20, .14);
-    }
-    .built-mark { display: grid; place-items: center; width: 30px; background: rgba(0, 0, 0, .18); }
-    .built-mark img { width: 16px; height: 16px; }
-    .built-text { display: grid; place-items: center; padding: 0 12px 0 9px; white-space: nowrap; }
-    .built-line {
-      flex: 1 1 18px; height: 2px; min-width: 16px; border-radius: 2px;
-      background: linear-gradient(90deg, var(--b), transparent); opacity: .5;
-    }
-    .built-count {
-      font-size: 12.5px; font-weight: 800; color: var(--b); background: #fff;
-      border-radius: 999px; padding: 5px 10px; white-space: nowrap;
-      box-shadow: 0 1px 3px rgba(70, 45, 20, .10);
-    }
-    .builder .section-title { margin-top: 14px; }
-    .builder .section-title::before {
-      content: ''; width: 7px; height: 7px; border-radius: 50%;
-      background: var(--b); flex: 0 0 auto;
-    }
-    .tile .by {
-      position: absolute; z-index: 2; right: 5px; bottom: 5px;
-      width: 18px; height: 18px; border-radius: 50%;
-      background: var(--b); display: grid; place-items: center; pointer-events: none;
-      box-shadow: 0 0 0 1.5px #fff, 0 1px 3px rgba(40, 30, 20, .28);
-    }
-    .tile .by img { width: 11px; height: 11px; }
-    .info-built { display: flex; justify-content: center; margin: 4px 0 2px; }
-
     .install-tip {
       margin: 16px 0 0; padding: 14px 16px; border-radius: 18px;
       background: var(--surface-2); color: var(--text-2); font-size: 14px; font-weight: 600;
@@ -232,7 +158,6 @@
           <input id="q" type="search" placeholder="Spiel suchen" autocomplete="off" enterkeyhint="search">
           <button class="clear hidden" id="q-clear" type="button" aria-label="Suche löschen">✕</button>
         </label>
-        <div class="score" id="score"></div>
         <div class="chips" id="chips" role="tablist"></div>
         <div id="catalog"></div>
 
@@ -247,8 +172,8 @@
   </div>
 
   <script type="module">
-    import { games, categories, builders, gameText } from './games.js';
-    import { L, lang, setLang, plural, fmt } from './shared/i18n.js';
+    import { games, categories, gameText } from './games.js';
+    import { L, lang, setLang, plural } from './shared/i18n.js';
     import { setupPage, soundButton, showModal, h, toast } from './shared/ui.js';
     import { store, readSummary, isDailyDone, dailyStreak } from './shared/storage.js';
     import { sfx } from './shared/sfx.js';
@@ -286,43 +211,6 @@
 
     const T = (g) => gameText(g, lang);
     const catTitle = (c) => (lang === 'en' && c.title_en) || c.title;
-    document.getElementById('score').setAttribute('aria-label', L('Nach Erbauer', 'By builder'));
-
-    function builderOf(g) {
-      return builders.find((b) => b.id === g.builder) || {
-        id: g.builder || 'offen',
-        name: g.builder || L('Offen', 'Open'),
-        color: '#8d8278',
-        soft: '#f3ece4',
-        glyph: '',
-      };
-    }
-    const builtLabel = (b) => fmt(L('Gebaut mit {name}', 'Built with {name}'), { name: b.name });
-    // Eigene Farben als CSS-Variablen. setProperty, weil die Kurzform im Helfer sie verwirft.
-    function paint(el, b) {
-      if (!el || !b) return el;
-      el.style.setProperty('--b', b.color);
-      if (b.soft) el.style.setProperty('--b-soft', b.soft);
-      return el;
-    }
-    function builtBadge(b) {
-      return paint(h('span.built', null,
-        b.glyph ? h('span.built-mark', null, h('img', { src: b.glyph, alt: '' })) : null,
-        h('span.built-text', null, builtLabel(b))), b);
-    }
-    function groupByBuilder(list) {
-      const order = builders.map((b) => b.id);
-      const map = new Map();
-      for (const g of list) {
-        const b = builderOf(g);
-        if (!map.has(b.id)) {
-          map.set(b.id, { builder: b, games: [] });
-          if (!order.includes(b.id)) order.push(b.id);
-        }
-        map.get(b.id).games.push(g);
-      }
-      return order.filter((id) => map.has(id)).map((id) => map.get(id));
-    }
 
     function iconEl(g, cls = '') {
       const img = h('img', { src: `icons/games/${g.id}.svg`, alt: '', draggable: 'false', class: cls, loading: 'lazy' });
@@ -339,22 +227,16 @@
     }
 
     function tile(g, { badges = true } = {}) {
-      const b = builderOf(g);
-      const ic = h('div.ic', null, iconEl(g));
-      if (b.glyph) {
-        ic.append(paint(h('span.by', { title: builtLabel(b), 'aria-hidden': 'true' },
-          h('img', { src: b.glyph, alt: '' })), b));
-      }
-      const a = h('a.tile', { href: `${g.id}/`, 'aria-label': `${T(g).title} – ${T(g).subtitle}. ${builtLabel(b)}` },
-        ic,
+      const a = h('a.tile', { href: `${g.id}/`, 'aria-label': `${T(g).title} – ${T(g).subtitle}` },
+        h('div.ic', null, iconEl(g)),
         h('span.name', null, T(g).tile));
       if (!isReady(g)) {
         a.classList.add('soon');
-        a.append(h('span.soon-badge', null, L('Bald', 'Soon')));
+        a.append(h('span.soon-badge', null, 'Bald'));
         a.addEventListener('click', soonToast, { capture: true });
         return a;
       }
-      if (badges && isNew(g)) a.append(h('span.new', null, L('Neu', 'New')));
+      if (badges && isNew(g)) a.append(h('span.new', null, 'Neu'));
       if (badges && store.get('favorites', []).includes(g.id)) a.append(h('span.fav', null, '★'));
       a.addEventListener('click', () => { sfx.play('tap'); rememberPlay(g); });
       // Langes Drücken: Info zum Spiel
@@ -376,7 +258,6 @@
       const content = h('div', null,
         h('div.info-ic', null, iconEl(g)),
         h('p', null, T(g).subtitle),
-        h('div.info-built', null, builtBadge(builderOf(g))),
         s && s.text ? h('p.info-status', null, s.text) : null);
       showModal({
         title: T(g).title, content,
@@ -435,47 +316,6 @@
     const section = (title, list) => h('section', null,
       h('h2.section-title.cat-title', null, title, h('small', null, String(list.length))), gridOf(list));
 
-    function builderSection(b, list, { subcats }) {
-      const head = paint(h('h2.builder-head', null,
-        builtBadge(b),
-        h('span.built-line', { 'aria-hidden': 'true' }),
-        h('span.built-count', null, plural(list.length, ['Spiel', 'Spiele'], ['game', 'games']))), b);
-      const parts = [head];
-      if (subcats) {
-        const known = new Set(categories.map((c) => c.id));
-        for (const c of categories) {
-          const sub = list.filter((g) => g.category === c.id);
-          if (!sub.length) continue;
-          parts.push(h('h3.section-title.cat-title', null, catTitle(c), h('small', null, String(sub.length))));
-          parts.push(gridOf(sub));
-        }
-        const rest = list.filter((g) => !known.has(g.category));
-        if (rest.length) parts.push(gridOf(rest));
-      } else if (list.length) {
-        parts.push(gridOf(list));
-      }
-      return paint(h('section.builder', { id: 'builder-' + b.id }, ...parts), b);
-    }
-
-    function renderScore(groups) {
-      const score = document.getElementById('score');
-      score.classList.toggle('hidden', !groups.length);
-      score.replaceChildren(...groups.map(({ builder: b, games: list }) => {
-        const btn = paint(h('button.score-btn', {
-          type: 'button',
-          'aria-label': `${builtLabel(b)}, ${plural(list.length, ['Spiel', 'Spiele'], ['game', 'games'])}`,
-        },
-          b.glyph ? h('img', { src: b.glyph, alt: '' }) : null,
-          h('span.nm', null,
-            h('b', null, b.name),
-            h('small', null, plural(list.length, ['Spiel', 'Spiele'], ['game', 'games'])))), b);
-        btn.addEventListener('click', () => {
-          document.getElementById('builder-' + b.id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        });
-        return btn;
-      }));
-    }
-
     function renderChips() {
       const recentIds = store.get('recent', []);
       const opts = [{ id: 'alle', title: L('Alle', 'All') }];
@@ -490,40 +330,28 @@
       }));
     }
 
-    function visibleGames(term) {
-      if (term) {
-        return games.filter((g) => {
-          const b = builderOf(g);
-          const cat = categories.find((c) => c.id === g.category) || {};
-          return norm(`${g.title} ${g.subtitle} ${g.title_en || ''} ${g.subtitle_en || ''} ${g.tile || ''} ${g.tile_en || ''} ${cat.title || ''} ${cat.title_en || ''} ${b.name} ${b.id} Gebaut mit ${b.name} Built with ${b.name}`).includes(term);
-        });
-      }
-      if (current === 'favoriten') return favs().map((id) => games.find((g) => g.id === id)).filter(Boolean);
-      if (current === 'zuletzt') return store.get('recent', []).map((id) => games.find((g) => g.id === id)).filter(Boolean);
-      if (current === 'alle') return games;
-      return games.filter((g) => g.category === current);
-    }
-
     function render() {
       renderChips();
       const term = norm(q.value.trim());
       qClear.classList.toggle('hidden', !term);
-      const list = visibleGames(term);
-      const groups = groupByBuilder(list);
-      const subcats = !term && current === 'alle';
-      const out = [];
-      if (!term && current === 'alle') {
+      let out = [];
+      if (term) {
+        const hits = games.filter((g) => norm(`${g.title} ${g.subtitle} ${g.title_en || ''} ${g.subtitle_en || ''} ${(categories.find((c) => c.id === g.category) || {}).title || ''} ${(categories.find((c) => c.id === g.category) || {}).title_en || ''}`).includes(term));
+        out = hits.length ? [gridOf(hits)] : [h('p.empty', null, L('Kein Spiel gefunden.', 'No game found.'))];
+      } else if (current === 'alle') {
         const recent = store.get('recent', []).map((id) => games.find((g) => g.id === id)).filter(Boolean).slice(0, 4);
         if (recent.length && games.length > 8) out.push(section(L('Zuletzt gespielt', 'Recently played'), recent));
-      }
-      if (!list.length) {
-        out.push(h('p.empty', null, term
-          ? L('Kein Spiel gefunden.', 'No game found.')
-          : L('Noch nichts hier.', 'Nothing here yet.')));
+        for (const c of categories) {
+          const list = games.filter((g) => g.category === c.id);
+          if (list.length) out.push(section(catTitle(c), list));
+        }
+      } else if (current === 'favoriten') {
+        out = [gridOf(favs().map((id) => games.find((g) => g.id === id)).filter(Boolean))];
+      } else if (current === 'zuletzt') {
+        out = [gridOf(store.get('recent', []).map((id) => games.find((g) => g.id === id)).filter(Boolean))];
       } else {
-        for (const group of groups) out.push(builderSection(group.builder, group.games, { subcats }));
+        out = [gridOf(games.filter((g) => g.category === current))];
       }
-      renderScore(term || current !== 'alle' ? groups : groupByBuilder(games));
       catalog.replaceChildren(...out);
     }
     q.addEventListener('input', render);

@@ -14,7 +14,7 @@ Mehrere KI-Agenten bauen parallel – Zuständigkeiten und Regeln stehen in [AGE
 |--:|---|---|:-:|
 | 1 | Farbenzauber – Malen nach Zahlen | Kreativ | ✅ |
 | 2 | Perlenbild – Steine sortieren, Bild legen | Kreativ | ✅ |
-| 3 | Puzzle – Bilder Teil für Teil | Kreativ | ✅ |
+| 3 | Puzzle – Bilder Teil für Teil | Kreativ | 🔧 |
 | 4 | Pfeilwürfel – 3D-Pfeilrätsel | Logik | ✅ |
 | 5 | Sudoku | Zahlen | ✅ |
 | 6 | Bilderrätsel – Nonogramme | Logik | ✅ |
@@ -26,8 +26,8 @@ Mehrere KI-Agenten bauen parallel – Zuständigkeiten und Regeln stehen in [AGE
 | 12 | Dreierlei – drei Gleiche sammeln | Steine | ✅ |
 | 13 | Wortsuche | Wörter | ✅ |
 | 14 | Wortrate – 5-Buchstaben-Wort | Wörter | ✅ |
-| 15 | Juwelen – drei in einer Reihe | Kombinieren | ✅ |
-| 16 | Blasenzauber – Bubble Shooter | Kombinieren | ✅ |
+| 15 | Juwelen – drei in einer Reihe | Kombinieren | 🔧 |
+| 16 | Blasenzauber – Bubble Shooter | Kombinieren | 🔧 |
 
 ## Welle 1 – die beliebtesten Familien (in Arbeit · Claude)
 
@@ -65,62 +65,62 @@ Mehrere KI-Agenten bauen parallel – Zuständigkeiten und Regeln stehen in [AGE
 | 37 | Ausparken – Autos aus dem Stau schieben | 🔧 |
 | 38 | Kuchen-Sortierung | 🔧 |
 
-## Welle 2 · Grok
+## Welle 2 · offen
 
 **Brettspiele gegen den Computer** (gemeinsames Brett + KI in drei Stärken)
 | # | Spiel | Stand |
 |--:|---|:-:|
-| 39 | Vier in einer Reihe | ✅ |
-| 40 | Reversi | ✅ |
-| 41 | Dame | ✅ |
-| 42 | Mühle | ✅ |
-| 43 | Eile mit Weile | ✅ |
-| 44 | Kalaha (Mancala) | ✅ |
-| 45 | Fünf in einer Reihe (Gomoku) | ✅ |
-| 46 | Schiffe versenken | ✅ |
-| 47 | Schach (mit freundlicher KI) | ✅ |
-| 48 | Backgammon | ✅ |
+| 39 | Vier in einer Reihe | 📋 |
+| 40 | Reversi | 📋 |
+| 41 | Dame | 📋 |
+| 42 | Mühle | 📋 |
+| 43 | Eile mit Weile | 📋 |
+| 44 | Kalaha (Mancala) | 📋 |
+| 45 | Fünf in einer Reihe (Gomoku) | 📋 |
+| 46 | Schiffe versenken | 📋 |
+| 47 | Schach (mit freundlicher KI) | 📋 |
+| 48 | Backgammon | 📋 |
 
 **Wörter** (gemeinsame deutsche Wortlisten)
 | # | Spiel | Stand |
 |--:|---|:-:|
-| 49 | Wortkreis – Wörter aus Buchstabenrad | ✅ |
-| 50 | Wabenwort – Wörter aus 7 Buchstaben | ✅ |
-| 51 | Buchstabenjagd (Galgenmännchen-Art) | ✅ |
-| 52 | Geheimschrift – Zitate entschlüsseln | ✅ |
-| 53 | Wortleiter | ✅ |
-| 54 | Anagramm | ✅ |
-| 55 | Wortwirbel – Wörter im Buchstabenfeld | ✅ |
-| 56 | Kreuzworträtsel (Mini) | ✅ |
-| 57 | Emoji-Rätsel – Begriffe erraten | ✅ |
+| 49 | Wortkreis – Wörter aus Buchstabenrad | 📋 |
+| 50 | Wabenwort – Wörter aus 7 Buchstaben | 📋 |
+| 51 | Buchstabenjagd (Galgenmännchen-Art) | 📋 |
+| 52 | Geheimschrift – Zitate entschlüsseln | 📋 |
+| 53 | Wortleiter | 📋 |
+| 54 | Anagramm | 📋 |
+| 55 | Wortwirbel – Wörter im Buchstabenfeld | 📋 |
+| 56 | Kreuzworträtsel (Mini) | 📋 |
+| 57 | Emoji-Rätsel – Begriffe erraten | 📋 |
 
-## Welle 3 · Grok
+## Welle 3 · offen
 
 **Logikrätsel** (gemeinsames Rätselgitter)
 | # | Spiel | Stand |
 |--:|---|:-:|
-| 58 | Minensucher | ✅ |
-| 59 | Brücken (Hashi) | ✅ |
-| 60 | Binärrätsel | ✅ |
-| 61 | Sternenhimmel (Star Battle) | ✅ |
-| 62 | Zelte & Bäume | ✅ |
-| 63 | Hochhäuser | ✅ |
-| 64 | Grösser-Kleiner (Futoshiki) | ✅ |
-| 65 | Lichter aus | ✅ |
-| 66 | Inseln (Nurikabe) | ✅ |
-| 67 | Rundweg (Slitherlink) | ✅ |
+| 58 | Minensucher | 📋 |
+| 59 | Brücken (Hashi) | 📋 |
+| 60 | Binärrätsel | 📋 |
+| 61 | Sternenhimmel (Star Battle) | 📋 |
+| 62 | Zelte & Bäume | 📋 |
+| 63 | Hochhäuser | 📋 |
+| 64 | Grösser-Kleiner (Futoshiki) | 📋 |
+| 65 | Lichter aus | 📋 |
+| 66 | Inseln (Nurikabe) | 📋 |
+| 67 | Rundweg (Slitherlink) | 📋 |
 
 **Kombinieren** (Arcade, entspannt)
 | # | Spiel | Stand |
 |--:|---|:-:|
-| 68 | Früchte-Fusion – Früchte fallen lassen und verschmelzen | ✅ |
-| 69 | Kugelkette | ✅ |
-| 70 | Farbklicker – Farbgruppen abräumen | ✅ |
-| 71 | Farbkugeln – fünf in einer Reihe | ✅ |
-| 72 | Schlängel (Snake) | ✅ |
-| 73 | Mauerbrecher | ✅ |
-| 74 | Turmbau – Blöcke stapeln | ✅ |
-| 75 | Fallende Blöcke | ✅ |
+| 68 | Früchte-Fusion – Früchte fallen lassen und verschmelzen | 📋 |
+| 69 | Kugelkette | 📋 |
+| 70 | Farbklicker – Farbgruppen abräumen | 📋 |
+| 71 | Farbkugeln – fünf in einer Reihe | 📋 |
+| 72 | Schlängel (Snake) | 📋 |
+| 73 | Mauerbrecher | 📋 |
+| 74 | Turmbau – Blöcke stapeln | 📋 |
+| 75 | Fallende Blöcke | 📋 |
 
 ## Welle 4 · offen
 
@@ -171,7 +171,7 @@ Mehrere KI-Agenten bauen parallel – Zuständigkeiten und Regeln stehen in [AGE
 - neue Themen für Wortsuche, neue Mahjong-Layouts, neue Kartenrücken und Tischfarben
 - saisonale Inhalte (Advent, Ostern, Sommer) und Tagesrätsel-Serien
 
-## Welle 5 – Retro-Ecke (nach den 100) · Grok
+## Welle 5 – Retro-Ecke (nach den 100) · offen
 
 Klassiker mit wenig Verzögerung, auf dem iPhone mit Touch-Steuerung **und** Bluetooth-Controller
 (Xbox/PlayStation über die Gamepad-Schnittstelle von Safari). Nur Open Source bzw. frei lizenzierte
@@ -190,15 +190,13 @@ Inhalte – keine kommerziellen ROMs.
 | # | Spiel | Stand |
 |--:|---|:-:|
 | 106 | Labyrinth 3D – Schatzsuche im Stil der 90er-Ego-Perspektive | 📋 |
-| 107 | Riesenjagd – Weltraum-Shooter gegen riesige Mechs | ✅ |
+| 107 | Weltraum-Shooter | 📋 |
 | 108 | Hüpfheld – Jump'n'Run | 📋 |
 | 109 | Turmverteidigung | 📋 |
 | 110 | Asteroiden | 📋 |
 | 111 | Froschsprung – sicher über die Strasse | 📋 |
 | 112 | Mini-Rennen | 📋 |
 | 113 | Labyrinth-Futter – Punkte sammeln, Geistern ausweichen | 📋 |
-| 114 | Ausweichen – Laser und Kanonen überstehen | ✅ |
-| 115 | Sternkater – Held und Katze gegen Riesen | ✅ |
 
 Nicht möglich: **Neo Geo** (das System-BIOS ist urheberrechtlich geschützt) und kommerzielle
 SNES/NES-Spiele (ROMs dürfen nicht mitgeliefert werden).

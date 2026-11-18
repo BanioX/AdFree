@@ -1,9 +1,0 @@
-.mw { position: relative; width: min(100%, 360px); height: min(420px, 54dvh); margin: 0 auto; background: #fff4ec; border-radius: 18px; overflow: hidden; touch-action: none; }
-.mw .brick { position: absolute; border-radius: 6px; background: #c45c26; }
-.mw .brick:nth-child(3n) { background: #e6a317; }
-.mw .brick:nth-child(3n+1) { background: #e25b4a; }
-.mw .pad { position: absolute; height: 12px; border-radius: 8px; background: #3a2a12; bottom: 7%; }
-.mw .ball { position: absolute; width: 14px; height: 14px; margin: -7px 0 0 -7px; border-radius: 50%; background: #fff; box-shadow: 0 2px 0 rgb(0 0 0 / .15); }
-.mw-demo { width: 120px; height: 36px; position: relative; }
-.mw-demo b { position: absolute; bottom: 0; left: 30px; width: 40px; height: 8px; border-radius: 4px; background: #3a2a12; }
-.mw-demo i { position: absolute; width: 10px; height: 10px; border-radius: 50%; background: #e25b4a; left: 46px; top: 4px; }

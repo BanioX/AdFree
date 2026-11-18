@@ -9,6 +9,7 @@ import { Game } from './game.js';
 import { CubeRenderer } from './render.js';
 import { qMul, qAxisAngle, qNorm, clamp, smoothstep } from './math.js';
 import { Q_DEFAULT } from './view.js';
+import { t } from './i18n.js';
 
 const ACCENT = '#f29a1f';
 
@@ -153,8 +154,8 @@ function heartRow(stage, n) {
 function steps() {
   return [
     {
-      title: 'Pfeil antippen',
-      text: 'Ist der Weg bis zum Rand frei, gleitet der Pfeil hinaus.',
+      title: t('tut1Title'),
+      text: t('tut1Text'),
       demo(stage, api) {
         const sc = cubeScene(stage, api, demoLevel());
         return api.loop(async () => {
@@ -172,8 +173,8 @@ function steps() {
       },
     },
     {
-      title: 'Nicht anstossen',
-      text: 'Steht ein Pfeil im Weg, prallt deiner ab – das kostet ein Herz.',
+      title: t('tut2Title'),
+      text: t('tut2Text'),
       demo(stage, api) {
         const sc = cubeScene(stage, api, demoLevel());
         const hearts = heartRow(stage, 3);
@@ -196,8 +197,8 @@ function steps() {
       },
     },
     {
-      title: 'Würfel drehen',
-      text: 'Wische zum Drehen, mit zwei Fingern zoomen. Pfeile laufen auch über Kanten.',
+      title: t('tut3Title'),
+      text: t('tut3Text'),
       demo(stage, api) {
         const sc = cubeScene(stage, api, generateLevel(1));
         return api.loop(async () => {
@@ -217,8 +218,8 @@ function steps() {
       },
     },
     {
-      title: 'Alle Pfeile raus',
-      text: 'Räum den ganzen Würfel ab. Ohne Fehler gibt es drei Sterne, Tipps sind gratis.',
+      title: t('tut4Title'),
+      text: t('tut4Text'),
       demo(stage, api) {
         const lv = generateLevel(1);
         const sc = cubeScene(stage, api, lv);

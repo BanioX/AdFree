@@ -7,8 +7,10 @@ import { mountMenu } from './menu.js';
 import { mountPlay } from './play.js';
 import { loadProgress } from './progress.js';
 import { maybeShowHowto } from './howto.js';
+import { t } from './i18n.js';
 
 setupPage();
+document.title = t('pageTitle');
 
 const root = document.getElementById('app');
 let screen = null;

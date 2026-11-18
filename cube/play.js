@@ -3,7 +3,8 @@
 import { sfx } from '../shared/sfx.js';
 import { icon, h, showModal, confirmDialog, celebrate, soundButton, ease } from '../shared/ui.js';
 import { generateLevel, specialFor, themeFor } from './generator.js';
-import { PRAISE, CHAPTER_SIZE } from './data/levels.js';
+import { CHAPTER_SIZE } from './data/levels.js';
+import { t, starWord, spTitle, spText, themeName, praisePool } from './i18n.js';
 import { showHowto } from './howto.js';
 import { makeCube } from './geometry.js';
 import { Game } from './game.js';
@@ -68,15 +69,16 @@ export function mountPlay(root, levelNum, nav) {
   // ---------- DOM ----------
   root.className = 'app cube-play';
   root.innerHTML = '';
-  const back = h('button.icon-btn', { type: 'button', 'aria-label': 'Zurück zur Levelauswahl', html: icon('back') });
+  const back = h('button.icon-btn', { type: 'button', 'aria-label': t('backToLevels'), html: icon('back') });
   const title = h('div.lvl-title', null,
-    h('b', null, `Level ${levelNum}`),
-    sp ? h('span.special', { html: `${icon('sparkle', { size: 13 })}${sp.title}` }) : h('span.chapter-name', null, `Kapitel ${theme.chapter} · ${theme.name}`));
-  const heartsEl = h('div.hearts' + (relax ? '.relax' : ''), { 'aria-label': 'Herzen' });
-  const helpBtn = h('button.icon-btn.help-btn', { type: 'button', 'aria-label': 'So geht’s', html: '<span class="gm-q">?</span>' });
+    h('b', null, t('level', { n: levelNum })),
+    sp ? h('span.special', null, h('span', { html: icon('sparkle', { size: 13 }) }), spTitle(sp))
+      : h('span.chapter-name', null, t('chapterLine', { n: theme.chapter, name: themeName(theme) })));
+  const heartsEl = h('div.hearts' + (relax ? '.relax' : ''), { 'aria-label': t('hearts') });
+  const helpBtn = h('button.icon-btn.help-btn', { type: 'button', 'aria-label': t('howto'), html: '<span class="gm-q">?</span>' });
   helpBtn.addEventListener('click', () => { sfx.play('click'); saveNow(); showHowto(); });
   const top = h('header.topbar', null, back, title, h('div.spacer'), helpBtn, soundButton());
-  const canvas = h('canvas.cube-canvas', { 'aria-label': 'Würfel mit Pfeilen' });
+  const canvas = h('canvas.cube-canvas', { 'aria-label': t('canvasAria') });
   const pillText = h('span.pill-text');
   const pill = h('div.pill', null, heartsEl, pillText);
   const bubble = h('div.bubble.hidden');
@@ -88,9 +90,9 @@ export function mountPlay(root, levelNum, nav) {
     return b;
   };
   const tools = h('nav.tools', null,
-    mkTool('view', 'rotate', 'Ansicht', () => resetView()),
-    mkTool('hint', 'hint', 'Tipp', () => doHint()),
-    mkTool('restart', 'refresh', 'Neustart', () => askRestart()));
+    mkTool('view', 'rotate', t('toolView'), () => resetView()),
+    mkTool('hint', 'hint', t('toolHint'), () => doHint()),
+    mkTool('restart', 'refresh', t('toolRestart'), () => askRestart()));
   root.append(top, stage, tools);
 
   // ---------- Zustand ----------
@@ -125,8 +127,8 @@ export function mountPlay(root, levelNum, nav) {
   function renderHearts(lostIndex = -1) {
     heartsEl.innerHTML = '';
     if (relax) {
-      heartsEl.append(h('span.relax-chip', { html: `${icon('heart', { size: 15, fill: true })}<span>Entspannt</span>` }));
-      heartsEl.setAttribute('aria-label', 'Entspannt – ohne Herzen');
+      heartsEl.append(h('span.relax-chip', null, h('span.relax-ic', { html: icon('heart', { size: 15, fill: true }) }), h('span', null, t('relax'))));
+      heartsEl.setAttribute('aria-label', t('relaxAria'));
       return;
     }
     for (let i = 0; i < game.maxHearts; i++) {
@@ -135,11 +137,11 @@ export function mountPlay(root, levelNum, nav) {
       if (i === lostIndex) el.classList.add('lost');
       heartsEl.append(el);
     }
-    heartsEl.setAttribute('aria-label', `${game.hearts} von ${game.maxHearts} Herzen`);
+    heartsEl.setAttribute('aria-label', t('heartsOf', { n: game.hearts, max: game.maxHearts }));
   }
   function updatePill(pop = false) {
     const r = game.remaining;
-    pillText.textContent = r === 0 ? 'Alle Pfeile draussen!' : r === 1 ? 'Noch 1 Pfeil' : `Noch ${r} Pfeile`;
+    pillText.textContent = r === 0 ? t('pillDone') : r === 1 ? t('pillOne') : t('pillMany', { n: r });
     if (pop) { pill.classList.remove('pop'); void pill.offsetWidth; pill.classList.add('pop'); }
   }
   renderHearts();
@@ -496,11 +498,11 @@ export function mountPlay(root, levelNum, nav) {
     if (destroyed) return;
     sfx.play('error');
     const v = await showModal({
-      title: 'Keine Herzen mehr',
-      html: '<p>Kein Problem – die Pfeile warten auf dich.<br>Probier es gleich nochmal!</p>',
+      title: t('loseTitle'),
+      html: t('loseHtml'),
       buttons: [
-        { label: 'Nochmal', value: 'retry', primary: true, icon: 'refresh' },
-        { label: 'Levelauswahl', value: 'menu', ghost: true },
+        { label: t('again'), value: 'retry', primary: true, icon: 'refresh' },
+        { label: t('levels'), value: 'menu', ghost: true },
       ],
       dismissible: false,
     });
@@ -526,13 +528,13 @@ export function mountPlay(root, levelNum, nav) {
     if (destroyed) return;
     sfx.play('complete');
     celebrate(CONFETTI);
-    const pool = PRAISE[stars] || PRAISE[1];
+    const pool = praisePool(stars);
     const msg = pool[(levelNum * 7 + game.mistakes) % pool.length];
     const nsp = specialFor(levelNum + 1);
     const newChapter = levelNum % CHAPTER_SIZE === 0;
     const nth = themeFor(levelNum + 1);
-    const teaser = nsp ? `Als Nächstes: Spezial «${nsp.title}» ${nsp.emoji || ''}`.trim()
-      : newChapter ? `Neues Kapitel: ${nth.name}` : null;
+    const teaser = nsp ? t('nextSpecial', { name: spTitle(nsp), emoji: nsp.emoji || '' }).trim()
+      : newChapter ? t('nextChapter', { name: themeName(nth) }) : null;
     const starRow = h('div.win-stars');
     for (let i = 0; i < 3; i++) {
       const st = h('span.win-star' + (i < stars ? '.on' : ''), { html: icon('star', { size: 56 }), style: `--i:${i}` });
@@ -541,15 +543,15 @@ export function mountPlay(root, levelNum, nav) {
     const content = h('div.win', null,
       starRow,
       h('p.win-msg', null, msg),
-      res.best > stars ? h('p.win-best', null, `Bestleistung: ${res.best} ${res.best === 1 ? 'Stern' : 'Sterne'}`) : null,
+      res.best > stars ? h('p.win-best', null, t('best', { n: res.best, stars: starWord(res.best) })) : null,
       teaser ? h('p.win-next', null, teaser) : null);
     for (let i = 0; i < stars; i++) setTimeout(() => sfx.play(i === 2 ? 'sparkle' : 'pop'), 380 + i * 200);
     const v = await showModal({
-      title: `Level ${levelNum} gelöst!`,
+      title: t('winTitle', { n: levelNum }),
       content,
       buttons: [
-        { label: 'Weiter', value: 'next', primary: true, icon: 'play' },
-        { label: 'Levelauswahl', value: 'menu', ghost: true },
+        { label: t('next'), value: 'next', primary: true, icon: 'play' },
+        { label: t('levels'), value: 'menu', ghost: true },
       ],
       dismissible: false,
     });
@@ -562,7 +564,7 @@ export function mountPlay(root, levelNum, nav) {
     sfx.play('click');
     if (locked) return;
     if (game.removedCount > 0) {
-      const ok = await confirmDialog('Level neu starten?', 'Alle Pfeile kommen zurück an ihren Platz.', 'Neu starten', 'Abbrechen');
+      const ok = await confirmDialog(t('restartTitle'), t('restartText'), t('restartOk'), t('cancel'));
       if (!ok || destroyed) return;
     }
     restart();
@@ -642,7 +644,7 @@ export function mountPlay(root, levelNum, nav) {
     clearTimeout(bubbleTimer);
     bubble.innerHTML = '';
     const ic = kind === 'tap' ? TAP_ICON : kind === 'swipe' ? SWIPE_ICON : icon('sparkle', { size: 24 });
-    const msg = text || (kind === 'tap' ? 'Tippe auf einen Pfeil, dessen Weg frei ist' : 'Wische, um den Würfel zu drehen');
+    const msg = text || (kind === 'tap' ? t('coachTap') : t('coachSwipe'));
     bubble.append(h('span.bubble-ic', { html: ic }), h('span', null, msg));
     bubble.classList.remove('hidden', 'out');
     stage.classList.add('tut');
@@ -684,8 +686,8 @@ export function mountPlay(root, levelNum, nav) {
     bubbleTimer = setTimeout(() => {
       if (destroyed || tutorial) return;
       // «Riesenwürfel» auf schon maximaler Grösse: passender Text
-      const txt = sp.grow && !level.grew && sp.textMax ? sp.textMax : sp.text;
-      showBubble('special', `${sp.title}: ${txt}`);
+      const txt = spText(sp, !!(sp.grow && !level.grew && sp.textMax));
+      showBubble('special', `${spTitle(sp)}: ${txt}`);
       bubbleTimer = setTimeout(() => { if (tutorial === 'special') hideBubble(true); }, 3400);
     }, 650);
   }

@@ -2,13 +2,14 @@
 // Schlüssel (mit Präfix "spielpause."):
 //   nonogram.settings          Einstellungen
 //   nonogram.p.<id>            Spielstand eines Rätsels { c, u, t, h, m, k, v }
-//   nonogram.solved            { <id>: { t: Bestzeit ms, n: Anzahl, p: ohne Hilfe, d: Datum } }
+//   nonogram.solved            { <id>: { t: Bestzeit ms, n: Anzahl, p: ohne Hilfe, st: beste Sterne 1–3, d: Datum } }
 //   nonogram.stats             Zähler
 //   nonogram.last              zuletzt gespieltes Rätsel
 //   nonogram.endless           { 5: n, 10: n, … } nächstes Endlos-Bild je Grösse
 //   nonogram.daily             { 'JJJJ-MM-TT': { t, s: sourceId } }
 
 import { store, reportSummary, todayKey, isDailyDone } from '../shared/storage.js';
+import { t } from './i18n.js';
 
 const K = 'nonogram.';
 
@@ -27,13 +28,14 @@ export function solvedMap() { return store.get(K + 'solved', {}) || {}; }
 export function isSolved(id) { return !!solvedMap()[id]; }
 
 /** Rätsel als gelöst eintragen. Gibt { first, best, prevBest } zurück. */
-export function markSolved(id, { time, perfect }) {
+export function markSolved(id, { time, perfect, stars }) {
   const map = solvedMap();
   const prev = map[id];
   const best = prev ? Math.min(prev.t, time) : time;
-  map[id] = { t: best, n: (prev ? prev.n : 0) + 1, p: !!(perfect || (prev && prev.p)), d: todayKey() };
+  const st = Math.max(stars || 0, (prev && prev.st) || (prev && prev.p ? 3 : 0));
+  map[id] = { t: best, n: (prev ? prev.n : 0) + 1, p: !!(perfect || (prev && prev.p)), st, d: todayKey() };
   store.set(K + 'solved', map);
-  return { first: !prev, best, prevBest: prev ? prev.t : null };
+  return { first: !prev, best, prevBest: prev ? prev.t : null, stars: st, prevStars: prev ? (prev.st || (prev.p ? 3 : 0)) : 0 };
 }
 
 const DEFAULT_STATS = { started: 0, solved: 0, perfect: 0, hints: 0, time: 0, bySize: {} };
@@ -77,8 +79,8 @@ export function logDaily(day, entry) { store.update(K + 'daily', {}, (m) => { m 
 /** Kurzer Status für die Startseite. */
 export function updateSummary(total) {
   const solved = Object.keys(solvedMap()).filter((id) => !id.startsWith('daily-')).length;
-  const daily = isDailyDone('nonogram') ? ' · Tagesrätsel ✓' : '';
-  reportSummary('nonogram', `${solved} von ${total} Bildern gelöst${daily}`);
+  const daily = isDailyDone('nonogram') ? t('summaryDaily') : '';
+  reportSummary('nonogram', t('summary', { solved, total }) + daily);
 }
 
 export function formatTime(ms) {

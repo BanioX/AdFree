@@ -9,6 +9,7 @@ import { tileFace } from './board.js';
 import { valueOf } from './logic.js';
 import { skinById } from './data/skins.js';
 import * as P from './progress.js';
+import { t } from './i18n.js';
 
 export const ID = 'merge';
 const ACCENT = '#e2795a';
@@ -91,8 +92,8 @@ async function merge(api, b, a, b2, at, e) {
 function steps(skin) {
   return [
     {
-      title: 'Wischen',
-      text: 'Alle Kacheln rutschen mit – zwei gleiche verschmelzen zur nächsten Stufe.',
+      title: t('tut1Title'),
+      text: t('tut1Text'),
       demo(stage, api) {
         const b = miniBoard(skin, 3, 3);
         stage.append(h('div.tb-wrap', null, b.el));
@@ -111,11 +112,11 @@ function steps(skin) {
       },
     },
     {
-      title: 'Ziel-Kachel bauen',
-      text: 'Verschmilz weiter, bis die Ziel-Kachel da ist – danach darfst du weiterspielen.',
+      title: t('tut2Title'),
+      text: t('tut2Text'),
       demo(stage, api) {
         const goalE = 5;
-        const chip = h('div.tb-goal', null, h('span', null, 'Ziel'), h('div.tb-goal-tile', null, tileFace(skin, goalE, { value: false })),
+        const chip = h('div.tb-goal', null, h('span', null, t('goal')), h('div.tb-goal-tile', null, tileFace(skin, goalE, { value: false })),
           h('b', null, fmt(valueOf(goalE))), h('i.tb-check', { html: icon('check', { size: 18 }) }));
         const b = miniBoard(skin, 4, 1);
         stage.append(h('div.tb-wrap.col', null, chip, b.el));
@@ -139,12 +140,12 @@ function steps(skin) {
       },
     },
     {
-      title: 'Zurück und Tipp',
-      text: '«Tipp» zeigt einen guten Zug, «Zurück» nimmt einen Zug zurück.',
+      title: t('tut3Title'),
+      text: t('tut3Text'),
       demo(stage, api) {
         const b = miniBoard(skin, 3, 3, { cell: 44 });
-        const undoB = h('div.tb-tool', { html: icon('undo', { size: 20 }) }, h('span', null, 'Zurück'));
-        const hintB = h('div.tb-tool', { html: icon('hint', { size: 20 }) }, h('span', null, 'Tipp'));
+        const undoB = h('div.tb-tool', { html: icon('undo', { size: 20 }) }, h('span', null, t('undo')));
+        const hintB = h('div.tb-tool', { html: icon('hint', { size: 20 }) }, h('span', null, t('hint')));
         stage.append(h('div.tb-wrap.col', null, b.el, h('div.tb-tools', null, undoB, hintB)));
         return api.loop(async () => {
           b.reset();
@@ -177,8 +178,8 @@ function steps(skin) {
       },
     },
     {
-      title: 'Etappen',
-      text: 'Steine bleiben liegen – mit wenigen Zügen gibt es mehr Sterne.',
+      title: t('tut4Title'),
+      text: t('tut4Text'),
       demo(stage, api) {
         const b = miniBoard(skin, 3, 3, { stones: [[0, 1]], cell: 46 });
         const stars = h('div.tb-stars', null, [0, 1, 2].map(() => h('span', { html: icon('star', { size: 26 }) })));
@@ -213,7 +214,7 @@ let open = null;
 export function showHowTo() {
   if (open) return open;
   const skin = skinById(P.getProg().skin);
-  open = showTutorial({ id: ID, steps: steps(skin), accent: ACCENT }).finally(() => { open = null; });
+  open = showTutorial({ id: ID, steps: steps(skin), accent: ACCENT, title: t('howTo') }).finally(() => { open = null; });
   return open;
 }
 

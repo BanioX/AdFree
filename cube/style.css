@@ -29,6 +29,7 @@
   box-shadow: 0 3px 10px rgba(242, 154, 31, .35);
 }
 .hero-badge svg { width: 14px; height: 14px; }
+.hero-badge > span { display: inline-flex; }
 .cube-menu .gm-title { margin-top: 4px; }
 .legend-badge {
   width: 18px; height: 18px; border-radius: 50%; display: inline-grid; place-items: center; flex: 0 0 auto;
@@ -162,6 +163,7 @@
 .relax-chip { display: inline-flex; align-items: center; gap: 4px; color: var(--text-2); font-size: 14px; font-weight: 800; }
 .relax-chip svg { color: var(--heart); }
 .lvl-title .special svg { width: 13px; height: 13px; }
+.lvl-title .special > span, .relax-chip .relax-ic { display: inline-flex; }
 
 .hearts { display: flex; align-items: center; gap: 1px; color: var(--heart); }
 .hearts::after { content: ''; width: 1.5px; height: 16px; margin-left: 8px; border-radius: 1px; background: rgba(70, 45, 20, .14); }

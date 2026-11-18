@@ -5,6 +5,7 @@
 //                   dazu die zuletzt wiederholten Level (höchstens MAX_REPLAYS).
 
 import { store, reportSummary, readSummary } from '../shared/storage.js';
+import { t, starWord } from './i18n.js';
 
 const KEY = 'cube.progress';
 const SAVES = 'cube.saves';
@@ -20,7 +21,7 @@ export function loadProgress() {
 
 export function summaryText(p = loadProgress()) {
   const st = totalStars(p);
-  return st > 0 ? `Level ${p.unlocked} · ${st} ${st === 1 ? 'Stern' : 'Sterne'}` : `Level ${p.unlocked}`;
+  return st > 0 ? t('summaryStars', { n: p.unlocked, s: st, stars: starWord(st) }) : t('summary', { n: p.unlocked });
 }
 
 /** Schreibt die Startseiten-Zusammenfassung (falls noch keine da ist oder sie veraltet ist). */

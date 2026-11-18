@@ -2,13 +2,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  SIZES, LATE_SIZES, HEARTS, SPECIAL_EVERY, SPECIALS, CHAPTER_SIZE, THEMES, PRAISE,
+  SIZES, LATE_SIZES, HEARTS, SPECIAL_EVERY, SPECIALS, CHAPTER_SIZE, THEMES, PRAISE, PRAISE_EN,
 } from '../data/levels.js';
 import { levelParams, specialFor, themeFor, generateLevel, solve } from '../generator.js';
 import { makeCube } from '../geometry.js';
 
 const HEX = /^#[0-9a-f]{6}$/i;
-const SPECIAL_KEYS = new Set(['id', 'title', 'emoji', 'text', 'grow', 'maxN', 'density', 'maxDensity', 'hearts', 'minLen', 'maxLen', 'turn', 'maxTurns', 'mustCross', 'textMax']);
+const SPECIAL_KEYS = new Set(['id', 'title', 'emoji', 'text', 'grow', 'maxN', 'density', 'maxDensity', 'hearts', 'minLen', 'maxLen', 'turn', 'maxTurns', 'mustCross', 'textMax',
+  'title_en', 'text_en', 'textMax_en']);
 
 /** Schweizer Rechtschreibung: kein ß, typografische Anführungszeichen «». */
 function swiss(text, where) {
@@ -40,6 +41,11 @@ test('Spezial-Level: gültige Regler, eindeutige IDs, Texte', () => {
     assert.ok(sp.text && sp.text.length <= 60, `${sp.id}: kurzer Satz`);
     swiss(sp.title + sp.text, sp.id);
     if ('textMax' in sp) { assert.ok(sp.textMax.length <= 60, `${sp.id}: kurzer textMax`); swiss(sp.textMax, sp.id); }
+    // Englisch: Titel und Satz immer, textMax_en genau dann, wenn es textMax gibt
+    assert.ok(sp.title_en && sp.title_en.length <= 18, `${sp.id}: englischer Titel`);
+    assert.ok(sp.text_en && sp.text_en.length <= 60, `${sp.id}: englischer Satz`);
+    assert.equal('textMax_en' in sp, 'textMax' in sp, `${sp.id}: textMax_en passend zu textMax`);
+    if ('textMax_en' in sp) assert.ok(sp.textMax_en.length <= 60, `${sp.id}: kurzer textMax_en`);
     if ('maxTurns' in sp) assert.ok(Number.isInteger(sp.maxTurns) && sp.maxTurns >= 0);
     if ('turn' in sp) assert.ok(sp.turn >= 0 && sp.turn <= 1);
     if ('maxN' in sp) assert.ok(sp.maxN >= 3 && sp.maxN <= 10);
@@ -112,6 +118,7 @@ test('Kapitel-Themen: gültige Farben, eindeutig, reihum', () => {
     assert.ok(!ids.has(t.id));
     ids.add(t.id);
     assert.ok(t.name && t.name.length <= 14);
+    assert.ok(t.name_en && t.name_en.length <= 14, `${t.id}: englischer Name`);
     swiss(t.name, t.id);
     for (const k of ['light', 'dark', 'edge', 'ink']) assert.match(t[k], HEX, `${t.id}.${k}`);
     if (t.hint) assert.match(t.hint, HEX);
@@ -130,5 +137,7 @@ test('Lob-Sätze für 1–3 Sterne', () => {
   for (const k of [1, 2, 3]) {
     assert.ok(Array.isArray(PRAISE[k]) && PRAISE[k].length > 0);
     for (const t of PRAISE[k]) swiss(t, `PRAISE[${k}]`);
+    assert.ok(Array.isArray(PRAISE_EN[k]) && PRAISE_EN[k].length > 0, `PRAISE_EN[${k}]`);
+    for (const t of PRAISE_EN[k]) assert.ok(t.length > 0 && t.length <= 60);
   }
 });

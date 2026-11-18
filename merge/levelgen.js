@@ -8,6 +8,7 @@ import {
   MAX_TARGET, MAX_BOSS_TARGET, MIN_TARGET, stars,
 } from './data/levels.js';
 import { FREE, STONE, HOLE, valueOf } from './logic.js';
+import { t, loc } from './i18n.js';
 
 export { LEVELS_PER_CHAPTER };
 
@@ -36,7 +37,8 @@ export function chapterOf(n) {
 export function chapterTitle(gci) {
   const ch = chapters[gci % chapters.length];
   const round = Math.floor(gci / chapters.length);
-  return round > 0 ? `${ch.title} · Runde ${round + 1}` : ch.title;
+  const name = loc(ch, 'title');
+  return round > 0 ? t('round', { name, n: round + 1 }) : name;
 }
 
 export function goalSum(goal) {
@@ -68,7 +70,7 @@ export function makeLevel(n) {
     goal = hm.goal.type === 'count'
       ? { type: 'count', e: log2(hm.goal.value), n: hm.goal.n || 2 }
       : { type: 'tile', e: log2(hm.goal.value) };
-    tip = hm.tip || null;
+    tip = loc(hm, 'tip') || null;
   } else {
     const rng = makeRng('merge-level-' + n);
     const pool = plan.shapes ? plan.shapes.map((id) => SHAPES.get(id)).filter(Boolean)

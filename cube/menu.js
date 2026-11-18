@@ -14,32 +14,34 @@ import {
   loadStats, loadSettings, saveSettings,
 } from './progress.js';
 import { showHowto } from './howto.js';
+import { num } from '../shared/i18n.js';
+import { t, spTitle, themeName } from './i18n.js';
 
 const ACCENT = '#f29a1f';
 
 function fmtTime(ms) {
   const min = Math.round(ms / 60000);
-  if (min < 60) return `${min} Min.`;
+  if (min < 60) return t('minutes', { m: min });
   const hrs = Math.floor(min / 60);
-  return `${hrs} Std. ${min % 60} Min.`;
+  return t('hoursMinutes', { h: hrs, m: min % 60 });
 }
 
 export function showStats() {
   const p = loadProgress();
   const s = loadStats();
   const rows = [
-    ['Höchstes Level', String(p.unlocked)],
-    ['Level gelöst', String(solvedCount(p))],
-    ['Sterne gesamt', String(totalStars(p))],
-    ['Perfekt (3 Sterne)', String(perfectCount(p))],
-    ['Beste Serie ohne Fehler', `${s.bestStreak} Level`],
-    ['Pfeile befreit', s.arrows.toLocaleString('de-CH')],
-    ['Fehlversuche', String(s.mistakes)],
-    ['Tipps genutzt', String(s.hints)],
-    ['Spielzeit', fmtTime(s.playMs)],
+    [t('rowHighest'), num(p.unlocked)],
+    [t('rowSolved'), num(solvedCount(p))],
+    [t('rowStars'), num(totalStars(p))],
+    [t('rowPerfect'), num(perfectCount(p))],
+    [t('rowStreak'), t('streakLevels', { n: s.bestStreak })],
+    [t('rowArrows'), num(s.arrows)],
+    [t('rowMistakes'), num(s.mistakes)],
+    [t('rowHints'), num(s.hints)],
+    [t('rowTime'), fmtTime(s.playMs)],
   ];
   const list = h('div.cube-statlist', null, rows.map(([k, v]) => h('div.cube-statrow', null, h('span', null, k), h('b', null, v))));
-  return showModal({ title: 'Statistik', content: list, buttons: [{ label: 'Schliessen', value: 'ok', primary: true }] });
+  return showModal({ title: t('stats'), content: list, buttons: [{ label: t('close'), value: 'ok', primary: true }] });
 }
 
 export function mountMenu(root, nav) {
@@ -58,7 +60,7 @@ export function mountMenu(root, nav) {
   // ---------- Titelbild: drehender Würfel des nächsten Levels ----------
   const heroCanvas = h('canvas.hero-cube', { 'aria-hidden': 'true' });
   const art = h('div.hero-stage', null, heroCanvas,
-    sp ? h('span.hero-badge', { html: `${icon('sparkle', { size: 14 })}${sp.title}` }) : null);
+    sp ? h('span.hero-badge', null, h('span', { html: icon('sparkle', { size: 14 }) }), spTitle(sp)) : null);
 
   // ---------- Levelkarte ----------
   const curChapter = Math.ceil(next / CHAPTER_SIZE);
@@ -80,7 +82,7 @@ export function mountMenu(root, nav) {
       if (st > 0) cls.push('done');
       if (lsp) cls.push('special');
       const tile = h('button', { class: cls.join(' '), type: 'button', 'data-level': L,
-        'aria-label': `Level ${L}${lsp ? ` (Spezial: ${lsp.title})` : ''}${locked ? ' (gesperrt)' : ''}` });
+        'aria-label': t('level', { n: L }) + (lsp ? t('tileSpecial', { name: spTitle(lsp) }) : '') + (locked ? t('tileLocked') : '') });
       if (lsp) tile.append(h('span.tile-badge', { html: icon('sparkle', { size: 12 }) }));
       if (locked) {
         tile.append(h('span.num', null, String(L)), h('span.tile-lock', { html: icon('lock', { size: 13 }) }));
@@ -90,7 +92,7 @@ export function mountMenu(root, nav) {
         tile.append(h('span.num', null, String(L)), row);
       }
       tile.addEventListener('click', () => {
-        if (locked) { sfx.play('tap'); toast(`Löse zuerst Level ${next}`); return; }
+        if (locked) { sfx.play('tap'); toast(t('solveFirst', { n: next })); return; }
         nav.play(L);
       });
       if (current) currentTile = tile;
@@ -98,11 +100,11 @@ export function mountMenu(root, nav) {
     }
     const sw = h('span.ch-swatch', { style: `--l:${th.light};--d:${th.dark};--i:${th.ink}` });
     const head = h('div.ch-head', null, sw,
-      h('span.ch-name', null, h('b', null, `Kapitel ${ch}`), h('small', null, th.name)),
+      h('span.ch-name', null, h('b', null, t('chapter', { n: ch })), h('small', null, themeName(th))),
       h('span.ch-stars', { html: `${icon('star', { size: 14 })}<span>${chStars}/${CHAPTER_SIZE * 3}</span>` }));
     map.append(h('div.chapter' + (ch > curChapter ? '.locked' : ''), null, head, grid));
   }
-  const legend = h('p.map-legend', { html: `<span class="legend-badge">${icon('sparkle', { size: 11 })}</span>Jedes 10. Level ist ein Spezial-Level. Neues Kapitel = neues Papier.` });
+  const legend = h('p.map-legend', null, h('span.legend-badge', { html: icon('sparkle', { size: 11 }) }), t('mapLegend'));
 
   const scrollToMap = () => {
     if (!currentTile) return;
@@ -111,37 +113,40 @@ export function mountMenu(root, nav) {
 
   const solved = solvedCount(prog);
   const stats = loadStats();
-  const subParts = [`Level ${next}`];
-  if (sp) subParts.push(`Spezial: ${sp.title}`);
-  if (resume) subParts.push(`noch ${nextLevel.arrows.length - cur.removed.length} Pfeile`);
+  const subParts = [t('level', { n: next })];
+  if (sp) subParts.push(t('special', { name: spTitle(sp) }));
+  if (resume) {
+    const left = nextLevel.arrows.length - cur.removed.length;
+    subParts.push(left === 1 ? t('arrowsLeftOne') : t('arrowsLeftMany', { n: left }));
+  }
 
   const menu = gameMenu({
     id: 'cube',
-    title: 'Pfeilwürfel',
-    tagline: 'Dreh den Würfel, befreie die Pfeile',
+    title: t('gameTitle'),
+    tagline: t('tagline'),
     accent: ACCENT,
     art,
-    primary: { label: resume ? 'Weiterspielen' : 'Spielen', sub: subParts.join(' · '), onClick: () => nav.play(next) },
+    primary: { label: resume ? t('resume') : t('play'), sub: subParts.join(' · '), onClick: () => nav.play(next) },
     modes: {
-      label: 'Modus',
+      label: t('mode'),
       value: settings.mode,
       options: [
-        { id: 'classic', label: 'Klassisch', sub: 'mit Herzen' },
-        { id: 'relax', label: 'Entspannt', sub: 'ohne Herzen' },
+        { id: 'classic', label: t('classic'), sub: t('classicSub') },
+        { id: 'relax', label: t('relax'), sub: t('relaxSub') },
       ],
-      onChange(id) { saveSettings({ mode: id }); toast(id === 'relax' ? 'Entspannt: ohne Herzen – Fehler kosten nur Sterne' : 'Klassisch: mit Herzen'); },
+      onChange(id) { saveSettings({ mode: id }); toast(id === 'relax' ? t('toastRelax') : t('toastClassic')); },
     },
     secondary: [
-      { label: 'Levelkarte', icon: 'grid', onClick: scrollToMap },
-      { label: 'Statistik', icon: 'star', onClick: () => showStats() },
+      { label: t('levelMap'), icon: 'grid', onClick: scrollToMap },
+      { label: t('stats'), icon: 'star', onClick: () => showStats() },
     ],
     stats: [
-      { label: 'Gelöst', value: solved },
-      { label: 'Sterne', value: totalStars(prog) },
-      { label: 'Perfekt', value: perfectCount(prog) },
-      { label: 'Pfeile', value: stats.arrows.toLocaleString('de-CH') },
+      { label: t('statSolved'), value: num(solved) },
+      { label: t('statStars'), value: num(totalStars(prog)) },
+      { label: t('statPerfect'), value: num(perfectCount(prog)) },
+      { label: t('statArrows'), value: num(stats.arrows) },
     ],
-    sections: [menuSection('Levelkarte', map, legend)],
+    sections: [menuSection(t('levelMap'), map, legend)],
     onHelp: () => showHowto(),
     backHref: '../',
   });

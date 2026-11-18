@@ -8,6 +8,7 @@
 import { store, reportSummary } from '../shared/storage.js';
 import { DEFAULT_MODE, modeById } from './data/modes.js';
 import { DEFAULT_SKIN, skins } from './data/skins.js';
+import { t, lang } from './i18n.js';
 
 const KEY = 'merge.progress';
 
@@ -116,7 +117,9 @@ export function recordLevel(n, stars) {
 
 // ---------- Kurztext für die Startseite ----------
 
-const fmt = (n) => String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+// Tausender: Deutsch mit schmalem Abstand («2 048»), Englisch mit Komma («2,048»).
+const SEP = lang === 'en' ? ',' : ' ';
+const fmt = (n) => String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, SEP);
 
 export function formatNumber(n) { return fmt(n); }
 
@@ -124,7 +127,7 @@ export function report() {
   const p = getProg();
   const parts = [];
   const best = Math.max(0, ...Object.values(p.best).map((v) => v | 0));
-  if (best > 0) parts.push('Rekord ' + fmt(best));
-  if (p.levelMax > 1) parts.push('Etappe ' + p.levelMax);
-  reportSummary('merge', parts.length ? parts.join(' · ') : 'Noch nicht gespielt');
+  if (best > 0) parts.push(t('sumBest', { n: fmt(best) }));
+  if (p.levelMax > 1) parts.push(t('sumLevel', { n: p.levelMax }));
+  reportSummary('merge', parts.length ? parts.join(' · ') : t('sumNone'));
 }

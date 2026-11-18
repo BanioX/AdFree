@@ -28,7 +28,7 @@ export const SPECIAL_EVERY = 10;
 
 /**
  * Spezial-Level, der Reihe nach (Level 10 = erstes, 20 = zweites, …, dann von vorn).
- * Texte: `text` erscheint zu Beginn des Levels; `textMax` (optional) statt dessen, wenn der Würfel
+ * Texte (Deutsch + Englisch mit `_en`): `title`/`title_en` Name, `text`/`text_en` erscheint zu Beginn des Levels; `textMax` (optional) statt dessen, wenn der Würfel
  * schon die Höchstgrösse 10 hat und `grow` darum nichts mehr bewirkt.
  * Mögliche Regler (alle optional):
  *   grow        Würfel um so viele Zellen grösser (max. 10)
@@ -46,27 +46,33 @@ export const SPECIALS = [
   {
     id: 'edges', title: 'Kantenlauf', emoji: '📐',
     text: 'Jeder Pfeil läuft über eine Kante.',
+    title_en: 'Edge Runner', text_en: 'Every arrow runs over an edge.',
     maxN: 7, maxDensity: 0.8, mustCross: true,
   },
   {
     id: 'big', title: 'Riesenwürfel', emoji: '🧊',
     text: 'Ein Stück grösser und dicht gepackt.',
     textMax: 'Volle Grösse, extra dicht – mit einem Herz weniger.',
+    title_en: 'Giant Cube', text_en: 'A size bigger and tightly packed.',
+    textMax_en: 'Full size, extra dense – and one heart fewer.',
     grow: 1, density: 0.04, hearts: -1,
   },
   {
     id: 'long', title: 'Lange Schlangen', emoji: '🐍',
     text: 'Wenige, aber sehr lange Pfeile.',
+    title_en: 'Long Snakes', text_en: 'Only a few arrows, but very long ones.',
     minLen: 5, maxLen: 4, turn: 0.45, maxN: 8,
   },
   {
     id: 'twisty', title: 'Kringel', emoji: '🌀',
     text: 'Die Pfeile winden sich in vielen Kurven.',
+    title_en: 'Twists', text_en: 'The arrows wind through lots of turns.',
     turn: 0.85, minLen: 3, maxLen: 1,
   },
   {
     id: 'straight', title: 'Gerade Wege', emoji: '📏',
     text: 'Fast nur gerade Pfeile – aber dicht an dicht.',
+    title_en: 'Straight Paths', text_en: 'Almost only straight arrows – packed side by side.',
     turn: 0.04, maxTurns: 0, density: 0.05, minLen: 3,
   },
 ];
@@ -74,19 +80,24 @@ export const SPECIALS = [
 /** Kapitel: alle 10 Level ein neues Papier (dann wieder von vorn). Farben als #rrggbb. */
 export const CHAPTER_SIZE = 10;
 export const THEMES = [
-  { id: 'pergament', name: 'Pergament', light: '#fffbf3', dark: '#e9d6b6', edge: '#e2cfae', ink: '#4a3418', hint: '#2f7de1' },
-  { id: 'salbei', name: 'Salbei', light: '#f8fbf2', dark: '#cfdfc0', edge: '#c8d9b8', ink: '#2f3f24', hint: '#e0702a' },
-  { id: 'rosenholz', name: 'Rosenholz', light: '#fff8f5', dark: '#efcfc6', edge: '#e8c3b8', ink: '#55282b', hint: '#2f7de1' },
-  { id: 'himmel', name: 'Himmel', light: '#f7fbff', dark: '#c9dcef', edge: '#bed4ea', ink: '#22344d', hint: '#e0702a' },
-  { id: 'honig', name: 'Honig', light: '#fffaea', dark: '#f1d391', edge: '#ecc97e', ink: '#4b300c', hint: '#2f7de1' },
-  { id: 'lavendel', name: 'Lavendel', light: '#fbf8ff', dark: '#d9cfee', edge: '#cfc3e8', ink: '#352651', hint: '#e0702a' },
-  { id: 'minze', name: 'Minze', light: '#f4fcf9', dark: '#bfe3d6', edge: '#b2dccd', ink: '#1f3d35', hint: '#e0702a' },
-  { id: 'sand', name: 'Sand', light: '#fdf9f1', dark: '#e3d3b8', edge: '#dac8aa', ink: '#3e3426', hint: '#2f7de1' },
+  { id: 'pergament', name: 'Pergament', name_en: 'Parchment', light: '#fffbf3', dark: '#e9d6b6', edge: '#e2cfae', ink: '#4a3418', hint: '#2f7de1' },
+  { id: 'salbei', name: 'Salbei', name_en: 'Sage', light: '#f8fbf2', dark: '#cfdfc0', edge: '#c8d9b8', ink: '#2f3f24', hint: '#e0702a' },
+  { id: 'rosenholz', name: 'Rosenholz', name_en: 'Rosewood', light: '#fff8f5', dark: '#efcfc6', edge: '#e8c3b8', ink: '#55282b', hint: '#2f7de1' },
+  { id: 'himmel', name: 'Himmel', name_en: 'Sky', light: '#f7fbff', dark: '#c9dcef', edge: '#bed4ea', ink: '#22344d', hint: '#e0702a' },
+  { id: 'honig', name: 'Honig', name_en: 'Honey', light: '#fffaea', dark: '#f1d391', edge: '#ecc97e', ink: '#4b300c', hint: '#2f7de1' },
+  { id: 'lavendel', name: 'Lavendel', name_en: 'Lavender', light: '#fbf8ff', dark: '#d9cfee', edge: '#cfc3e8', ink: '#352651', hint: '#e0702a' },
+  { id: 'minze', name: 'Minze', name_en: 'Mint', light: '#f4fcf9', dark: '#bfe3d6', edge: '#b2dccd', ink: '#1f3d35', hint: '#e0702a' },
+  { id: 'sand', name: 'Sand', name_en: 'Sand', light: '#fdf9f1', dark: '#e3d3b8', edge: '#dac8aa', ink: '#3e3426', hint: '#2f7de1' },
 ];
 
-/** Freundliche Sätze für das Gewinn-Blatt (zufällig gewählt, nach Sternen). */
+/** Freundliche Sätze für das Gewinn-Blatt (zufällig gewählt, nach Sternen). PRAISE_EN = Englisch. */
 export const PRAISE = {
   3: ['Ohne einen einzigen Fehler!', 'Makellos!', 'Perfekt gelöst!', 'Wie ein Profi!'],
   2: ['Nur ein Fehler – stark!', 'Fast perfekt!', 'Sehr schön gemacht!'],
   1: ['Geschafft – weiter so!', 'Gelöst! Das nächste wird noch besser.', 'Alle Pfeile sind draussen!'],
+};
+export const PRAISE_EN = {
+  3: ['Not a single mistake!', 'Flawless!', 'Perfectly solved!', 'Like a pro!'],
+  2: ['Just one slip – well done!', 'Almost perfect!', 'Very nicely done!'],
+  1: ['Done it – keep going!', 'Solved! The next one will go even better.', 'Every arrow is out!'],
 };

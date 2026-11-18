@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="de-CH">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <title>Libras 4 Ever – Spielpause</title>
+  <meta name="theme-color" content="#0a0a0a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Spielpause">
+  <link rel="manifest" href="../manifest.webmanifest">
+  <link rel="apple-touch-icon" href="../icons/apple-touch-icon.png">
+  <style>
+    /* Rahmen um «Libras 4 Ever» (gebaute Kopie in game/, siehe CONTENT.md).
+       Hochformat: schlanke Leiste «‹ Spielpause» über dem Spiel (wie New Dawn).
+       Querformat (Handy): keine Leiste, das Spiel behält die volle Höhe; ein kleiner runder
+       Zurück-Knopf schwebt links oben in einem schmalen Rand (auf iPhones mit Notch ist das
+       ohnehin der Sicherheitsbereich), damit er nichts vom Spiel verdeckt. */
+    :root { --bg: #0a0a0a; --fg: #f4f4f0; --gutter: max(44px, env(safe-area-inset-left, 0px)); }
+    html, body { margin: 0; height: 100%; background: var(--bg); overflow: hidden; overscroll-behavior: none; }
+    body { display: flex; flex-direction: column; font-family: ui-rounded, "SF Pro Rounded", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    .bar {
+      flex: 0 0 auto; display: flex; align-items: center; gap: 6px;
+      padding: env(safe-area-inset-top, 0px) 10px 0 calc(6px + env(safe-area-inset-left, 0px));
+      height: calc(40px + env(safe-area-inset-top, 0px)); box-sizing: border-box;
+      background: var(--bg); color: var(--fg);
+    }
+    .back {
+      display: inline-flex; align-items: center; gap: 4px; min-height: 40px; padding: 0 10px 0 4px;
+      color: var(--fg); text-decoration: none; font-weight: 750; font-size: 15px; border-radius: 999px;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .back:active { background: rgba(255, 255, 255, .1); }
+    .back svg { width: 22px; height: 22px; }
+    iframe { flex: 1 1 auto; width: 100%; min-height: 0; border: 0; display: block; background: var(--bg); }
+
+    .float-back {
+      display: none; position: fixed; z-index: 2;
+      top: calc(9px + env(safe-area-inset-top, 0px)); left: calc((var(--gutter) - 44px) / 2);
+      width: 44px; height: 44px; align-items: center; justify-content: center;
+      color: var(--fg); -webkit-tap-highlight-color: transparent;
+    }
+    .float-back span {
+      display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%;
+      background: rgba(244, 244, 240, .14); border: 1px solid rgba(244, 244, 240, .24);
+      opacity: .78; transition: opacity .15s, transform .15s, background .15s;
+    }
+    .float-back svg { width: 20px; height: 20px; margin-left: -2px; }
+    .float-back:hover span, .float-back:focus-visible span { opacity: 1; background: rgba(244, 244, 240, .22); }
+    .float-back:active span { transform: scale(.92); opacity: 1; }
+
+    @media (orientation: landscape) and (max-height: 600px) {
+      .bar { display: none; }
+      .float-back { display: flex; }
+      iframe {
+        position: fixed; top: 0; bottom: 0; height: 100%; width: auto;
+        left: var(--gutter); right: env(safe-area-inset-right, 0px);
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="bar">
+    <a class="back" href="../" id="back">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>
+      <span id="back-label">Spielpause</span>
+    </a>
+  </div>
+  <a class="float-back" href="../" id="float-back">
+    <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></span>
+  </a>
+  <iframe id="game" title="Libras 4 Ever" allow="autoplay; fullscreen"></iframe>
+  <script type="module">
+    import { setupPage } from '../shared/ui.js';
+    import { L, lang, plural } from '../shared/i18n.js';
+    import { store, reportSummary } from '../shared/storage.js';
+    setupPage();
+
+    const label = L('Zurück zu Spielpause', 'Back to Spielpause');
+    for (const id of ['back', 'float-back']) document.getElementById(id).setAttribute('aria-label', label);
+
+    // Die Sprache von Spielpause gilt auch im Spiel. Eine im Spiel gewählte Sprache bleibt,
+    // bis jemand auf der Startseite von Spielpause die Sprache wechselt.
+    try {
+      if (store.get('libras.lang', null) !== lang) {
+        localStorage.setItem('studio.locale', lang === 'en' ? 'en' : 'de-CH');
+        store.set('libras.lang', lang);
+      }
+    } catch { /* gesperrter Speicher: das Spiel nimmt die Gerätesprache */ }
+
+    const frame = document.getElementById('game');
+    frame.addEventListener('load', () => { try { frame.contentWindow.focus(); } catch { /* egal */ } });
+    frame.src = 'game/index.html';
+
+    // Kurzer Stand für die Kachel: wie viele Fragen schon gespielt wurden (das Spiel merkt sich
+    // pro Paket die gezeigten Fragen unter «studio.seen.<paket>»).
+    function summary() {
+      let seen = 0;
+      try {
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (!key || !key.startsWith('studio.seen.')) continue;
+          const list = JSON.parse(localStorage.getItem(key) || '[]');
+          if (Array.isArray(list)) seen += list.length;
+        }
+      } catch { /* nichts */ }
+      reportSummary('libras', seen > 0
+        ? plural(seen, ['Frage gespielt', 'Fragen gespielt'], ['question played', 'questions played'])
+        : L('Quiz-Flug mit der Pixel-Katze', 'Quiz flight with the pixel cat'));
+    }
+    summary();
+    addEventListener('pagehide', summary);
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') summary(); });
+    for (const id of ['back', 'float-back']) document.getElementById(id).addEventListener('click', summary);
+  </script>
+</body>
+</html>

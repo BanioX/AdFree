@@ -1,0 +1,221 @@
+// Pfeilwürfel – alle Oberflächentexte auf Deutsch und Englisch (shared/i18n.js).
+// Inhalte (Spezial-Level, Kapitel-Papiere, Lob) stehen zweisprachig in data/levels.js.
+// Test: tests/i18n.test.mjs prüft, dass Englisch jeden deutschen Schlüssel hat.
+
+import { dict, lang } from '../shared/i18n.js';
+import { PRAISE, PRAISE_EN } from './data/levels.js';
+
+export const TEXTS = {
+  de: {
+    // Allgemein
+    gameTitle: 'Pfeilwürfel',
+    pageTitle: 'Pfeilwürfel – Spielpause',
+    tagline: 'Dreh den Würfel, befreie die Pfeile',
+    level: 'Level {n}',
+    chapter: 'Kapitel {n}',
+    chapterLine: 'Kapitel {n} · {name}',
+    special: 'Spezial: {name}',
+    howto: 'So geht’s',
+    close: 'Schliessen',
+    // Startbildschirm
+    play: 'Spielen',
+    resume: 'Weiterspielen',
+    arrowsLeftOne: 'noch 1 Pfeil',
+    arrowsLeftMany: 'noch {n} Pfeile',
+    mode: 'Modus',
+    classic: 'Klassisch',
+    classicSub: 'mit Herzen',
+    relax: 'Entspannt',
+    relaxSub: 'ohne Herzen',
+    toastRelax: 'Entspannt: ohne Herzen – Fehler kosten nur Sterne',
+    toastClassic: 'Klassisch: mit Herzen',
+    levelMap: 'Levelkarte',
+    stats: 'Statistik',
+    statSolved: 'Gelöst',
+    statStars: 'Sterne',
+    statPerfect: 'Perfekt',
+    statArrows: 'Pfeile',
+    mapLegend: 'Jedes 10. Level ist ein Spezial-Level. Neues Kapitel = neues Papier.',
+    tileSpecial: ' (Spezial: {name})',
+    tileLocked: ' (gesperrt)',
+    solveFirst: 'Löse zuerst Level {n}',
+    // Statistik-Blatt
+    rowHighest: 'Höchstes Level',
+    rowSolved: 'Level gelöst',
+    rowStars: 'Sterne gesamt',
+    rowPerfect: 'Perfekt (3 Sterne)',
+    rowStreak: 'Beste Serie ohne Fehler',
+    streakLevels: '{n} Level',
+    rowArrows: 'Pfeile befreit',
+    rowMistakes: 'Fehlversuche',
+    rowHints: 'Tipps genutzt',
+    rowTime: 'Spielzeit',
+    minutes: '{m} Min.',
+    hoursMinutes: '{h} Std. {m} Min.',
+    // Spiel
+    backToLevels: 'Zurück zur Levelauswahl',
+    hearts: 'Herzen',
+    heartsOf: '{n} von {max} Herzen',
+    relaxAria: 'Entspannt – ohne Herzen',
+    canvasAria: 'Würfel mit Pfeilen',
+    toolView: 'Ansicht',
+    toolHint: 'Tipp',
+    toolRestart: 'Neustart',
+    pillDone: 'Alle Pfeile draussen!',
+    pillOne: 'Noch 1 Pfeil',
+    pillMany: 'Noch {n} Pfeile',
+    coachTap: 'Tippe auf einen Pfeil, dessen Weg frei ist',
+    coachSwipe: 'Wische, um den Würfel zu drehen',
+    combo3: 'Super!',
+    combo5: 'Klasse!',
+    combo8: 'Fantastisch!',
+    combo12: 'Unaufhaltsam!',
+    comboCount: '{n}er-Serie',
+    // Verloren
+    loseTitle: 'Keine Herzen mehr',
+    loseHtml: '<p>Kein Problem – die Pfeile warten auf dich.<br>Probier es gleich nochmal!</p>',
+    again: 'Nochmal',
+    levels: 'Levelauswahl',
+    // Gewonnen
+    winTitle: 'Level {n} gelöst!',
+    next: 'Weiter',
+    best: 'Bestleistung: {n} {stars}',
+    star1: 'Stern',
+    starN: 'Sterne',
+    nextSpecial: 'Als Nächstes: Spezial «{name}» {emoji}',
+    nextChapter: 'Neues Kapitel: {name}',
+    chapterDone: 'Kapitel {n} geschafft – {s} von {max} Sternen',
+    perfectStreak: '{n} perfekte Level in Folge',
+    newRecord: 'Neuer Rekord!',
+    // Neustart
+    restartTitle: 'Level neu starten?',
+    restartText: 'Alle Pfeile kommen zurück an ihren Platz.',
+    restartOk: 'Neu starten',
+    cancel: 'Abbrechen',
+    // Anleitung
+    tut1Title: 'Pfeil antippen',
+    tut1Text: 'Ist der Weg bis zum Rand frei, gleitet der Pfeil hinaus.',
+    tut2Title: 'Nicht anstossen',
+    tut2Text: 'Steht ein Pfeil im Weg, prallt deiner ab – das kostet ein Herz.',
+    tut3Title: 'Würfel drehen',
+    tut3Text: 'Wische zum Drehen, zoome mit zwei Fingern – Pfeile laufen auch über Kanten.',
+    tut4Title: 'Alle Pfeile raus',
+    tut4Text: 'Räum den Würfel ab – ohne Fehler gibt es drei Sterne, Tipps sind gratis.',
+    // Startseite (Info-Blatt)
+    summary: 'Level {n}',
+    summaryStars: 'Level {n} · {s} {stars}',
+  },
+  en: {
+    gameTitle: 'Arrow Cube',
+    pageTitle: 'Arrow Cube – Spielpause',
+    tagline: 'Turn the cube, free the arrows',
+    level: 'Level {n}',
+    chapter: 'Chapter {n}',
+    chapterLine: 'Chapter {n} · {name}',
+    special: 'Special: {name}',
+    howto: 'How to play',
+    close: 'Close',
+    play: 'Play',
+    resume: 'Continue',
+    arrowsLeftOne: '1 arrow left',
+    arrowsLeftMany: '{n} arrows left',
+    mode: 'Mode',
+    classic: 'Classic',
+    classicSub: 'with hearts',
+    relax: 'Relaxed',
+    relaxSub: 'no hearts',
+    toastRelax: 'Relaxed: no hearts – mistakes only cost stars',
+    toastClassic: 'Classic: with hearts',
+    levelMap: 'Level map',
+    stats: 'Stats',
+    statSolved: 'Solved',
+    statStars: 'Stars',
+    statPerfect: 'Perfect',
+    statArrows: 'Arrows',
+    mapLegend: 'Every 10th level is a special level. New chapter, new paper.',
+    tileSpecial: ' (special: {name})',
+    tileLocked: ' (locked)',
+    solveFirst: 'Solve level {n} first',
+    rowHighest: 'Highest level',
+    rowSolved: 'Levels solved',
+    rowStars: 'Total stars',
+    rowPerfect: 'Perfect (3 stars)',
+    rowStreak: 'Best flawless streak',
+    streakLevels: '{n} levels',
+    rowArrows: 'Arrows freed',
+    rowMistakes: 'Mistakes',
+    rowHints: 'Hints used',
+    rowTime: 'Play time',
+    minutes: '{m} min',
+    hoursMinutes: '{h} h {m} min',
+    backToLevels: 'Back to levels',
+    hearts: 'Hearts',
+    heartsOf: '{n} of {max} hearts',
+    relaxAria: 'Relaxed – no hearts',
+    canvasAria: 'Cube with arrows',
+    toolView: 'View',
+    toolHint: 'Hint',
+    toolRestart: 'Restart',
+    pillDone: 'All arrows out!',
+    pillOne: '1 arrow left',
+    pillMany: '{n} arrows left',
+    coachTap: 'Tap an arrow whose path is clear',
+    coachSwipe: 'Swipe to turn the cube',
+    combo3: 'Nice!',
+    combo5: 'Great!',
+    combo8: 'Fantastic!',
+    combo12: 'Unstoppable!',
+    comboCount: '{n} in a row',
+    loseTitle: 'Out of hearts',
+    loseHtml: '<p>No problem – the arrows will wait for you.<br>Give it another go!</p>',
+    again: 'Try again',
+    levels: 'Levels',
+    winTitle: 'Level {n} solved!',
+    next: 'Next',
+    best: 'Your best: {n} {stars}',
+    star1: 'star',
+    starN: 'stars',
+    nextSpecial: 'Up next: special “{name}” {emoji}',
+    nextChapter: 'New chapter: {name}',
+    chapterDone: 'Chapter {n} done – {s} of {max} stars',
+    perfectStreak: '{n} perfect levels in a row',
+    newRecord: 'New record!',
+    restartTitle: 'Restart level?',
+    restartText: 'All arrows go back to where they started.',
+    restartOk: 'Restart',
+    cancel: 'Cancel',
+    tut1Title: 'Tap an arrow',
+    tut1Text: 'If its path to the edge is clear, it slides right out.',
+    tut2Title: 'Don’t bump',
+    tut2Text: 'If another arrow is in the way, yours bounces back – that costs a heart.',
+    tut3Title: 'Turn the cube',
+    tut3Text: 'Swipe to turn, pinch to zoom – arrows can run over the edges too.',
+    tut4Title: 'Clear the cube',
+    tut4Text: 'Clear the whole cube – no mistakes earns three stars, and hints are free.',
+    summary: 'Level {n}',
+    summaryStars: 'Level {n} · {s} {stars}',
+  },
+};
+
+export const t = dict(TEXTS);
+
+/** «1 Stern» / «3 Sterne» ohne Zahl. */
+export const starWord = (n) => t(n === 1 ? 'star1' : 'starN');
+
+/** Name eines Spezial-Levels in der aktuellen Sprache. */
+export const spTitle = (sp) => (lang === 'en' && sp.title_en ? sp.title_en : sp.title);
+
+/** Einführungssatz eines Spezial-Levels (max = Würfel schon voll gross → textMax). */
+export function spText(sp, max = false) {
+  if (lang === 'en') return (max && sp.textMax_en) || sp.text_en || sp.text;
+  return (max && sp.textMax) || sp.text;
+}
+
+/** Name des Kapitel-Papiers in der aktuellen Sprache. */
+export const themeName = (th) => (lang === 'en' && th.name_en ? th.name_en : th.name);
+
+/** Lob-Sätze für das Gewinn-Blatt (nach Sternen). */
+export const praisePool = (stars) => {
+  const src = lang === 'en' ? PRAISE_EN : PRAISE;
+  return src[stars] || src[1];
+};

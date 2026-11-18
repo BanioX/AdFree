@@ -37,10 +37,18 @@ export function endlessSpec(round) {
 }
 export const ENDLESS_MAX_ADDS = 6;
 
-/** Kleine Namen für die Levelkarte (rein dekorativ). */
+/** Texte der Ziele (Deutsch / English). {n} = Anzahl. */
 export const GOAL_TEXT = {
-  clear: { short: 'Feld leeren', long: 'Räume alle Zahlen ab' },
-  stars: { short: 'Sterne', long: (n) => `Sammle ${n} Sterne` },
-  rows: { short: 'Reihen', long: (n) => `Räume ${n} Reihen ab` },
-  score: { short: 'Endlos', long: 'Punkte sammeln' },
+  de: {
+    clear: { short: 'Feld leeren', long: 'Räume alle Zahlen ab' },
+    stars: { short: 'Sterne', long: 'Sammle {n} Sterne' },
+    rows: { short: 'Reihen', long: 'Räume {n} Reihen ab' },
+    score: { short: 'Endlos', long: 'Punkte sammeln' },
+  },
+  en: {
+    clear: { short: 'Clear the board', long: 'Clear all numbers' },
+    stars: { short: 'Stars', long: 'Collect {n} stars' },
+    rows: { short: 'Rows', long: 'Clear {n} rows' },
+    score: { short: 'Endless', long: 'Collect points' },
+  },
 };

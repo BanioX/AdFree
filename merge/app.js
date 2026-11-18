@@ -11,8 +11,10 @@ import { mountMenu, mountMap, mountAlbum } from './screens.js';
 import { showHowTo, ensureHowTo, howToSeen } from './howto.js';
 import { mountPlay } from './play.js';
 import { getProg, saveProg } from './progress.js';
+import { t } from './i18n.js';
 
 setupPage();
+document.title = t('pageTitle');
 
 const app = document.getElementById('app');
 let current = null;

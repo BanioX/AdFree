@@ -1,0 +1,286 @@
+// Bilderrätsel – alle Texte auf Deutsch und Englisch (shared/i18n.js).
+//
+//   import { t, titleOf, packTitle } from './i18n.js';
+//   t('play')                 → «Spielen» / «Play»
+//   t('packNo', { pack, n })  → «Mini · Nr. 3» / «Mini · #3»
+//
+// Bildtitel stehen direkt in den Daten (title / title_en), siehe CONTENT.md.
+
+import { dict, lang, plural } from '../shared/i18n.js';
+
+export const TEXTS = {
+  de: {
+    // Startbildschirm
+    continue: 'Weiter',
+    play: 'Spielen',
+    daily: 'Tagesrätsel',
+    dailyPlural: 'Tagesrätsel',
+    dailyContinue: 'Weiter · {time}',
+    packNo: '{pack} · Nr. {n}',
+    endlessNo: 'Endlos {size}×{size} · Nr. {n}',
+    no: 'Nr. {n}',
+    album: 'Album',
+    statsTitle: 'Statistik',
+    solvedN: '{n} gelöst',
+    statPictures: 'Bilder',
+    statPerfect: 'Ohne Hilfe',
+    statStreak: 'Tage-Serie',
+    statTime: 'Gesamtzeit',
+    stars: 'Sterne',
+    collections: 'Bildersammlungen',
+    endless: 'Endlos',
+    endlessTitle: 'Endlos-Bilder',
+    endlessSub: 'Immer neue Fantasiewesen und Mosaike',
+    noGuessing: 'Jedes Bild lässt sich ohne Raten lösen.',
+    settings: 'Einstellungen',
+    notFound: 'Dieses Bild gibt es nicht mehr.',
+    allSolved: 'Alle Bilder gelöst – wunderbar!',
+    pageTitle: '{name} – Spielpause',
+    summary: '{solved} von {total} Bildern gelöst',
+    summaryDaily: ' · Tagesrätsel ✓',
+    // Album
+    albumEmpty: 'Noch keine Bilder',
+    albumEmptyText: 'Jedes gelöste Rätsel landet hier als farbiges Bild.',
+    albumFirst: 'Erstes Bild lösen',
+    viewBest: 'Bestzeit {time}',
+    viewTimes: '{n}× gelöst',
+    viewPerfect: '★ ohne Hilfe',
+    playAgain: 'Nochmals spielen',
+    close: 'Schliessen',
+    // Statistik
+    stSolved: 'Rätsel gelöst',
+    stPerfect: 'Ohne Hilfe',
+    stStreak: 'Tage in Serie',
+    stDaily: 'Tagesrätsel',
+    stTime: 'Gesamtzeit',
+    stAvg: 'Durchschnitt',
+    stBest: 'Bestzeiten',
+    stNone: 'noch keins',
+    stCollections: 'Sammlungen',
+    stExtra: 'Tipps benutzt: {hints} · Rätsel begonnen: {started}',
+    size5: 'Mini',
+    size10: 'Klein',
+    size15: 'Mittel',
+    size20: 'Gross',
+    // Spiel
+    backMenu: 'Zurück zum Menü',
+    more: 'Mehr',
+    howto: 'So geht’s',
+    board: 'Spielfeld',
+    undo: 'Rückgängig',
+    fill: 'Füllen',
+    cross: 'Kreuzchen',
+    zoom: 'Lupe',
+    check: 'Prüfen',
+    hint: 'Tipp',
+    again: 'Nochmals',
+    nextPic: 'Nächstes Bild',
+    toMenu: 'Zum Menü',
+    row: 'Zeile',
+    col: 'Spalte',
+    coachFull: 'Die {n} heisst: alle {len} Felder dieser {what} füllen. Einfach darüberziehen!',
+    coachStart: 'Fang hier an – in dieser {what} ist fast alles klar.',
+    hintMistake: 'Hier stimmt etwas nicht – ich habe es entfernt.',
+    hintRow: 'Schau dir Zeile {n} an.',
+    hintCol: 'Schau dir Spalte {n} an.',
+    checkOk: 'Bis jetzt alles richtig ✓',
+    checkOne: '1 Feld ist falsch (rot markiert).',
+    checkMany: '{n} Felder sind falsch (rot markiert).',
+    restartQ: 'Neu beginnen?',
+    restartText: 'Alle Felder dieses Bildes werden geleert.',
+    restart: 'Neu beginnen',
+    cancel: 'Abbrechen',
+    cells: '{w} × {h} Felder',
+    soundOn: 'Ton einschalten',
+    soundOff: 'Ton ausschalten',
+    keepPlaying: 'Weiterspielen',
+    zoomTip: 'Tipp: Mit zwei Fingern zoomen – oder die Lupe benutzen.',
+    // Lob beim Lösen von Zeilen
+    praise: 'Super!|Klasse!|Toll!|Prima!|Fantastisch!|Wunderbar!',
+    double: 'Doppelt!',
+    triple: 'Dreifach!',
+    // Gewonnen
+    winTitle: 'Geschafft!',
+    winDaily: 'Tagesrätsel gelöst!',
+    winTime: 'Zeit',
+    winHints: 'Tipps',
+    winBest: 'Bestzeit',
+    notePerfect: '★ Ganz ohne Hilfe – stark!',
+    noteRecord: 'Neue Bestzeit!',
+    noteFirst: 'Neues Bild für dein Album!',
+    noteNice: 'Schön gemalt!',
+    notePack: 'Sammlung «{pack}» komplett!',
+    starsLabel: '{n} von 3 Sternen',
+    viewPic: 'Bild ansehen',
+    quote: '«{title}»',
+    // Einstellungen
+    setAutoCross: 'Auto-Kreuze',
+    setAutoCrossText: 'Fertige Zeilen und Spalten werden automatisch mit ✕ aufgefüllt.',
+    setErrors: 'Fehler sofort zeigen',
+    setErrorsText: 'Falsche Felder werden gleich rot markiert und korrigiert.',
+    setTimer: 'Zeit anzeigen',
+    setTimerText: 'Die Uhr läuft trotzdem mit – für die Statistik.',
+    done: 'Fertig',
+    // So geht's
+    tut1: 'Felder füllen',
+    tut1Text: 'Die Zahlen sagen, wie viele Felder am Stück voll sind. Tippen oder ziehen!',
+    tut2: 'Leere Felder ✕',
+    tut2Text: 'Lange drücken setzt ein ✕ – für Felder, die sicher leer bleiben.',
+    tut3: 'Bild entdecken',
+    tut3Text: 'Stimmen alle Zahlen, erscheint das versteckte Bild in Farbe.',
+    tut4: 'Hilfe ist gratis',
+    tut4Text: 'Tipp zeigt ein sicheres Feld, Prüfen findet Fehler, die Lupe zoomt.',
+  },
+  en: {
+    continue: 'Continue',
+    play: 'Play',
+    daily: 'Daily puzzle',
+    dailyPlural: 'Daily puzzles',
+    dailyContinue: 'Continue · {time}',
+    packNo: '{pack} · #{n}',
+    endlessNo: 'Endless {size}×{size} · #{n}',
+    no: '#{n}',
+    album: 'Album',
+    statsTitle: 'Statistics',
+    solvedN: '{n} solved',
+    statPictures: 'Pictures',
+    statPerfect: 'No help',
+    statStreak: 'Day streak',
+    statTime: 'Total time',
+    stars: 'Stars',
+    collections: 'Collections',
+    endless: 'Endless',
+    endlessTitle: 'Endless pictures',
+    endlessSub: 'New creatures and mosaics, forever',
+    noGuessing: 'Every picture can be solved without guessing.',
+    settings: 'Settings',
+    notFound: 'This picture no longer exists.',
+    allSolved: 'All pictures solved – wonderful!',
+    pageTitle: '{name} – Spielpause',
+    summary: '{solved} of {total} pictures solved',
+    summaryDaily: ' · Daily ✓',
+    albumEmpty: 'No pictures yet',
+    albumEmptyText: 'Every puzzle you solve ends up here as a color picture.',
+    albumFirst: 'Solve your first picture',
+    viewBest: 'Best time {time}',
+    viewTimes: 'solved {n}×',
+    viewPerfect: '★ no help',
+    playAgain: 'Play again',
+    close: 'Close',
+    stSolved: 'Puzzles solved',
+    stPerfect: 'No help',
+    stStreak: 'Day streak',
+    stDaily: 'Daily puzzles',
+    stTime: 'Total time',
+    stAvg: 'Average',
+    stBest: 'Best times',
+    stNone: 'none yet',
+    stCollections: 'Collections',
+    stExtra: 'Hints used: {hints} · Puzzles started: {started}',
+    size5: 'Mini',
+    size10: 'Small',
+    size15: 'Medium',
+    size20: 'Large',
+    backMenu: 'Back to menu',
+    more: 'More',
+    howto: 'How to play',
+    board: 'Game board',
+    undo: 'Undo',
+    fill: 'Fill',
+    cross: 'Cross',
+    zoom: 'Zoom',
+    check: 'Check',
+    hint: 'Hint',
+    again: 'Replay',
+    nextPic: 'Next picture',
+    toMenu: 'Menu',
+    row: 'row',
+    col: 'column',
+    coachFull: 'The {n} means: fill all {len} cells in this {what}. Just drag across!',
+    coachStart: 'Start here – this {what} is almost decided.',
+    hintMistake: 'Something wasn’t right here – I removed it.',
+    hintRow: 'Take a look at row {n}.',
+    hintCol: 'Take a look at column {n}.',
+    checkOk: 'All correct so far ✓',
+    checkOne: '1 cell is wrong (marked in red).',
+    checkMany: '{n} cells are wrong (marked in red).',
+    restartQ: 'Start over?',
+    restartText: 'All cells of this picture will be cleared.',
+    restart: 'Start over',
+    cancel: 'Cancel',
+    cells: '{w} × {h} cells',
+    soundOn: 'Turn sound on',
+    soundOff: 'Turn sound off',
+    keepPlaying: 'Keep playing',
+    zoomTip: 'Tip: pinch with two fingers to zoom – or use the zoom button.',
+    praise: 'Great!|Nice!|Lovely!|Superb!|Fantastic!|Wonderful!',
+    double: 'Double!',
+    triple: 'Triple!',
+    winTitle: 'Well done!',
+    winDaily: 'Daily puzzle solved!',
+    winTime: 'Time',
+    winHints: 'Hints',
+    winBest: 'Best',
+    notePerfect: '★ No help at all – impressive!',
+    noteRecord: 'New best time!',
+    noteFirst: 'A new picture for your album!',
+    noteNice: 'Beautifully done!',
+    notePack: 'Collection “{pack}” complete!',
+    starsLabel: '{n} of 3 stars',
+    viewPic: 'View picture',
+    quote: '“{title}”',
+    setAutoCross: 'Auto crosses',
+    setAutoCrossText: 'Finished rows and columns fill up with ✕ automatically.',
+    setErrors: 'Show mistakes right away',
+    setErrorsText: 'Wrong cells are marked in red and fixed at once.',
+    setTimer: 'Show timer',
+    setTimerText: 'The clock keeps running anyway – for your stats.',
+    done: 'Done',
+    tut1: 'Fill the cells',
+    tut1Text: 'The numbers show how many cells are filled side by side. Tap or drag!',
+    tut2: 'Empty cells ✕',
+    tut2Text: 'Press and hold to mark ✕ on cells that must stay empty.',
+    tut3: 'Reveal the picture',
+    tut3Text: 'When all the numbers match, the hidden picture appears in color.',
+    tut4: 'Help is free',
+    tut4Text: 'Hint shows a safe cell, Check finds mistakes, Zoom zooms in.',
+  },
+};
+
+export const t = dict(TEXTS);
+
+/** Bildtitel in der aktuellen Sprache (title_en aus den Daten, sonst Deutsch). */
+export const titleOf = (def) => (def && ((lang === 'en' && def.title_en) || def.title)) || '';
+/** Paketname / -untertitel in der aktuellen Sprache. */
+export const packTitle = (p) => (p && ((lang === 'en' && p.title_en) || p.title)) || '';
+export const packSub = (p) => (p && ((lang === 'en' && p.subtitle_en) || p.subtitle)) || '';
+
+/** Name einer Grösse (5 → «Mini», 10 → «Klein» / «Small» …). */
+export const sizeName = (n) => t('size' + n);
+
+/** «Mittwoch, 18. November» / «Wednesday, November 18» */
+const WEEKDAYS = {
+  de: ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'],
+  en: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
+};
+const MONTHS = {
+  de: ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'],
+  en: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
+};
+export function longDate(d = new Date()) {
+  const L = lang === 'en' ? 'en' : 'de';
+  return L === 'en'
+    ? `${WEEKDAYS.en[d.getDay()]}, ${MONTHS.en[d.getMonth()]} ${d.getDate()}`
+    : `${WEEKDAYS.de[d.getDay()]}, ${d.getDate()}. ${MONTHS.de[d.getMonth()]}`;
+}
+
+/** «3 Bilder» / «3 pictures» */
+export const pictures = (n) => plural(n, ['Bild', 'Bilder'], ['picture', 'pictures']);
+/** «2 Tipps» / «2 hints» */
+export const hints = (n) => plural(n, ['Tipp', 'Tipps'], ['hint', 'hints']);
+
+/** Zufälliges Lob aus der Liste. */
+export function praiseWord(k = Math.random()) {
+  const list = t('praise').split('|');
+  return list[Math.floor(k * list.length) % list.length];
+}

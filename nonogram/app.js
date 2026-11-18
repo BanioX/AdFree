@@ -13,17 +13,19 @@ import { drawThumb } from './board.js';
 import { createPlay, openSettings } from './play.js';
 import { showHelp, maybeHelp } from './help.js';
 import { gameMenu, menuSection } from '../shared/gamemenu.js';
+import { lang } from '../shared/i18n.js';
+import { gameById, gameText } from '../games.js';
+import { t, titleOf, packTitle, packSub, sizeName, longDate, pictures } from './i18n.js';
 import * as save from './save.js';
 
 setupPage();
 
+const GAME = gameText(gameById('nonogram') || { title: 'Bilderrätsel', subtitle: 'Zahlen lösen, Bild entdecken' }, lang);
+document.title = t('pageTitle', { name: GAME.title });
+
 const app = document.getElementById('app');
 let current = null;   // { name, el, play? }
 
-const WEEKDAYS = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'];
-const MONTHS = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'];
-const longDate = (d = new Date()) => `${WEEKDAYS[d.getDay()]}, ${d.getDate()}. ${MONTHS[d.getMonth()]}`;
-const SIZE_NAMES = { 5: 'Mini', 10: 'Klein', 15: 'Mittel', 20: 'Gross' };
 const svg = (body, size = 24) => `<svg viewBox="0 0 24 24" width="${size}" height="${size}" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${body}</svg>`;
 const IC = {
   stats: '<path d="M5 20V11M12 20V5M19 20v-6"/>',
@@ -111,9 +113,9 @@ function nextUnsolved(packId = null, afterId = null) {
 }
 
 function labelFor(hit, id) {
-  if (hit.kind === 'daily') return 'Tagesrätsel';
-  if (hit.kind === 'endless') return `Endlos ${hit.size}×${hit.size} · Nr. ${hit.n}`;
-  return `${hit.pack.title} · Nr. ${indexInPack(hit.pack, id)}`;
+  if (hit.kind === 'daily') return t('daily');
+  if (hit.kind === 'endless') return t('endlessNo', { size: hit.size, n: hit.n });
+  return t('packNo', { pack: packTitle(hit.pack), n: indexInPack(hit.pack, id) });
 }
 
 // ---------- Menü (gemeinsamer Startbildschirm) ----------
@@ -129,7 +131,7 @@ function heroParts() {
     return {
       art,
       primary: {
-        label: 'Weiter', icon: 'play',
+        label: t('continue'), icon: 'play',
         sub: `${labelFor(res.hit, res.id)} · ${def.rows[0].length}×${def.rows.length} · ${save.formatTime(res.pr.t || 0)}`,
         onClick: () => go('#play/' + res.id, true),
       },
@@ -141,7 +143,7 @@ function heroParts() {
   return {
     art: null,
     primary: {
-      label: 'Spielen', icon: 'play',
+      label: t('play'), icon: 'play',
       sub: `${labelFor(hit, def.id)} · ${def.rows[0].length}×${def.rows.length}`,
       onClick: () => go('#play/' + def.id, true),
     },
@@ -156,7 +158,7 @@ function dailyInfo() {
   return {
     done,
     streak: dailyStreak('nonogram'),
-    sub: !done && dpr && !dpr.s ? `Weiter · ${save.formatTime(dpr.t || 0)}` : `${size}×${size} · ${longDate()}`,
+    sub: !done && dpr && !dpr.s ? t('dailyContinue', { time: save.formatTime(dpr.t || 0) }) : `${size}×${size} · ${longDate()}`,
     onClick: () => go('#daily', true),
   };
 }
@@ -174,8 +176,8 @@ function renderMenu() {
     const b = h('button.card.pack', { type: 'button', 'data-pack': pack.id },
       h('span.pack-emoji', null, pack.emoji || '🧩'),
       h('span.pack-info', null,
-        h('b', null, pack.title),
-        h('small', null, pack.subtitle || ''),
+        h('b', null, packTitle(pack)),
+        h('small', null, packSub(pack)),
         h('span.bar', null, h('i', { style: { width: `${n ? (s / n) * 100 : 0}%` } }))),
       h('span.pack-count', null, s === n && n ? '✓' : `${s}/${n}`));
     if (s === n && n) b.classList.add('complete');
@@ -188,40 +190,40 @@ function renderMenu() {
   // Endlos
   const endless = h('div.card.endless', null,
     h('div.endless-h', null, h('span.endless-ic', { html: svg(IC.infinity, 22) }),
-      h('div', null, h('b', null, 'Endlos-Bilder'), h('small', null, 'Immer neue Fantasiewesen und Mosaike'))),
+      h('div', null, h('b', null, t('endlessTitle')), h('small', null, t('endlessSub')))),
     h('div.size-row', null, ...ENDLESS_SIZES.map((sz) => {
-      const b = h('button.size-btn', { type: 'button', 'data-size': sz }, h('b', null, `${sz}×${sz}`), h('small', null, `Nr. ${save.endlessNext(sz)}`));
+      const b = h('button.size-btn', { type: 'button', 'data-size': sz }, h('b', null, `${sz}×${sz}`), h('small', null, t('no', { n: save.endlessNext(sz) })));
       b.addEventListener('click', () => { sfx.play('tap'); go('#endless/' + sz, true); });
       return b;
     })));
 
   const statsList = () => [
-    { label: 'Bilder', value: `${solvedLib()}/${libraryCount()}` },
-    { label: 'Ohne Hilfe', value: st.perfect },
-    { label: 'Tage-Serie', value: dailyStreak('nonogram') },
-    { label: 'Gesamtzeit', value: save.formatTime(st.time) },
+    { label: t('statPictures'), value: `${solvedLib()}/${libraryCount()}` },
+    { label: t('statPerfect'), value: st.perfect },
+    { label: t('statStreak'), value: dailyStreak('nonogram') },
+    { label: t('statTime'), value: save.formatTime(st.time) },
   ];
 
   const hero = heroParts();
   const menu = gameMenu({
     id: 'nonogram',
-    title: 'Bilderrätsel',
-    tagline: 'Zahlen lösen, Bild entdecken',
+    title: GAME.title,
+    tagline: GAME.subtitle,
     accent: '#e0699a',
     art: hero.art,
     primary: hero.primary,
     daily: dailyInfo(),
     secondary: [
-      { label: 'Album', sub: `${Object.keys(solved).length} Bilder`, icon: 'image', onClick: () => go('#album', true) },
-      { label: 'Statistik', sub: `${st.solved} gelöst`, icon: 'star', onClick: () => go('#stats', true) },
+      { label: t('album'), sub: pictures(Object.keys(solved).length), icon: 'image', onClick: () => go('#album', true) },
+      { label: t('statsTitle'), sub: t('solvedN', { n: st.solved }), icon: 'star', onClick: () => go('#stats', true) },
     ],
     stats: statsList(),
     sections: [
-      menuSection('Bildersammlungen', packList),
-      menuSection('Endlos', endless),
-      h('p.foot', null, 'Jedes Bild lässt sich ohne Raten lösen.'),
+      menuSection(t('collections'), packList),
+      menuSection(t('endless'), endless),
+      h('p.foot', null, t('noGuessing')),
       h('button.gm-howto.settings-link', { type: 'button', onclick: () => { sfx.play('click'); openSettings(); } },
-        h('span', { html: icon('settings', { size: 18 }) }), 'Einstellungen'),
+        h('span', { html: icon('settings', { size: 18 }) }), t('settings')),
     ],
     onHelp: () => showHelp(),
     backHref: '../',
@@ -265,7 +267,7 @@ function renderPack(packId) {
   const solved = save.solvedMap();
   const s = pack.puzzles.filter((d) => solved[d.id]).length;
   const top = h('header.topbar', null, backButton('#', () => { sfx.play('click'); goBack(''); }),
-    h('div.title.center', null, `${pack.emoji || ''} ${pack.title}`), h('span.top-count', null, `${s}/${pack.puzzles.length}`));
+    h('div.title.center', null, `${pack.emoji || ''} ${packTitle(pack)}`), h('span.top-count', null, `${s}/${pack.puzzles.length}`));
   const grid = h('div.tiles');
   pack.puzzles.forEach((def, k) => {
     const isSolved = !!solved[def.id];
@@ -275,14 +277,14 @@ function renderPack(packId) {
     if (isSolved) drawThumb(cv, def, { mode: 'color', size: 76 });
     else drawThumb(cv, def, { mode: 'progress', cells: pr ? pr.c : null, size: 76 });
     tile.append(...[h('span.tile-pic', null, cv, !isSolved && !pr ? h('span.tile-q', null, '?') : null),
-      h('span.tile-lbl', null, isSolved ? def.title : `Nr. ${k + 1}`),
+      h('span.tile-lbl', null, isSolved ? titleOf(def) : t('no', { n: k + 1 })),
       isSolved && solved[def.id].p ? h('span.tile-star', { html: icon('star', { size: 14 }) }) : null].filter(Boolean));
     tile.addEventListener('click', () => { sfx.play('tap'); go('#play/' + def.id, true); });
     grid.append(tile);
   });
   const w = pack.puzzles[0] ? pack.puzzles[0].rows[0].length : 0;
   const body = h('main.pack-body', null,
-    h('p.pack-sub', null, pack.subtitle || `${w} × ${w}`),
+    h('p.pack-sub', null, packSub(pack) || `${w} × ${w}`),
     grid);
   setScreen(h('div.screen.packview', null, top, h('div.scroll', null, body)), 'pack');
 }
@@ -294,21 +296,21 @@ function albumEntries() {
   const groups = new Map();
   const add = (name, entry) => { if (!groups.has(name)) groups.set(name, []); groups.get(name).push(entry); };
   for (const pack of allPacks()) {
-    for (const def of pack.puzzles) if (map[def.id]) add(pack.title, { id: def.id, def, info: map[def.id] });
+    for (const def of pack.puzzles) if (map[def.id]) add(packTitle(pack), { id: def.id, def, info: map[def.id] });
   }
   const ids = Object.keys(map).sort();
   for (const id of ids) {
-    if (/^daily-/.test(id)) { const hit = lookup(id); if (hit) add('Tagesrätsel', { id, def: hit.def, info: map[id], day: id.slice(6) }); }
+    if (/^daily-/.test(id)) { const hit = lookup(id); if (hit) add(t('dailyPlural'), { id, def: hit.def, info: map[id], day: id.slice(6) }); }
   }
   for (const id of ids) {
-    if (/^e\d+-/.test(id)) { const hit = lookup(id); if (hit) add('Endlos-Bilder', { id, def: hit.def, info: map[id] }); }
+    if (/^e\d+-/.test(id)) { const hit = lookup(id); if (hit) add(t('endlessTitle'), { id, def: hit.def, info: map[id] }); }
   }
   return groups;
 }
 
 function renderAlbum() {
   const top = h('header.topbar', null, backButton('#', () => { sfx.play('click'); goBack(''); }),
-    h('div.title.center', null, 'Album'), h('span.top-count'));
+    h('div.title.center', null, t('album')), h('span.top-count'));
   const groups = albumEntries();
   const body = h('main.album-body');
   let count = 0;
@@ -318,7 +320,7 @@ function renderAlbum() {
     for (const e of list) {
       const cv = h('canvas');
       drawThumb(cv, e.def, { mode: 'color', size: 96 });
-      const b = h('button.album-item', { type: 'button' }, h('span.album-frame', null, cv), h('span.album-t', null, e.def.title));
+      const b = h('button.album-item', { type: 'button' }, h('span.album-frame', null, cv), h('span.album-t', null, titleOf(e.def)));
       b.addEventListener('click', () => viewPicture(e));
       grid.append(b);
     }
@@ -327,9 +329,9 @@ function renderAlbum() {
   if (!count) {
     body.append(h('div.card.empty', null,
       h('div.empty-ic', { html: svg(IC.album, 40) }),
-      h('b', null, 'Noch keine Bilder'),
-      h('p', null, 'Jedes gelöste Rätsel landet hier als farbiges Bild.'),
-      (() => { const b = h('button.btn.primary', { type: 'button' }, 'Erstes Bild lösen'); b.addEventListener('click', () => go('')); return b; })()));
+      h('b', null, t('albumEmpty')),
+      h('p', null, t('albumEmptyText')),
+      (() => { const b = h('button.btn.primary', { type: 'button' }, t('albumFirst')); b.addEventListener('click', () => go('')); return b; })()));
   }
   top.lastChild.textContent = count ? String(count) : '';
   setScreen(h('div.screen.album', null, top, h('div.scroll', null, body)), 'album');
@@ -340,10 +342,11 @@ async function viewPicture(e) {
   const cv = h('canvas.big-pic');
   drawThumb(cv, e.def, { mode: 'color', size: 220 });
   const content = h('div.view-pic', null, h('div.win-frame', null, cv),
-    h('p.muted', null, `${e.def.rows[0].length} × ${e.def.rows.length} · Bestzeit ${save.formatTime(e.info.t)}${e.info.n > 1 ? ` · ${e.info.n}× gelöst` : ''}${e.info.p ? ' · ★ ohne Hilfe' : ''}`));
+    h('p.muted', null, [`${e.def.rows[0].length} × ${e.def.rows.length}`, t('viewBest', { time: save.formatTime(e.info.t) }),
+      e.info.n > 1 ? t('viewTimes', { n: e.info.n }) : '', e.info.p ? t('viewPerfect') : ''].filter(Boolean).join(' · ')));
   const v = await showModal({
-    title: e.def.title, content, dismissible: true,
-    buttons: [{ label: 'Nochmals spielen', value: 'again', icon: 'refresh' }, { label: 'Schliessen', value: null, primary: true }],
+    title: titleOf(e.def), content, dismissible: true,
+    buttons: [{ label: t('playAgain'), value: 'again', icon: 'refresh' }, { label: t('close'), value: null, primary: true }],
   });
   if (v === 'again') {
     save.clearProgress(e.id);
@@ -355,33 +358,33 @@ async function viewPicture(e) {
 
 function renderStats() {
   const top = h('header.topbar', null, backButton('#', () => { sfx.play('click'); goBack(''); }),
-    h('div.title.center', null, 'Statistik'), h('span.top-count'));
+    h('div.title.center', null, t('statsTitle')), h('span.top-count'));
   const st = save.getStats();
   const map = save.solvedMap();
   const big = (value, label) => h('div.stat', null, h('b', null, value), h('span', null, label));
   const avg = st.solved ? st.time / st.solved : 0;
   const grid = h('div.stat-grid',
-    big(String(st.solved), 'Rätsel gelöst'),
-    big(String(st.perfect), 'Ohne Hilfe'),
-    big(String(dailyStreak('nonogram')), 'Tage in Serie'),
-    big(String(Object.keys(map).filter((k) => /^daily-/.test(k)).length), 'Tagesrätsel'),
-    big(save.formatTime(st.time), 'Gesamtzeit'),
-    big(st.solved ? save.formatTime(avg) : '–', 'Durchschnitt'));
-  const sizes = h('div.card.stat-list', null, h('h3', null, 'Bestzeiten'),
+    big(String(st.solved), t('stSolved')),
+    big(String(st.perfect), t('stPerfect')),
+    big(String(dailyStreak('nonogram')), t('stStreak')),
+    big(String(Object.keys(map).filter((k) => /^daily-/.test(k)).length), t('stDaily')),
+    big(save.formatTime(st.time), t('stTime')),
+    big(st.solved ? save.formatTime(avg) : '–', t('stAvg')));
+  const sizes = h('div.card.stat-list', null, h('h3', null, t('stBest')),
     ...[5, 10, 15, 20].map((sz) => {
       const b = st.bySize[String(sz)];
-      return h('div.stat-row', null, h('span', null, `${SIZE_NAMES[sz]} · ${sz}×${sz}`),
-        h('small', null, b ? `${b.solved}× gelöst` : 'noch keins'), h('b', null, b && b.best != null ? save.formatTime(b.best) : '–'));
+      return h('div.stat-row', null, h('span', null, `${sizeName(sz)} · ${sz}×${sz}`),
+        h('small', null, b ? t('viewTimes', { n: b.solved }) : t('stNone')), h('b', null, b && b.best != null ? save.formatTime(b.best) : '–'));
     }));
-  const packsCard = h('div.card.stat-list', null, h('h3', null, 'Sammlungen'),
+  const packsCard = h('div.card.stat-list', null, h('h3', null, t('stCollections')),
     ...allPacks().map((p) => {
       const s = p.puzzles.filter((d) => map[d.id]).length;
-      return h('div.stat-row', null, h('span', null, `${p.emoji || ''} ${p.title}`),
+      return h('div.stat-row', null, h('span', null, `${p.emoji || ''} ${packTitle(p)}`),
         h('span.bar.slim', null, h('i', { style: { width: `${p.puzzles.length ? (s / p.puzzles.length) * 100 : 0}%` } })),
         h('b', null, `${s}/${p.puzzles.length}`));
     }),
-    h('div.stat-row', null, h('span', null, '♾️ Endlos-Bilder'), h('small', null, ''), h('b', null, String(Object.keys(map).filter((k) => /^e\d+-/.test(k)).length))));
-  const extra = h('p.foot', null, `Tipps benutzt: ${st.hints} · Rätsel begonnen: ${st.started}`);
+    h('div.stat-row', null, h('span', null, `♾️ ${t('endlessTitle')}`), h('small', null, ''), h('b', null, String(Object.keys(map).filter((k) => /^e\d+-/.test(k)).length))));
+  const extra = h('p.foot', null, t('stExtra', { hints: st.hints, started: st.started }));
   setScreen(h('div.screen.stats', null, top, h('div.scroll', null, h('main.stats-body', null, grid, sizes, packsCard, extra))), 'stats');
 }
 
@@ -393,7 +396,7 @@ async function openPuzzle(id) {
     await loadBeadsPack(importBeads);
     loaded = loadPuzzle(id);
   }
-  if (!loaded) { toast('Dieses Bild gibt es nicht mehr.'); go(''); return; }
+  if (!loaded) { toast(t('notFound')); go(''); return; }
   const { puzzle, kind, pack } = loaded;
   if (kind !== 'daily') save.setLastPlayed(id);
   const label = labelFor(loaded, id);
@@ -403,7 +406,7 @@ async function openPuzzle(id) {
     onNext = () => {
       const nx = nextUnsolved(pack.id, id);
       if (nx) go('#play/' + nx.def.id);
-      else { toast('Alle Bilder gelöst – wunderbar!'); go('#album'); }
+      else { toast(t('allSolved')); go('#album'); }
     };
   }
   // Coach-Mark nur beim allerersten Bild, solange es noch nie angefangen wurde

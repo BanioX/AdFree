@@ -212,7 +212,7 @@ export function makeEndless(size, n) {
     return cleanPalette({
       id: `e${size}-${n}`,
       title: mosaicT ? `Mosaik Nr. ${n}` : def.title,
-      title_en: mosaicT ? `Mosaic No. ${n}` : def.title,
+      title_en: mosaicT ? `Mosaic #${n}` : def.title,
       category: def.category,
       palette: def.palette,
       rows: def.rows,
@@ -226,5 +226,5 @@ export function makeEndless(size, n) {
     for (let c = 0; c < size; c++) s += r === 0 || c === 0 || r === size - 1 || c === size - 1 ? 'a' : '.';
     rows.push(s);
   }
-  return { id: `e${size}-${n}`, title: `Rahmen Nr. ${n}`, title_en: `Frame No. ${n}`, category: 'Mosaik', palette: { a: '#e0699a' }, rows };
+  return { id: `e${size}-${n}`, title: `Rahmen Nr. ${n}`, title_en: `Frame #${n}`, category: 'Mosaik', palette: { a: '#e0699a' }, rows };
 }

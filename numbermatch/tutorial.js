@@ -1,6 +1,7 @@
 // Zahlenpaare – «So geht's»: 4 kurze Schritte mit animierten Mini-Szenen.
 import { h } from '../shared/ui.js';
 import { NI } from '../lib/numbers/icons.js';
+import { t } from './i18n.js';
 
 /** Kleines Demo-Gitter (cols Spalten) aus einem Ziffern-String; '.' = gestrichen-Ziffer folgt. */
 function demoGrid(stage, cols, digits, { cs = 40 } = {}) {
@@ -33,8 +34,8 @@ const reset = (cells, digits) => cells.forEach((c, k) => {
 export function tutorialSteps() {
   return [
     {
-      title: 'Paare streichen',
-      text: 'Tippe zwei gleiche Zahlen an – oder zwei, die zusammen 10 ergeben.',
+      title: t('tut1Title'),
+      text: t('tut1Text'),
       demo(stage, api) {
         const D = '38735' + '62146' + '21952';
         const { cells } = demoGrid(stage, 5, D);
@@ -55,8 +56,8 @@ export function tutorialSteps() {
       },
     },
     {
-      title: 'Auch über Lücken',
-      text: 'Dazwischen dürfen nur gestrichene Felder liegen – auch quer und über den Zeilenumbruch.',
+      title: t('tut2Title'),
+      text: t('tut2Text'),
       demo(stage, api) {
         const D = '4bcd6' + '7ae2f' + 'g3h18';
         const { cells } = demoGrid(stage, 5, D);
@@ -77,8 +78,8 @@ export function tutorialSteps() {
       },
     },
     {
-      title: 'Reihen verschwinden',
-      text: 'Ist eine Reihe ganz gestrichen, rutscht sie weg. Erfülle so das Ziel des Levels.',
+      title: t('tut3Title'),
+      text: t('tut3Text'),
       demo(stage, api) {
         const D = '58296' + 'a9cd1' + '73455';
         const { cells } = demoGrid(stage, 5, D);
@@ -98,8 +99,8 @@ export function tutorialSteps() {
       },
     },
     {
-      title: 'Zahlen hinzufügen',
-      text: 'Keine Paare mehr? «Hinzufügen» hängt alle offenen Zahlen unten an. Tipp und «Zurück» sind gratis.',
+      title: t('tut4Title'),
+      text: t('tut4Text'),
       demo(stage, api) {
         const D = '1a6b' + 'c42d';
         const wrap = h('div.nx-demo.nm-demo-add');

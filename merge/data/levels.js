@@ -7,15 +7,15 @@
 
 export const LEVELS_PER_CHAPTER = 12;
 
-// Jedes Kapitel hat einen Namen und spielt mit einem Kachel-Stil (id aus data/skins.js).
+// Jedes Kapitel hat einen Namen (title, title_en auf Englisch) und spielt mit einem Kachel-Stil (id aus data/skins.js).
 export const chapters = [
-  { id: 'obstgarten', title: 'Obstgarten', skin: 'fruechte', icon: '🍎' },
-  { id: 'tierpark', title: 'Tierpark', skin: 'tiere', icon: '🦁' },
-  { id: 'konditorei', title: 'Konditorei', skin: 'suesses', icon: '🧁' },
-  { id: 'blumenwiese', title: 'Blumenwiese', skin: 'blumen', icon: '🌷' },
-  { id: 'sternenhimmel', title: 'Sternenhimmel', skin: 'weltall', icon: '🪐' },
-  { id: 'meeresgrund', title: 'Meeresgrund', skin: 'meer', icon: '🐬' },
-  { id: 'bauernhof', title: 'Bauernhof', skin: 'bauernhof', icon: '🐄' },
+  { id: 'obstgarten', title: 'Obstgarten', title_en: 'Orchard', skin: 'fruechte', icon: '🍎' },
+  { id: 'tierpark', title: 'Tierpark', title_en: 'Zoo', skin: 'tiere', icon: '🦁' },
+  { id: 'konditorei', title: 'Konditorei', title_en: 'Bakery', skin: 'suesses', icon: '🧁' },
+  { id: 'blumenwiese', title: 'Blumenwiese', title_en: 'Flower Meadow', skin: 'blumen', icon: '🌷' },
+  { id: 'sternenhimmel', title: 'Sternenhimmel', title_en: 'Starry Sky', skin: 'weltall', icon: '🪐' },
+  { id: 'meeresgrund', title: 'Meeresgrund', title_en: 'Seabed', skin: 'meer', icon: '🐬' },
+  { id: 'bauernhof', title: 'Bauernhof', title_en: 'Farm', skin: 'bauernhof', icon: '🐄' },
 ];
 
 // Brett-Formen. Jede Zeile gleich lang, Brett quadratisch (3×3 bis 6×6).
@@ -73,14 +73,14 @@ export const MIN_TARGET = 5;
 
 // Handgemachte Etappen: überschreiben den Generator für genau diese Nummer.
 //   shape: id aus shapes, goal: { type: 'tile', value } oder { type: 'count', value, n }
-//   tip: kurzer Hinweis zum Start (optional)
+//   tip: kurzer Hinweis zum Start (optional), tip_en: derselbe Hinweis auf Englisch
 export const handmade = {
-  1: { shape: 'quadrat4', goal: { type: 'tile', value: 64 }, tip: 'Wische, damit gleiche Kacheln verschmelzen.' },
-  2: { shape: 'quadrat4', goal: { type: 'tile', value: 128 }, tip: 'Tipp: Sammle grosse Kacheln in einer Ecke.' },
-  3: { shape: 'quadrat3', goal: { type: 'tile', value: 64 }, tip: 'Ein kleines Brett – plane voraus!' },
-  4: { shape: 'eckstein4', goal: { type: 'tile', value: 128 }, tip: 'Steine bewegen sich nie. Kacheln rutschen nur bis davor.' },
-  5: { shape: 'quadrat5', goal: { type: 'count', value: 32, n: 3 }, tip: 'Bilde die gezeigte Kachel so oft wie verlangt.' },
-  6: { shape: 'kissen4', goal: { type: 'tile', value: 128 }, tip: 'Die Ecken fehlen – das Brett ist kleiner.' },
+  1: { shape: 'quadrat4', goal: { type: 'tile', value: 64 }, tip: 'Wische, damit gleiche Kacheln verschmelzen.', tip_en: 'Swipe to merge matching tiles.' },
+  2: { shape: 'quadrat4', goal: { type: 'tile', value: 128 }, tip: 'Tipp: Sammle grosse Kacheln in einer Ecke.', tip_en: 'Tip: Keep big tiles in one corner.' },
+  3: { shape: 'quadrat3', goal: { type: 'tile', value: 64 }, tip: 'Ein kleines Brett – plane voraus!', tip_en: 'A small board – plan ahead!' },
+  4: { shape: 'eckstein4', goal: { type: 'tile', value: 128 }, tip: 'Steine bewegen sich nie. Kacheln rutschen nur bis davor.', tip_en: 'Stones never move. Tiles stop right in front of them.' },
+  5: { shape: 'quadrat5', goal: { type: 'count', value: 32, n: 3 }, tip: 'Bilde die gezeigte Kachel so oft wie verlangt.', tip_en: 'Make the shown tile as many times as asked.' },
+  6: { shape: 'kissen4', goal: { type: 'tile', value: 128 }, tip: 'Die Ecken fehlen – das Brett ist kleiner.', tip_en: 'The corners are missing – the board is smaller.' },
 };
 
 // Sterne: 3 Sterne bei höchstens par Zügen, 2 Sterne bei höchstens par2 Zügen.
